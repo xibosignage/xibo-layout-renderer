@@ -1,0 +1,20 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    /*cursor: none;*/
+}
+div.preview-container {
+    height: 100%;
+    z-index: 1;
+    background-color: #000000;
+}
+div.preview-canvas, div.player-preview, div.screen-preview {
+    height: 100%;
+    z-index: 1;
+}
+
+/* Styles override */
+.preview-player {
+    display: none;
+}

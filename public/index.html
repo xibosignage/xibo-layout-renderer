@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
+    <link type="text/css" rel="stylesheet" href="styles.css" />
+    <title>Xibo Layout Renderer Demo</title>
+</head>
+<body>
+    <div class="preview-container">
+        <div class="preview-canvas"></div>
+    </div>
+    <script
+        src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+    <script src="xibo-layout-renderer.min.js"></script>
+    <script>
+        let layout = [{
+          layoutId: 281,
+        }];
+
+        let xiboLayoutRenderer = new XiboLayoutRenderer(layout);
+
+        xiboLayoutRenderer.init();
+    </script>
+</body>
+</html>
