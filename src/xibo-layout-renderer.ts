@@ -44,9 +44,7 @@ export default function XiboLayoutRenderer(
             console.log({xlr, currentLayoutIndex: xlr.currentLayoutIndex})
             if (xlr.currentLayout !== undefined) {
                 xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
-                // while (xlr.currentLayoutIndex <= xlr.inputLayouts.length) {
-                    xlr.currentLayout.run();
-                // }
+                xlr.currentLayout.run();
             }
         },
 
@@ -61,31 +59,31 @@ export default function XiboLayoutRenderer(
             }
 
             let layoutXlf: string;
-            let layoutXlfNode: Document;
-            if (inputLayout.layoutNode === null) {
+            let layoutXlfNode: Document | null;
+            if (inputLayout && inputLayout.layoutNode === null) {
                 layoutXlf = await getXlf(newOptions);
 
                 const parser = new window.DOMParser();
                 layoutXlfNode = parser.parseFromString(layoutXlf as string, 'text/xml');
             } else {
-                layoutXlfNode = inputLayout.layoutNode;
+                layoutXlfNode = inputLayout && inputLayout.layoutNode;
             }
 
             return new Promise<ILayout>((resolve) => {
                 resolve(Layout(layoutXlfNode, newOptions, self, {
                     ...initialLayout,
                     ...inputLayout,
-                    id: inputLayout.layoutId,
-                    layoutId: inputLayout.layoutId,
+                    id: inputLayout?.layoutId,
+                    layoutId: inputLayout?.layoutId,
                     options: newOptions,
                 }));
             });
         },
 
-        async prepareLayouts(params?: PrepareLayoutsType) {
+        async prepareLayouts() {
             const self = this;
             // Get layouts
-            const xlrLayouts = getLayout({xlr: self, moveNext: params?.moveNext});
+            const xlrLayouts = getLayout({xlr: self});
 
             self.currentLayoutId = xlrLayouts.current?.layoutId;
 

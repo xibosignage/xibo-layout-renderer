@@ -42,6 +42,7 @@ export function initRenderingDOM(targetContainer: Element | null) {
 }
 
 export async function getXlf(layoutOptions: OptionsType) {
+    console.log({layoutOptions});
     const apiHost = 'http://localhost';
     const res = await fetch(apiHost + layoutOptions.xlfUrl, {mode: 'no-cors'});
     return await res.text();
@@ -58,40 +59,42 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
     } = params.xlr;
     const hasLayout = inputLayouts.length > 0;
     const layoutStartCount = currentLayoutIndex === -1 ? 0 : currentLayoutIndex;
+    const nextLayoutIndex = currentLayoutIndex + 1;
 
     if (currentLayout === undefined && nextLayout === undefined) {
         // Preview just got started
         if (hasLayout) {
-            _currentLayout = {...initialLayout, ...inputLayouts[layoutStartCount]};
-
-            if (_currentLayout) {
-                currentLayoutIndex = layoutStartCount;
-            }
+            _currentLayout = {...initialLayout, ...inputLayouts[currentLayoutIndex]};
 
             if (inputLayouts.length > 1) {
-                _nextLayout = {...initialLayout, ...inputLayouts[layoutStartCount + 1]};
+                _nextLayout = {...initialLayout, ...inputLayouts[nextLayoutIndex]};
             } else {
                 _nextLayout = _currentLayout;
             }
         }
     } else {
         if (hasLayout) {
-            if (params.moveNext && nextLayout !== undefined) {
+            if (params.moveNext) {
                 _currentLayout = nextLayout;
-                currentLayoutIndex += 1;
             }
 
-            if (inputLayouts.length > 1 && currentLayoutIndex + 1 < inputLayouts.length) {
-                _nextLayout = {...initialLayout, ...inputLayouts[currentLayoutIndex + 1]};
+            if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
+                if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
+                    _nextLayout = params.xlr.layouts[nextLayoutIndex];
+                } else {
+                    _nextLayout = {...initialLayout, ...inputLayouts[nextLayoutIndex]};
+                }
             }
+            console.log({nextLayout: _nextLayout});
 
             // If _nextLayout is undefined, then we go back to first layout
             if (_nextLayout === undefined) {
-                currentLayoutIndex = 0;
-                _nextLayout = params.xlr.layouts[currentLayoutIndex];
+                _nextLayout = params.xlr.layouts[0];
             }
         }
     }
+
+    console.log({currentLayoutIndex});
 
     return {
         currentLayoutIndex,
@@ -117,7 +120,6 @@ export default function Layout(
         options: options,
         layout: layout || initialLayout,
     }
-    let counter = 1;
     const emitter = createNanoEvents<ILayoutEvents>();
 
     emitter.on('start', (layout) => {
@@ -134,14 +136,9 @@ export default function Layout(
             $layout.remove();
         }
 
-        const moveNext = xlr.currentLayoutIndex <= xlr.inputLayouts.length;
-        if (counter > 2) {
-            return;
-        }
         // Transition next layout to current layout and prepare next layout if exist
-        xlr.prepareLayouts({moveNext}).then((parent) => {
+        xlr.prepareLayouts().then((parent) => {
             xlr.playSchedules(parent);
-            counter++;
         });
     });
 
@@ -154,8 +151,8 @@ export default function Layout(
         },
         run() {
             const layout = this;
-            const $layoutContainer = document.getElementById(`#${layout.containerName}`);
-            const $splashScreen = document.getElementById(`#splash_${layout.id}`);
+            const $layoutContainer = document.getElementById(`${layout.containerName}`);
+            const $splashScreen = document.getElementById(`splash_${layout.id}`);
 
             if ($layoutContainer) {
                 $layoutContainer.style.display = 'block';
