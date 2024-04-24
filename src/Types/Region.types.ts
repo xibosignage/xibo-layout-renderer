@@ -1,6 +1,12 @@
 import {ILayout, initialLayout, OptionsType} from "./Layout.types.js";
 import {platform} from "../Modules/Platform.js";
 import {IMedia} from "./Media.types.js";
+import { DefaultEvents, Emitter, Unsubscribe } from "nanoevents";
+
+export interface IRegionEvents {
+    start: (layout: IRegion) => void;
+    end: (layout: IRegion) => void;
+}
 
 export interface IRegion {
     layout: ILayout;
@@ -24,12 +30,14 @@ export interface IRegion {
     offsetX: number;
     offsetY: number;
     zIndex: number;
+    emitter?: Emitter<DefaultEvents>;
     prepareRegion(): void;
     nextMedia(): void;
     transitionNodes(oldMedia: IMedia | undefined, newMedia: IMedia | undefined): void;
     finished(): void;
     run(): void;
     end(): void;
+    on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe;
 }
 
 export const initialRegion: IRegion = {
@@ -65,5 +73,8 @@ export const initialRegion: IRegion = {
     run() {
     },
     end() {
-    }
+    },
+    on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe {
+        return <Unsubscribe>{};
+    },
 };

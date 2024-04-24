@@ -22,14 +22,14 @@ export interface IXlr {
     init(): void;
     playSchedules(xlr: IXlr): void;
     prepareLayoutXlf(inputLayout: ILayout | undefined, type: ELayoutType): Promise<ILayout>;
-    prepareLayouts(params?: PrepareLayoutsType): Promise<IXlr>;
+    prepareLayouts(): Promise<IXlr>;
 }
 
 export const initialXlr: IXlr = {
     inputLayouts: [],
     config: platform,
     layouts: [],
-    currentLayoutIndex: -1,
+    currentLayoutIndex: 0,
     currentLayoutId: undefined,
     currentLayout: undefined,
     nextLayout: undefined,
@@ -42,7 +42,7 @@ export const initialXlr: IXlr = {
     prepareLayoutXlf(inputLayout: ILayout | undefined, type: ELayoutType): Promise<ILayout> {
         return Promise.resolve(<ILayout>{});
     },
-    prepareLayouts(params?: PrepareLayoutsType): Promise<IXlr> {
+    prepareLayouts(): Promise<IXlr> {
         return Promise.resolve(<IXlr>{});
     }
 };
