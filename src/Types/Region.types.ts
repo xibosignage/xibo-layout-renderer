@@ -1,7 +1,7 @@
+import { DefaultEvents, Emitter, Unsubscribe } from "nanoevents";
 import {ILayout, initialLayout, OptionsType} from "./Layout.types.js";
 import {platform} from "../Modules/Platform.js";
 import {IMedia} from "./Media.types.js";
-import { DefaultEvents, Emitter, Unsubscribe } from "nanoevents";
 
 export interface IRegionEvents {
     start: (layout: IRegion) => void;
@@ -23,6 +23,8 @@ export interface IRegion {
     oneMedia: boolean;
     oldMedia: IMedia | undefined;
     curMedia: IMedia | undefined;
+    nxtMedia: IMedia | undefined;
+    currentMediaIndex: number;
     totalMediaObjects: number;
     ready: boolean;
     options: OptionsType;
@@ -34,7 +36,7 @@ export interface IRegion {
     index: number;
     emitter?: Emitter<DefaultEvents>;
     prepareRegion(): void;
-    nextMedia(): void;
+    playNextMedia(): void;
     transitionNodes(oldMedia: IMedia | undefined, newMedia: IMedia | undefined): void;
     finished(): void;
     run(): void;
@@ -42,6 +44,7 @@ export interface IRegion {
     exitTransition(): void;
     exitTransitionComplete(): void;
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe;
+    prepareMediaObjects(): void;
 }
 
 export const initialRegion: IRegion = {
@@ -59,6 +62,8 @@ export const initialRegion: IRegion = {
     oneMedia: false,
     oldMedia: undefined,
     curMedia: undefined,
+    nxtMedia: undefined,
+    currentMediaIndex: 0,
     totalMediaObjects: 0,
     ready: false,
     options: platform,
@@ -70,7 +75,7 @@ export const initialRegion: IRegion = {
     index: -1,
     prepareRegion() {
     },
-    nextMedia() {
+    playNextMedia() {
     },
     transitionNodes() {
     },
@@ -84,5 +89,7 @@ export const initialRegion: IRegion = {
     exitTransitionComplete() {},
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe {
         return <Unsubscribe>{};
+    },
+    prepareMediaObjects() {
     },
 };

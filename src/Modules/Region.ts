@@ -1,9 +1,9 @@
+import { createNanoEvents } from "nanoevents";
 import {ILayout, OptionsType} from "../Types/Layout.types.js";
 import {initialRegion, IRegion, IRegionEvents} from "../Types/Region.types.js";
 import {IMedia} from "../Types/Media.types.js";
 import {nextId} from "./Generators.js";
 import Media from "./Media.js";
-import { createNanoEvents } from "nanoevents";
 
 export default function Region(
     layout: ILayout,
@@ -68,6 +68,8 @@ export default function Region(
                 options,
             ));
         }
+
+        self.prepareMediaObjects();
     };
 
     regionObject.finished = function() {
@@ -79,18 +81,62 @@ export default function Region(
         self.layout.regionExpired();
     };
 
-    regionObject.transitionNodes = function(oldMedia: IMedia | undefined, newMedia: IMedia | undefined) {
-        console.log('Called Region::transitionNodes from region ID ', regionObject.id);
-        console.log('transitionNodes > ', {oldMedia, newMedia});
-        (newMedia) && newMedia.run()
+    regionObject.prepareMediaObjects = function() {
+        const self = regionObject;
+        let nextMediaIndex;
+
+        if (self.mediaObjects.length > 0) {
+
+            if (self.curMedia) {
+                self.oldMedia = self.curMedia;
+            } else {
+                self.oldMedia = undefined;
+            }
+
+            if (self.currentMediaIndex >= self.mediaObjects.length) {
+                self.currentMediaIndex = 0;
+            }
+
+            self.curMedia = self.mediaObjects[self.currentMediaIndex];
+
+            nextMediaIndex = self.currentMediaIndex + 1;
+
+            if (nextMediaIndex >= self.mediaObjects.length) {
+                nextMediaIndex = 0;
+            }
+
+            if (Boolean(self.mediaObjects[nextMediaIndex])) {
+                self.nxtMedia = self.mediaObjects[nextMediaIndex];
+            }
+
+            const $region = document.getElementById(`${self.containerName}`);
+            // Append available media to region DOM
+            if (self.curMedia) {
+                ($region) && $region.appendChild(self.curMedia.html as Node);
+            }
+
+            if (self.nxtMedia) {
+                ($region) && $region.appendChild(self.nxtMedia.html as Node);
+            }
+        }
     };
 
     regionObject.run = function() {
         console.log('Called Region::run > ', regionObject.id);
-        regionObject.nextMedia();
+
+        if (regionObject.curMedia) {
+            regionObject.transitionNodes(regionObject.oldMedia, regionObject.curMedia);
+        }
     };
 
-    regionObject.nextMedia = function() {
+    regionObject.transitionNodes = function(oldMedia: IMedia | undefined, newMedia: IMedia | undefined) {
+        if (newMedia) {
+            console.log('Showing Media ' + newMedia.id + ' for ' + newMedia.duration + 's of Region ' + newMedia.region.regionId);
+            newMedia.run();
+        }
+    };
+
+    regionObject.playNextMedia = function() {
         const self = regionObject;
 
         /* The current media has finished running */
@@ -98,22 +144,16 @@ export default function Region(
             return;
         }
 
-        if (self.curMedia) {
-            // playLog(8, "debug", "nextMedia -> Old: " + self.curMedia.id);
-            self.oldMedia = self.curMedia;
-        } else {
-            self.oldMedia = undefined;
-        }
-
-        self.currentMedia = self.currentMedia + 1;
-
-        if (self.currentMedia >= self.mediaObjects.length) {
+        if (self.currentMediaIndex === self.mediaObjects.length - 1) {
             self.finished();
-            self.currentMedia = 0;
-            return;
+
+            if (self.layout.allEnded) {
+                return;
+            }
         }
 
-        self.curMedia = self.mediaObjects[self.currentMedia];
+        self.currentMediaIndex = self.currentMediaIndex + 1;
+        self.prepareMediaObjects();
 
         self.transitionNodes(self.oldMedia, self.curMedia);
     };

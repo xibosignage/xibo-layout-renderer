@@ -1,4 +1,4 @@
-import {GetLayoutType, ILayout, InputLayoutType, OptionsType} from "./Layout.types.js";
+import {ILayout, InputLayoutType, OptionsType} from "./Layout.types.js";
 import {platform} from "../Modules/Platform.js";
 
 export type PrepareLayoutsType = {

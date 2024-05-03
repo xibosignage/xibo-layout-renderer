@@ -1,9 +1,8 @@
+import {DefaultEvents, Emitter, Unsubscribe} from "nanoevents";
 import {IRegion} from "./Region.types.js";
 import {platform} from "../Modules/Platform.js";
-import {DefaultEvents, Emitter, Unsubscribe} from "nanoevents";
 import {ILayoutEvents} from "../Modules/Layout/Layout.js";
 import {IXlr} from "./XLR.types";
-// import Region from "../Modules/Region";
 
 export type InputLayoutType = {
     layoutId: string;

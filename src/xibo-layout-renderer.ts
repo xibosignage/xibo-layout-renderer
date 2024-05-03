@@ -1,9 +1,7 @@
-import {GetLayoutType, ILayout, initialLayout, InputLayoutType, OptionsType} from "./Types/Layout.types.js";
+import {ILayout, initialLayout, InputLayoutType, OptionsType} from "./Types/Layout.types.js";
 import Layout, {getLayout, getXlf, initRenderingDOM} from "./Modules/Layout/Layout.js";
+import {ELayoutType, initialXlr, IXlr} from "./Types/XLR.types.js";
 import {platform} from "./Modules/Platform.js";
-import {ELayoutType, initialXlr, IXlr, PrepareLayoutsType} from "./Types/XLR.types.js";
-import {resolve} from "path";
-// import {authApp} from "./Modules/Auth";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -82,7 +80,6 @@ export default function XiboLayoutRenderer(
             const self = this;
             // Get layouts
             const xlrLayouts = getLayout({xlr: self});
-            console.log({xlrLayouts, xlr: self});
 
             self.currentLayoutId = xlrLayouts.current?.layoutId;
 

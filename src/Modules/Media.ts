@@ -50,7 +50,7 @@ export default function Media(
         if (mediaTimer) {
             clearInterval(mediaTimer);
             mediaTimeCount = 0;
-            media.region.nextMedia();
+            media.region.playNextMedia();
         }
     });
 
@@ -115,12 +115,6 @@ export default function Media(
 
         const $region = document.getElementById(`${self.region.containerName}`);
 
-        // Add media to the region
-        // Second media if exists, will be off-canvas
-        // All added media will be hidden by default
-        // It will start showing when region.nextMedia() function is called
-        ($region) && $region.appendChild($media);
-
         const tmpUrl = self.region.options.getResourceUrl.replace(":regionId", self.region.id).replace(":id", self.id) + '?preview=1&layoutPreview=1&scale_override=' + self.region.layout.scaleFactor;
 
         $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
@@ -142,6 +136,14 @@ export default function Media(
                 $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
             }
         }
+
+        // Add media to the region
+        // Second media if exists, will be off-canvas
+        // All added media will be hidden by default
+        // It will start showing when region.nextMedia() function is called
+
+        // Add html node to media for 
+        self.html = $media;
 
         // Check/set iframe based widgets play status
         if(self.iframe && self.checkIframeStatus) {
@@ -177,19 +179,19 @@ export default function Media(
             const $oldMedia = document.getElementById(self.region.oldMedia.containerName);
             if ($oldMedia) {
                 $oldMedia.style.display = 'none';
+                $oldMedia.remove();
             }
         }
 
         self.emitter?.emit('start', self);
-        // self.timeoutId = setTimeout(self.region.nextMedia, self.duration * 1000);
     };
 
     mediaObject.stop = async function() {
         const $media = document.getElementById(`${this.containerName}`);
 
-        console.log('Media stopped ', $media);
         if ($media) {
             $media.style.display = 'none';
+            $media.remove();
         }
     };
 

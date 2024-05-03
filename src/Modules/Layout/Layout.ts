@@ -4,14 +4,13 @@ import {
     GetLayoutType,
     ILayout,
     initialLayout,
-    InputLayoutType,
     OptionsType
 } from "../../Types/Layout.types.js";
+import {IXlr} from "../../Types/XLR.types.js";
 import {nextId} from "../Generators.js";
 import Region from "../Region.js";
 
 import './layout.css';
-import {IXlr} from "../../Types/XLR.types.js";
 
 export function initRenderingDOM(targetContainer: Element | null) {
     let _targetContainer = targetContainer;
