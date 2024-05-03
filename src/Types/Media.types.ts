@@ -33,6 +33,7 @@ export interface IMedia {
     emitter?: Emitter<DefaultEvents>;
     run(): void;
     init(): void;
+    stop(): Promise<void>;
     on<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]): Unsubscribe;
 }
 
@@ -64,6 +65,9 @@ export const initialMedia: IMedia = {
     divHeight: 0,
     run() {},
     init() {},
+    stop() {
+        return Promise.resolve();
+    },
     on<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]): Unsubscribe {
         return <Unsubscribe>{};
     },

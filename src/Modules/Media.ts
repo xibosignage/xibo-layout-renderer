@@ -1,8 +1,8 @@
+import { createNanoEvents } from "nanoevents";
 import {OptionsType} from "../Types/Layout.types.js";
 import {IRegion} from "../Types/Region.types.js";
 import {IMedia, initialMedia} from "../Types/Media.types.js";
 import {nextId} from "./Generators.js";
-import { createNanoEvents } from "nanoevents";
 
 export interface IMediaEvents {
     start: (layout: IMedia) => void;
@@ -32,7 +32,6 @@ export default function Media(
     emitter.on('start', function(media) {
         mediaTimer = setInterval(() => {
             mediaTimeCount++;
-            console.log({mediaTimeCount});
             if (mediaTimeCount > media.duration) {
                 media.emitter?.emit('end', media);
             }
@@ -101,6 +100,8 @@ export default function Media(
             $media.id = self.containerName;
         }
 
+        $media.className = 'media--item';
+
         /* Scale the Content Container */
         $media.style.cssText = `
             display: none;
@@ -111,6 +112,14 @@ export default function Media(
             background-repeat: no-repeat;
             background-position: center;
         `;
+
+        const $region = document.getElementById(`${self.region.containerName}`);
+
+        // Add media to the region
+        // Second media if exists, will be off-canvas
+        // All added media will be hidden by default
+        // It will start showing when region.nextMedia() function is called
+        ($region) && $region.appendChild($media);
 
         const tmpUrl = self.region.options.getResourceUrl.replace(":regionId", self.region.id).replace(":id", self.id) + '?preview=1&layoutPreview=1&scale_override=' + self.region.layout.scaleFactor;
 
@@ -133,8 +142,6 @@ export default function Media(
                 $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
             }
         }
-
-        self.html = $media;
 
         // Check/set iframe based widgets play status
         if(self.iframe && self.checkIframeStatus) {
@@ -159,17 +166,31 @@ export default function Media(
 
     mediaObject.run = function() {
         const self = this;
+        const $media = document.getElementById(self.containerName);
 
-        const $region = document.getElementById(`${self.region.containerName}`);
+        if ($media) {
+            $media.style.display = 'block';
+        }
 
-        ($region) && $region.appendChild(self.html as Node);
-
-        if (self.html) {
-            self.html.style.display = 'block';
+        // Hide oldMedia
+        if (self.region.oldMedia) {
+            const $oldMedia = document.getElementById(self.region.oldMedia.containerName);
+            if ($oldMedia) {
+                $oldMedia.style.display = 'none';
+            }
         }
 
         self.emitter?.emit('start', self);
         // self.timeoutId = setTimeout(self.region.nextMedia, self.duration * 1000);
+    };
+
+    mediaObject.stop = async function() {
+        const $media = document.getElementById(`${this.containerName}`);
+
+        console.log('Media stopped ', $media);
+        if ($media) {
+            $media.style.display = 'none';
+        }
     };
 
     

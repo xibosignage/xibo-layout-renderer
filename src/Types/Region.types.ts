@@ -11,6 +11,7 @@ export interface IRegionEvents {
 export interface IRegion {
     layout: ILayout;
     id: string;
+    regionId: string;
     xml: null | Element;
     mediaObjects: IMedia[];
     mediaObjectsActions: String[];
@@ -30,6 +31,7 @@ export interface IRegion {
     offsetX: number;
     offsetY: number;
     zIndex: number;
+    index: number;
     emitter?: Emitter<DefaultEvents>;
     prepareRegion(): void;
     nextMedia(): void;
@@ -37,12 +39,15 @@ export interface IRegion {
     finished(): void;
     run(): void;
     end(): void;
+    exitTransition(): void;
+    exitTransitionComplete(): void;
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe;
 }
 
 export const initialRegion: IRegion = {
     layout: initialLayout,
     id: '',
+    regionId: '',
     xml: null,
     mediaObjects: [],
     mediaObjectsActions: [],
@@ -62,6 +67,7 @@ export const initialRegion: IRegion = {
     offsetX: 0,
     offsetY: 0,
     zIndex: 0,
+    index: -1,
     prepareRegion() {
     },
     nextMedia() {
@@ -74,6 +80,8 @@ export const initialRegion: IRegion = {
     },
     end() {
     },
+    exitTransition() {},
+    exitTransitionComplete() {},
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe {
         return <Unsubscribe>{};
     },

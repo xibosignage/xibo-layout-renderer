@@ -39,9 +39,7 @@ export default function XiboLayoutRenderer(
         },
 
         playSchedules(xlr: IXlr) {
-            // console.log({currentLayout: xlr.currentLayout});
             // Check if there's a current layout
-            console.log({xlr, currentLayoutIndex: xlr.currentLayoutIndex})
             if (xlr.currentLayout !== undefined) {
                 xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
                 xlr.currentLayout.run();
@@ -70,13 +68,13 @@ export default function XiboLayoutRenderer(
             }
 
             return new Promise<ILayout>((resolve) => {
-                resolve(Layout(layoutXlfNode, newOptions, self, {
-                    ...initialLayout,
-                    ...inputLayout,
-                    id: inputLayout?.layoutId,
-                    layoutId: inputLayout?.layoutId,
-                    options: newOptions,
-                }));
+                const xlrLayoutObj = initialLayout;
+                
+                xlrLayoutObj.id = inputLayout.layoutId;
+                xlrLayoutObj.layoutId = inputLayout.layoutId;
+                xlrLayoutObj.options = newOptions;
+
+                resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
             });
         },
 
@@ -84,6 +82,7 @@ export default function XiboLayoutRenderer(
             const self = this;
             // Get layouts
             const xlrLayouts = getLayout({xlr: self});
+            console.log({xlrLayouts, xlr: self});
 
             self.currentLayoutId = xlrLayouts.current?.layoutId;
 

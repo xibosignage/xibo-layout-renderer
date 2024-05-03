@@ -48,6 +48,7 @@ export interface ILayout {
     actions: String[];
     options: OptionsType;
     done: boolean;
+    allEnded: boolean;
     prepareLayout(): void;
     parseXlf(): void;
     run(): void;
@@ -55,6 +56,8 @@ export interface ILayout {
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;
+    regionEnded(): void;
+    stopAllMedia(): Promise<void>;
 }
 
 export const initialLayout: ILayout = {
@@ -84,6 +87,7 @@ export const initialLayout: ILayout = {
     actions: [],
     options: platform,
     done: false,
+    allEnded: false,
     prepareLayout() {
     },
     parseXlf() {
@@ -96,7 +100,12 @@ export const initialLayout: ILayout = {
     regionExpired() {
     },
     end() {
-    }
+    },
+    regionEnded() {
+    },
+    stopAllMedia() {
+        return Promise.resolve();
+    },
 };
 
 export type GetLayoutParamType = {
