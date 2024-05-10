@@ -137,6 +137,16 @@ export default function Media(
             }
         }
 
+        // Check if the media has fade-in/out transitions
+        if (Boolean(self.options['transin']) && Boolean(self.options['transinduration'])) {
+            $media.classList.remove('fade-out');
+
+            const transInDuration = Number(self.options.transinduration) / 1000;
+
+            $media.style.animationDuration = `${transInDuration}s`;
+            $media.classList.add('fade-in');
+        }
+
         // Add media to the region
         // Second media if exists, will be off-canvas
         // All added media will be hidden by default
@@ -169,17 +179,58 @@ export default function Media(
     mediaObject.run = function() {
         const self = this;
         const $media = document.getElementById(self.containerName);
+        const regionOldMedia = self.region.oldMedia;
+        let transInDuration = 1;
+        let transOutDuration = 1;
 
-        if ($media) {
-            $media.style.display = 'block';
+        if (Boolean(self.options['transinduration'])) {
+            transInDuration = Number(self.options.transinduration) / 1000;
         }
 
-        // Hide oldMedia
-        if (self.region.oldMedia) {
-            const $oldMedia = document.getElementById(self.region.oldMedia.containerName);
-            if ($oldMedia) {
-                $oldMedia.style.display = 'none';
-                $oldMedia.remove();
+        if (Boolean(self.options['transoutduration'])) {
+            transOutDuration = Number(self.options.transoutduration) / 1000;
+        }
+
+        const showCurrentMedia = ($media: HTMLElement) => {
+            $media.style.display = 'block';
+
+            $media.classList.remove('fade-out');
+            if (Boolean(self.options['transin']) && !$media.classList.contains('fade-in')) {
+                $media.style.animationDuration = `${transInDuration}s`;
+                $media.classList.add('fade-in');
+            }
+        };
+        const hideOldMedia = new Promise((resolve) => {
+            // Hide oldMedia
+            if (regionOldMedia) {
+                const $oldMedia = document.getElementById(regionOldMedia.containerName);
+                if ($oldMedia) {
+                    if (Boolean(regionOldMedia.options['transout']) && !$oldMedia.classList.contains('fade-out')) {
+                        $oldMedia.classList.remove('fade-in');
+    
+                        $oldMedia.style.animationDuration = `${transOutDuration}s`;
+                        $oldMedia.classList.add('fade-out');
+
+                        resolve(true);
+
+                        setTimeout(() => {
+                            $oldMedia.style.display = 'none';
+                            $oldMedia.remove();
+                        }, transOutDuration * 1000);
+                    }
+                }
+            }
+        });
+
+        if ($media) {
+            if (regionOldMedia) {
+                hideOldMedia.then((isDone) => {
+                    if (isDone) {
+                        showCurrentMedia($media);
+                    }
+                });
+            } else {
+                showCurrentMedia($media);
             }
         }
 

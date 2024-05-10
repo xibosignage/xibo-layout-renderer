@@ -41,3 +41,40 @@ div.preview-ended a {
     -o-transform: translateY(-50%);
     transform: translateY(-50%);
 }
+.media--item.fade-in {
+    -webkit-animation-name: elemFadeIn;
+    -webkit-animation-timing-function: linear;
+    -webkit-animation-fill-mode: forwards;
+    animation-name: elemFadeIn;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+.media--item.fade-out {
+    -webkit-animation-name: elemFadeOut;
+    -webkit-animation-timing-function: linear;
+    -webkit-animation-fill-mode: forwards;
+    animation-name: elemFadeOut;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+@-webkit-keyframes elemFadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@-webkit-keyframes elemFadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes elemFadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes elemFadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
