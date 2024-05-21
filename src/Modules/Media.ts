@@ -3,6 +3,7 @@ import {OptionsType} from "../Types/Layout.types.js";
 import {IRegion} from "../Types/Region.types.js";
 import {IMedia, initialMedia} from "../Types/Media.types.js";
 import {nextId} from "./Generators.js";
+import { TransitionElementOptions, transitionElement } from "./Transitions.js";
 
 export interface IMediaEvents {
     start: (layout: IMedia) => void;
@@ -16,10 +17,10 @@ export default function Media(
     options: OptionsType,
 ) {
     const props = {
-        region,
-        mediaId,
-        xml,
-        options,
+        region: region,
+        mediaId: mediaId,
+        xml: xml,
+        options: options,
     };
     let mediaTimer: string | number | NodeJS.Timeout | null | undefined = null;
     let mediaTimeCount = 0;
@@ -55,22 +56,23 @@ export default function Media(
     });
 
     mediaObject.init = function() {
-        const self = this;
+        const self = mediaObject;
         self.id = props.mediaId;
         self.containerName = `M-${self.id}-${nextId(props.options)}`;
         self.iframeName = `${self.containerName}-iframe`;
         self.mediaType = self.xml?.getAttribute('type') || '';
         self.render = self.xml?.getAttribute('render') || '';
         self.duration = parseInt(self.xml?.getAttribute('duration') as string) || 5;
+        self.options = { ...props.options, mediaId };
 
         const $mediaIframe = document.createElement('iframe');
-        const options = self.xml?.getElementsByTagName('options');
+        const mediaOptions = self.xml?.getElementsByTagName('options');
 
-        if (options) {
-            for (let _options of Array.from(options)) {
+        if (mediaOptions) {
+            for (let _options of Array.from(mediaOptions)) {
                 // Get options
-                const mediaOptions = _options.children;
-                for (let mediaOption of Array.from(mediaOptions)) {
+                const _mediaOptions = _options.children;
+                for (let mediaOption of Array.from(_mediaOptions)) {
                     self.options[mediaOption.nodeName.toLowerCase()] = mediaOption.textContent;
                 }
             }
@@ -139,12 +141,9 @@ export default function Media(
 
         // Check if the media has fade-in/out transitions
         if (Boolean(self.options['transin']) && Boolean(self.options['transinduration'])) {
-            $media.classList.remove('fade-out');
-
-            const transInDuration = Number(self.options.transinduration) / 1000;
-
-            $media.style.animationDuration = `${transInDuration}s`;
-            $media.classList.add('fade-in');
+            const transInDuration = Number(self.options.transinduration);
+            const fadeInTrans = transitionElement('fadeIn', { duration: transInDuration });
+            $media.animate(fadeInTrans.keyframes, fadeInTrans.timing);
         }
 
         // Add media to the region
@@ -177,27 +176,70 @@ export default function Media(
     };
 
     mediaObject.run = function() {
-        const self = this;
+        const self = mediaObject;
         const $media = document.getElementById(self.containerName);
         const regionOldMedia = self.region.oldMedia;
         let transInDuration = 1;
         let transOutDuration = 1;
 
         if (Boolean(self.options['transinduration'])) {
-            transInDuration = Number(self.options.transinduration) / 1000;
+            transInDuration = Number(self.options.transinduration);
         }
 
-        if (Boolean(self.options['transoutduration'])) {
-            transOutDuration = Number(self.options.transoutduration) / 1000;
+        if (regionOldMedia && Boolean(regionOldMedia.options['transoutduration'])) {
+            transOutDuration = Number(regionOldMedia.options.transoutduration);
+        }
+
+        let defaultTransInOptions: TransitionElementOptions = {duration: transInDuration};
+        let defaultTransOutOptions: TransitionElementOptions = {duration: transOutDuration};
+        let transIn = transitionElement('defaultIn', {duration: defaultTransInOptions.duration});
+        let transOut = transitionElement('defaultOut', {duration: defaultTransOutOptions.duration});
+
+        /**
+         * @TODO
+         * Add logic for transition direction
+         * */
+        if (Boolean(self.options['transin'])) {
+            let transInName = self.options['transin'];
+
+            if (transInName === 'fly') {
+                transInName = `${transInName}In`;
+                defaultTransInOptions.keyframes = {
+                    from: {
+                        top: `${self.region.offsetY - self.divHeight}px`,
+                    },
+                    to: {
+                        top: 0,
+                    },
+                };
+            }
+
+            transIn = transitionElement(transInName, defaultTransInOptions);
+        }
+
+        if (regionOldMedia && Boolean(regionOldMedia.options['transout'])) {
+            let transOutName = regionOldMedia.options['transout'];
+
+            if (transOutName === 'fly') {
+                transOutName = `${transOutName}Out`;
+                defaultTransOutOptions.keyframes = {
+                    from: {
+                        top: 0,
+                    },
+                    to: {
+                        top: `${self.region.offsetY - regionOldMedia.divHeight}px`,
+                    },
+                };
+            }
+            
+            transOut = transitionElement(transOutName, defaultTransOutOptions);
         }
 
         const showCurrentMedia = ($media: HTMLElement) => {
-            $media.style.display = 'block';
+            $media.style.display = 'block'
 
-            $media.classList.remove('fade-out');
-            if (Boolean(self.options['transin']) && !$media.classList.contains('fade-in')) {
-                $media.style.animationDuration = `${transInDuration}s`;
-                $media.classList.add('fade-in');
+            if (Boolean(self.options['transin'])) {
+                $media.animate(transIn.keyframes, transIn.timing);
             }
         };
         const hideOldMedia = new Promise((resolve) => {
@@ -205,18 +247,15 @@ export default function Media(
             if (regionOldMedia) {
                 const $oldMedia = document.getElementById(regionOldMedia.containerName);
                 if ($oldMedia) {
-                    if (Boolean(regionOldMedia.options['transout']) && !$oldMedia.classList.contains('fade-out')) {
-                        $oldMedia.classList.remove('fade-in');
-    
-                        $oldMedia.style.animationDuration = `${transOutDuration}s`;
-                        $oldMedia.classList.add('fade-out');
+                    if (Boolean(regionOldMedia.options['transout'])) {
+                        $oldMedia.animate(transOut.keyframes, transOut.timing);
 
                         resolve(true);
 
                         setTimeout(() => {
                             $oldMedia.style.display = 'none';
                             $oldMedia.remove();
-                        }, transOutDuration * 1000);
+                        }, transOutDuration);
                     }
                 }
             }
