@@ -206,7 +206,7 @@ export default function Media(
                 transInName = `${transInName}In`;
                 defaultTransInOptions.keyframes = flyTransitionKeyframes({
                     trans: 'in',
-                    direction: 'N',
+                    direction: 'NE',
                     height: self.divHeight,
                     width: self.divWidth,
                 });
@@ -222,7 +222,7 @@ export default function Media(
                 transOutName = `${transOutName}Out`;
                 defaultTransOutOptions.keyframes = flyTransitionKeyframes({
                     trans: 'out',
-                    direction: 'N',
+                    direction: 'NE',
                     height: regionOldMedia.divHeight,
                     width: regionOldMedia.divWidth,
                 });

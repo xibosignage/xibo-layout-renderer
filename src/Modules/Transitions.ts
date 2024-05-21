@@ -157,18 +157,38 @@ export const flyTransitionKeyframes = (params: flyTransitionParams): KeyframeOpt
             };
             break;
         case 'NE':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `${params.height}px` : 0,
+                left: params.trans === 'in' ? `-${params.width}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `-${params.height}px`,
+                left: params.trans === 'in' ? 0 : `${params.width}px`,
+            };
             break;
         case 'E':
             keyframes.from = {
                 opacity: opacityAttr('from'),
-                left: `-${params.width}px`,
+                left: params.trans === 'in' ? `-${params.width}px` : 0,
             };
             keyframes.to = {
                 opacity: opacityAttr('to'),
-                left: 0,
+                left: params.trans === 'in' ? 0 : `${params.width}px`,
             };
             break;
         case 'SE':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `-${params.height}px` : 0,
+                left: params.trans === 'in' ? `-${params.width}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `${params.height}px`,
+                left: params.trans === 'in' ? 0 : `${params.width}px`,
+            };
             break;
         case 'S':
             keyframes.from = {
@@ -181,20 +201,48 @@ export const flyTransitionKeyframes = (params: flyTransitionParams): KeyframeOpt
             };
             break;
         case 'SW':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `-${params.height}px` : 0,
+                left: params.trans === 'in' ? `${params.width}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `${params.height}px`,
+                left: params.trans === 'in' ? 0 : `-${params.width}px`,
+            };
             break;
         case 'W':
             keyframes.from = {
                 opacity: opacityAttr('from'),
-                left: `${params.width}px`,
+                left: params.trans === 'in' ? `${params.width}px` : 0,
             };
             keyframes.to = {
                 opacity: opacityAttr('to'),
-                left: 0,
+                left: params.trans === 'in' ? 0 : `-${params.width}px`,
             };
             break;
         case 'NW':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `${params.height}px` : 0,
+                left: params.trans === 'in' ? `${params.width}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `-${params.height}px`,
+                left: params.trans === 'in' ? 0 : `-${params.width}px`,
+            };
             break;
         default:
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `${params.height}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `-${params.height}px`,
+            };
             break;
     }
 
