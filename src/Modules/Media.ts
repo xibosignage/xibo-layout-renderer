@@ -3,7 +3,7 @@ import {OptionsType} from "../Types/Layout.types.js";
 import {IRegion} from "../Types/Region.types.js";
 import {IMedia, initialMedia} from "../Types/Media.types.js";
 import {nextId} from "./Generators.js";
-import { TransitionElementOptions, transitionElement } from "./Transitions.js";
+import { TransitionElementOptions, flyTransitionKeyframes, transitionElement } from "./Transitions.js";
 
 export interface IMediaEvents {
     start: (layout: IMedia) => void;
@@ -204,14 +204,12 @@ export default function Media(
 
             if (transInName === 'fly') {
                 transInName = `${transInName}In`;
-                defaultTransInOptions.keyframes = {
-                    from: {
-                        top: `${self.region.offsetY - self.divHeight}px`,
-                    },
-                    to: {
-                        top: 0,
-                    },
-                };
+                defaultTransInOptions.keyframes = flyTransitionKeyframes({
+                    trans: 'in',
+                    direction: 'N',
+                    height: self.divHeight,
+                    width: self.divWidth,
+                });
             }
 
             transIn = transitionElement(transInName, defaultTransInOptions);
@@ -222,14 +220,12 @@ export default function Media(
 
             if (transOutName === 'fly') {
                 transOutName = `${transOutName}Out`;
-                defaultTransOutOptions.keyframes = {
-                    from: {
-                        top: 0,
-                    },
-                    to: {
-                        top: `${self.region.offsetY - regionOldMedia.divHeight}px`,
-                    },
-                };
+                defaultTransOutOptions.keyframes = flyTransitionKeyframes({
+                    trans: 'out',
+                    direction: 'N',
+                    height: regionOldMedia.divHeight,
+                    width: regionOldMedia.divWidth,
+                });
             }
             
             transOut = transitionElement(transOutName, defaultTransOutOptions);

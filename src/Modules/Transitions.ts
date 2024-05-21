@@ -122,3 +122,81 @@ export const transitionElement = (transition: TransitionNameType, options: Trans
 
     return transitions[transition];
 };
+
+export type compassPoints = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
+
+export type flyTransitionParams = {
+    trans: 'in' | 'out';
+    direction: compassPoints;
+    height: string | number;
+    width: string | number;
+};
+
+export const flyTransitionKeyframes = (params: flyTransitionParams): KeyframeOptionsType => {
+    const keyframes = {
+        from: {},
+        to: {},
+    };
+    const opacityAttr = (source: 'from' | 'to') => {
+        if (source === 'from') {
+            return params.trans === 'in' ? 0 : 1;
+        }
+        
+        return params.trans === 'out' ? 1 : 0;
+    };
+
+    switch (params.direction) {
+        case 'N':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `${params.height}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `-${params.height}px`,
+            };
+            break;
+        case 'NE':
+            break;
+        case 'E':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                left: `-${params.width}px`,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                left: 0,
+            };
+            break;
+        case 'SE':
+            break;
+        case 'S':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `-${params.height}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `${params.height}px`,
+            };
+            break;
+        case 'SW':
+            break;
+        case 'W':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                left: `${params.width}px`,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                left: 0,
+            };
+            break;
+        case 'NW':
+            break;
+        default:
+            break;
+    }
+
+    return keyframes;
+};
