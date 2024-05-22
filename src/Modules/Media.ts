@@ -31,12 +31,36 @@ export default function Media(
     };
 
     emitter.on('start', function(media) {
-        mediaTimer = setInterval(() => {
-            mediaTimeCount++;
-            if (mediaTimeCount > media.duration) {
-                media.emitter?.emit('end', media);
+        if (media.mediaType === 'video') {
+            const $videoMedia = document.getElementById(media.containerName + '-vid') as HTMLVideoElement;
+
+            if ($videoMedia) {
+                $videoMedia.onloadeddata = () => {
+                    if ($videoMedia.readyState >= 2) {
+                        const videoPlayPromise = $videoMedia.play();
+
+                        if (videoPlayPromise !== undefined) {
+                            videoPlayPromise.then(() => {
+                                // Autoplay restarted
+                            }).catch(error => {
+                                $videoMedia.muted = true;
+                                $videoMedia.play();
+                            });
+                        }
+                        $videoMedia.onended = () => {
+                            media.emitter?.emit('end', media);
+                        };
+                    }
+                };
             }
-        }, 1000)
+        } else {
+            mediaTimer = setInterval(() => {
+                mediaTimeCount++;
+                if (mediaTimeCount > media.duration) {
+                    media.emitter?.emit('end', media);
+                }
+            }, 1000)
+        }
     });
 
     // @NOTE: Transitions
@@ -52,6 +76,11 @@ export default function Media(
             clearInterval(mediaTimer);
             mediaTimeCount = 0;
             media.region.playNextMedia();
+        } else {
+            console.log('video media >> ', media);
+            if (media.mediaType === 'video') {
+                media.region.playNextMedia();
+            }
         }
     });
 
@@ -95,11 +124,22 @@ export default function Media(
         $mediaIframe.height = `${self.divHeight}px`;
         $mediaIframe.style.cssText = `border: 0; visibility: hidden;`;
 
-        let $media = document.getElementById(self.containerName);
+        let $mediaId = self.containerName;
+
+        if (self.mediaType === 'video') {
+            $mediaId = self.containerName + '-vid';
+        }
+
+        let $media = document.getElementById($mediaId);
 
         if ($media === null) {
-            $media = document.createElement('div');
-            $media.id = self.containerName;
+            if (self.mediaType === 'video') {
+                $media = document.createElement('video');
+                $media.id = self.containerName + '-vid';
+            } else {
+                $media = document.createElement('div');
+                $media.id = self.containerName;
+            }
         }
 
         $media.className = 'media--item';
@@ -136,6 +176,26 @@ export default function Media(
                 const align = (self.options['align'] == "") ? "center" : self.options['align'];
                 const valign = (self.options['valign'] == "" || self.options['valign'] == "middle") ? "center" : self.options['valign'];
                 $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
+            }
+        } else if (self.mediaType === 'video') {
+            const $videoMedia = $media as HTMLVideoElement;
+            let $videoSrc = $videoMedia.getElementsByTagName('source')[0];
+
+            if ($videoSrc !== undefined) {
+                $videoSrc.remove();
+                $videoMedia.innerHTML = '';
+            }
+        
+            $videoSrc = document.createElement('source');;
+
+            $videoMedia.preload = 'auto';
+
+            $videoSrc.src = tmpUrl;
+            $videoMedia.appendChild($videoSrc);
+            $videoMedia.innerHTML = $videoMedia.innerHTML + 'Unsupported Video';
+
+            if (Boolean(self.options['mute'])) {
+                $videoMedia.muted = self.options.mute === '1';
             }
         }
 
@@ -177,8 +237,14 @@ export default function Media(
 
     mediaObject.run = function() {
         const self = mediaObject;
-        const $media = document.getElementById(self.containerName);
         const regionOldMedia = self.region.oldMedia;
+        let $mediaId = self.containerName;
+
+        if (self.mediaType === 'video') {
+            $mediaId = self.containerName + '-vid';
+        }
+
+        const $media = document.getElementById($mediaId);
         let transInDuration = 1;
         let transOutDuration = 1;
 
@@ -195,10 +261,6 @@ export default function Media(
         let transIn = transitionElement('defaultIn', {duration: defaultTransInOptions.duration});
         let transOut = transitionElement('defaultOut', {duration: defaultTransOutOptions.duration});
 
-        /**
-         * @TODO
-         * Add logic for transition direction
-         * */
         if (Boolean(self.options['transin'])) {
             let transInName = self.options['transin'];
 
