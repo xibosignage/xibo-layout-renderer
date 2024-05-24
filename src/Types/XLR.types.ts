@@ -1,5 +1,5 @@
-import {ILayout, InputLayoutType, OptionsType} from "./Layout.types.js";
-import {platform} from "../Modules/Platform.js";
+import {ILayout, InputLayoutType, OptionsType} from "./Layout.types";
+import {platform} from "../Modules/Platform";
 
 export type PrepareLayoutsType = {
     moveNext?: boolean;

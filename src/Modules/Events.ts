@@ -1,5 +1,5 @@
 import { createNanoEvents } from 'nanoevents';
-import {ILayout} from "../Types/Layout.types.js";
+import {ILayout} from "../Types/Layout.types";
 
 export const emitter = createNanoEvents();
 export const startLayout = (layout: ILayout) => emitter.on('start', stats => {

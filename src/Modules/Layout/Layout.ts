@@ -5,10 +5,10 @@ import {
     ILayout,
     initialLayout,
     OptionsType
-} from "../../Types/Layout.types.js";
-import {IXlr} from "../../Types/XLR.types.js";
-import {nextId} from "../Generators.js";
-import Region from "../Region.js";
+} from "../../Types/Layout.types";
+import {IXlr} from "../../Types/XLR.types";
+import {nextId} from "../Generators";
+import Region from "../Region";
 
 import './layout.css';
 

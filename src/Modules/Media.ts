@@ -1,9 +1,9 @@
 import { createNanoEvents } from "nanoevents";
-import {OptionsType} from "../Types/Layout.types.js";
-import {IRegion} from "../Types/Region.types.js";
-import {IMedia, initialMedia} from "../Types/Media.types.js";
-import {nextId} from "./Generators.js";
-import { TransitionElementOptions, flyTransitionKeyframes, transitionElement } from "./Transitions.js";
+import {OptionsType} from "../Types/Layout.types";
+import {IRegion} from "../Types/Region.types";
+import {IMedia, initialMedia} from "../Types/Media.types";
+import {capitalizeStr, getMediaId, nextId, preloadVideo} from "./Generators";
+import { TransitionElementOptions, flyTransitionKeyframes, transitionElement } from "./Transitions";
 
 export interface IMediaEvents {
     start: (layout: IMedia) => void;
@@ -32,25 +32,45 @@ export default function Media(
 
     emitter.on('start', function(media) {
         if (media.mediaType === 'video') {
-            const $videoMedia = document.getElementById(media.containerName + '-vid') as HTMLVideoElement;
+            const $videoMedia = document.getElementById(getMediaId(media)) as HTMLVideoElement;
 
             if ($videoMedia) {
+                $videoMedia.onloadstart = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} as started loading data . . .`);
+                };
+                $videoMedia.ondurationchange = () => {
+                    media.duration = $videoMedia.duration;
+                    media.region.mediaObjects[media.index] = media;
+
+                    $videoMedia.autoplay = true;
+                    console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
+                };
                 $videoMedia.onloadeddata = () => {
                     if ($videoMedia.readyState >= 2) {
-                        const videoPlayPromise = $videoMedia.play();
-
-                        if (videoPlayPromise !== undefined) {
-                            videoPlayPromise.then(() => {
-                                // Autoplay restarted
-                            }).catch(error => {
-                                $videoMedia.muted = true;
-                                $videoMedia.play();
-                            });
-                        }
-                        $videoMedia.onended = () => {
-                            media.emitter?.emit('end', media);
-                        };
+                        console.log(`${capitalizeStr(media.mediaType)} data for media > ${media.id} has been fully loaded . . .`);
                     }
+                };
+                $videoMedia.oncanplay = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
+
+                    const videoPlayPromise = $videoMedia.play();
+
+                    if (videoPlayPromise !== undefined) {
+                        videoPlayPromise.then(() => {
+                            console.log('autoplay started . . .');
+                            // Autoplay restarted
+                        }).catch(error => {
+                            $videoMedia.muted = true;
+                            $videoMedia.play();
+                        });
+                    }
+                };
+                $videoMedia.onplaying = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+                };
+                $videoMedia.onended = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                    media.emitter?.emit('end', media);
                 };
             }
         } else {
@@ -60,28 +80,17 @@ export default function Media(
                     media.emitter?.emit('end', media);
                 }
             }, 1000)
+            console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
         }
     });
 
-    // @NOTE: Transitions
-    // 1: Hide/Show
-    // 2: Fade In/Out
-    // 3: Fly In/Out
-    // In XLF, we have transIn, transOut, transDuration, and transDirection
-    // transIn is always on the media
-    // transOut can also be on the media
-    // When all regions are expired, the layout checks for region.exitTransition
     emitter.on('end', function(media) {
         if (mediaTimer) {
             clearInterval(mediaTimer);
             mediaTimeCount = 0;
-            media.region.playNextMedia();
-        } else {
-            console.log('video media >> ', media);
-            if (media.mediaType === 'video') {
-                media.region.playNextMedia();
-            }
         }
+
+        media.region.playNextMedia();
     });
 
     mediaObject.init = function() {
@@ -124,22 +133,17 @@ export default function Media(
         $mediaIframe.height = `${self.divHeight}px`;
         $mediaIframe.style.cssText = `border: 0; visibility: hidden;`;
 
-        let $mediaId = self.containerName;
-
-        if (self.mediaType === 'video') {
-            $mediaId = self.containerName + '-vid';
-        }
-
+        const $mediaId = getMediaId(self);
         let $media = document.getElementById($mediaId);
 
         if ($media === null) {
             if (self.mediaType === 'video') {
                 $media = document.createElement('video');
-                $media.id = self.containerName + '-vid';
             } else {
                 $media = document.createElement('div');
-                $media.id = self.containerName;
             }
+        
+            $media.id = $mediaId;
         }
 
         $media.className = 'media--item';
@@ -158,6 +162,8 @@ export default function Media(
         const $region = document.getElementById(`${self.region.containerName}`);
 
         const tmpUrl = self.region.options.getResourceUrl.replace(":regionId", self.region.id).replace(":id", self.id) + '?preview=1&layoutPreview=1&scale_override=' + self.region.layout.scaleFactor;
+
+        self.url = tmpUrl;
 
         $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
 
@@ -179,24 +185,19 @@ export default function Media(
             }
         } else if (self.mediaType === 'video') {
             const $videoMedia = $media as HTMLVideoElement;
-            let $videoSrc = $videoMedia.getElementsByTagName('source')[0];
-
-            if ($videoSrc !== undefined) {
-                $videoSrc.remove();
-                $videoMedia.innerHTML = '';
-            }
-        
-            $videoSrc = document.createElement('source');;
 
             $videoMedia.preload = 'auto';
 
-            $videoSrc.src = tmpUrl;
-            $videoMedia.appendChild($videoSrc);
-            $videoMedia.innerHTML = $videoMedia.innerHTML + 'Unsupported Video';
+            // $videoSrc.src = tmpUrl;
+            // $videoMedia.appendChild($videoSrc);
+            $videoMedia.textContent = 'Unsupported Video';
 
             if (Boolean(self.options['mute'])) {
                 $videoMedia.muted = self.options.mute === '1';
             }
+
+            $videoMedia.playsInline = true;
+            $media = $videoMedia;
         }
 
         // Check if the media has fade-in/out transitions
@@ -238,11 +239,7 @@ export default function Media(
     mediaObject.run = function() {
         const self = mediaObject;
         const regionOldMedia = self.region.oldMedia;
-        let $mediaId = self.containerName;
-
-        if (self.mediaType === 'video') {
-            $mediaId = self.containerName + '-vid';
-        }
+        let $mediaId = getMediaId(self);
 
         const $media = document.getElementById($mediaId);
         let transInDuration = 1;
@@ -293,28 +290,33 @@ export default function Media(
             transOut = transitionElement(transOutName, defaultTransOutOptions);
         }
 
-        const showCurrentMedia = ($media: HTMLElement) => {
+        const showCurrentMedia = async ($media: HTMLElement) => {
             $media.style.display = 'block'
 
             if (Boolean(self.options['transin'])) {
                 $media.animate(transIn.keyframes, transIn.timing);
             }
+
+            if (self.mediaType === 'video' && self.url !== null) {
+                ($media as HTMLVideoElement).src = await preloadVideo(self.url);
+            }
+
+            self.emitter?.emit('start', self);
         };
         const hideOldMedia = new Promise((resolve) => {
             // Hide oldMedia
             if (regionOldMedia) {
-                const $oldMedia = document.getElementById(regionOldMedia.containerName);
+                const $oldMedia = document.getElementById(getMediaId(regionOldMedia));
                 if ($oldMedia) {
                     if (Boolean(regionOldMedia.options['transout'])) {
                         $oldMedia.animate(transOut.keyframes, transOut.timing);
-
-                        resolve(true);
-
-                        setTimeout(() => {
-                            $oldMedia.style.display = 'none';
-                            $oldMedia.remove();
-                        }, transOutDuration);
                     }
+
+                    setTimeout(() => {
+                        $oldMedia.style.display = 'none';
+                        $oldMedia.remove();
+                        resolve(true);
+                    }, transOutDuration);
                 }
             }
         });
@@ -330,12 +332,11 @@ export default function Media(
                 showCurrentMedia($media);
             }
         }
-
-        self.emitter?.emit('start', self);
     };
 
     mediaObject.stop = async function() {
-        const $media = document.getElementById(`${this.containerName}`);
+        const self = mediaObject;
+        const $media = document.getElementById(getMediaId(self));
 
         if ($media) {
             $media.style.display = 'none';

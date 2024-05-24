@@ -1,7 +1,7 @@
 import {DefaultEvents, Emitter, Unsubscribe} from "nanoevents";
-import {IRegion} from "./Region.types.js";
-import {platform} from "../Modules/Platform.js";
-import {ILayoutEvents} from "../Modules/Layout/Layout.js";
+import {IRegion} from "./Region.types";
+import {platform} from "../Modules/Platform";
+import {ILayoutEvents} from "../Modules/Layout/Layout";
 import {IXlr} from "./XLR.types";
 
 export type InputLayoutType = {

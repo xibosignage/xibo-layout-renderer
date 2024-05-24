@@ -1,9 +1,9 @@
 import { createNanoEvents } from "nanoevents";
-import {ILayout, OptionsType} from "../Types/Layout.types.js";
-import {initialRegion, IRegion, IRegionEvents} from "../Types/Region.types.js";
-import {IMedia} from "../Types/Media.types.js";
-import {nextId} from "./Generators.js";
-import Media from "./Media.js";
+import {ILayout, OptionsType} from "../Types/Layout.types";
+import {initialRegion, IRegion, IRegionEvents} from "../Types/Region.types";
+import {IMedia} from "../Types/Media.types";
+import {nextId} from "./Generators";
+import Media from "./Media";
 
 export default function Region(
     layout: ILayout,
@@ -59,14 +59,27 @@ export default function Region(
         $region.className = 'region--item';
 
         /* Parse region media objects */
-        const regionMedia = Array.from(self.xml.getElementsByTagName('media'));
-        for (let mediaXml of regionMedia) {
-            self.mediaObjects.push(Media(
+        const regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));
+
+        Array.from(regionMediaItems).forEach((mediaXml, indx) => {
+            const mediaObj = Media(
                 self,
                 mediaXml?.getAttribute('id') || '',
                 mediaXml,
                 options,
-            ));
+            );
+
+            mediaObj.index = indx;
+            self.mediaObjects.push(mediaObj);
+        });
+
+        // Check if mediaObjects.length === 1
+        // If yes, then clone it to have next media item available
+        if (self.mediaObjects.length === 1) {
+            const tempMedia = { ...self.mediaObjects[0] };
+
+            tempMedia.index = tempMedia.index + 1;
+            self.mediaObjects.push(tempMedia);
         }
 
         self.prepareMediaObjects();
@@ -101,7 +114,12 @@ export default function Region(
 
             nextMediaIndex = self.currentMediaIndex + 1;
 
-            if (nextMediaIndex >= self.mediaObjects.length) {
+            if (nextMediaIndex >= self.mediaObjects.length ||
+                (
+                    !Boolean(self.mediaObjects[nextMediaIndex]) &&
+                    self.mediaObjects.length === 1
+                )
+            ) {
                 nextMediaIndex = 0;
             }
 
@@ -131,7 +149,6 @@ export default function Region(
 
     regionObject.transitionNodes = function(oldMedia: IMedia | undefined, newMedia: IMedia | undefined) {
         if (newMedia) {
-            console.log('Showing Media ' + newMedia.id + ' for ' + newMedia.duration + 's of Region ' + newMedia.region.regionId);
             newMedia.run();
         }
     };

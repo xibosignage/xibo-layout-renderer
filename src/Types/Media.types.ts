@@ -1,11 +1,12 @@
 import { DefaultEvents, Emitter, Unsubscribe } from "nanoevents";
-import { IMediaEvents } from "../Modules/Media.js";
-import {initialRegion, IRegion} from "./Region.types.js";
+import { IMediaEvents } from "../Modules/Media";
+import {initialRegion, IRegion} from "./Region.types";
 
 export interface IMedia {
     region: IRegion;
     xml: null | Element;
     id: string;
+    index: number;
     containerName: string;
     html: null | HTMLElement;
     iframe: null | HTMLIFrameElement;
@@ -30,6 +31,7 @@ export interface IMedia {
     };
     divWidth: number;
     divHeight: number;
+    url: string | null;
     emitter?: Emitter<DefaultEvents>;
     run(): void;
     init(): void;
@@ -41,6 +43,7 @@ export const initialMedia: IMedia = {
     region: initialRegion,
     xml: null,
     id: '',
+    index: 0,
     containerName: '',
     html: null,
     iframe: null,
@@ -63,6 +66,7 @@ export const initialMedia: IMedia = {
     options: {},
     divWidth: 0,
     divHeight: 0,
+    url: null,
     run() {},
     init() {},
     stop() {

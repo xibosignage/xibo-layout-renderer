@@ -1,9 +1,9 @@
-import {ILayout, initialLayout, InputLayoutType, OptionsType} from "./Types/Layout.types.js";
-import Layout, {getLayout, getXlf, initRenderingDOM} from "./Modules/Layout/Layout.js";
-import {ELayoutType, initialXlr, IXlr} from "./Types/XLR.types.js";
-import {platform} from "./Modules/Platform.js";
+import {ILayout, initialLayout, InputLayoutType, OptionsType} from "./Types/Layout.types";
+import Layout, {getLayout, getXlf, initRenderingDOM} from "./Modules/Layout/Layout";
+import {ELayoutType, initialXlr, IXlr} from "./Types/XLR.types";
+import {platform} from "./Modules/Platform";
 
-export default function XiboLayoutRenderer(
+function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
     options?: OptionsType,
 ) {
@@ -103,3 +103,5 @@ export default function XiboLayoutRenderer(
 
     return xlrObject;
 }
+
+export default XiboLayoutRenderer;
