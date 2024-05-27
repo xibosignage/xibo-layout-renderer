@@ -36,7 +36,7 @@ export default function Media(
 
             if ($videoMedia) {
                 $videoMedia.onloadstart = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} as started loading data . . .`);
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
                 };
                 $videoMedia.ondurationchange = () => {
                     media.duration = $videoMedia.duration;
@@ -315,6 +315,11 @@ export default function Media(
             if (regionOldMedia) {
                 const $oldMedia = document.getElementById(getMediaId(regionOldMedia));
                 if ($oldMedia) {
+                    const removeOldMedia = () => {
+                        $oldMedia.style.display = 'none';
+                        $oldMedia.remove();
+                    };
+
                     if (Boolean(regionOldMedia.options['transout'])) {
                         $oldMedia.animate(transOut.keyframes, transOut.timing);
                     }
@@ -324,10 +329,11 @@ export default function Media(
                     // seems like a cross-over
                     resolve(true);
 
-                    setTimeout(() => {
-                        $oldMedia.style.display = 'none';
-                        $oldMedia.remove();
-                    }, transOutDuration);
+                    if (Boolean(regionOldMedia.options['transout'])) {
+                        setTimeout(removeOldMedia, transOutDuration);
+                    } else {
+                        removeOldMedia();
+                    }
                 }
             }
         });
