@@ -96,7 +96,8 @@ export default function Media(
     mediaObject.init = function() {
         const self = mediaObject;
         self.id = props.mediaId;
-        self.containerName = `M-${self.id}-${nextId(props.options)}`;
+        self.idCounter = nextId(props.options);
+        self.containerName = `M-${self.id}-${self.idCounter}`;
         self.iframeName = `${self.containerName}-iframe`;
         self.mediaType = self.xml?.getAttribute('type') || '';
         self.render = self.xml?.getAttribute('render') || '';
@@ -239,9 +240,6 @@ export default function Media(
     mediaObject.run = function() {
         const self = mediaObject;
         const regionOldMedia = self.region.oldMedia;
-        let $mediaId = getMediaId(self);
-
-        const $media = document.getElementById($mediaId);
         let transInDuration = 1;
         let transOutDuration = 1;
 
@@ -290,18 +288,27 @@ export default function Media(
             transOut = transitionElement(transOutName, defaultTransOutOptions);
         }
 
-        const showCurrentMedia = async ($media: HTMLElement) => {
-            $media.style.display = 'block'
+        const showCurrentMedia = async () => {
+            let $mediaId = getMediaId(self);
+            let $media = document.getElementById($mediaId);
 
-            if (Boolean(self.options['transin'])) {
-                $media.animate(transIn.keyframes, transIn.timing);
+            if ($media === null) {
+                $media = getNewMedia();
             }
 
-            if (self.mediaType === 'video' && self.url !== null) {
-                ($media as HTMLVideoElement).src = await preloadVideo(self.url);
-            }
+            if ($media !== null) {
+                $media.style.display = 'block'
 
-            self.emitter?.emit('start', self);
+                if (Boolean(self.options['transin'])) {
+                    $media.animate(transIn.keyframes, transIn.timing);
+                }
+
+                if (self.mediaType === 'video' && self.url !== null) {
+                    ($media as HTMLVideoElement).src = await preloadVideo(self.url);
+                }
+
+                self.emitter?.emit('start', self);
+            }
         };
         const hideOldMedia = new Promise((resolve) => {
             // Hide oldMedia
@@ -312,25 +319,42 @@ export default function Media(
                         $oldMedia.animate(transOut.keyframes, transOut.timing);
                     }
 
+                    // Resolve this right away
+                    // As a result, the transition between two media object
+                    // seems like a cross-over
+                    resolve(true);
+
                     setTimeout(() => {
                         $oldMedia.style.display = 'none';
                         $oldMedia.remove();
-                        resolve(true);
                     }, transOutDuration);
                 }
             }
         });
+        const getNewMedia = (): HTMLElement | null => {
+            const $region = document.getElementById(`${self.region.containerName}`);
+            // This function is for checking whether
+            // the region still has to show a media item
+            // when another region is not finished yet
+            if (self.region.complete && !self.region.layout.allEnded) {
+                // Add currentMedia to the region
 
-        if ($media) {
-            if (regionOldMedia) {
-                hideOldMedia.then((isDone) => {
-                    if (isDone) {
-                        showCurrentMedia($media);
-                    }
-                });
-            } else {
-                showCurrentMedia($media);
+                ($region) && $region.insertBefore(self.html as Node, $region.lastElementChild);
+
+                return self.html as HTMLElement;
             }
+
+            return null;
+        };
+
+        if (regionOldMedia) {
+            hideOldMedia.then((isDone) => {
+                if (isDone) {
+                    showCurrentMedia();
+                }
+            });
+        } else {
+            showCurrentMedia();
         }
     };
 

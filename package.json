@@ -9,7 +9,7 @@
   "scripts": {
     "watch": "rimraf dist && rollup --config rollup.config.dev.js -w",
     "build": "rimraf dist && rollup --config rollup.config.dev.js",
-    "dev": "rimraf dist && rollup --config rollup.config.dev.ts --configPlugin @rollup/plugin-typescript"
+    "dev": "rimraf dist && rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
   },
   "repository": {
     "type": "git",

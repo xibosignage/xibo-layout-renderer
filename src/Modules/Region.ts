@@ -73,15 +73,6 @@ export default function Region(
             self.mediaObjects.push(mediaObj);
         });
 
-        // Check if mediaObjects.length === 1
-        // If yes, then clone it to have next media item available
-        if (self.mediaObjects.length === 1) {
-            const tempMedia = { ...self.mediaObjects[0] };
-
-            tempMedia.index = tempMedia.index + 1;
-            self.mediaObjects.push(tempMedia);
-        }
-
         self.prepareMediaObjects();
     };
 
@@ -130,11 +121,11 @@ export default function Region(
             const $region = document.getElementById(`${self.containerName}`);
             // Append available media to region DOM
             if (self.curMedia) {
-                ($region) && $region.appendChild(self.curMedia.html as Node);
+                ($region) && $region.insertBefore(self.curMedia.html as Node, $region.lastElementChild);
             }
 
             if (self.nxtMedia) {
-                ($region) && $region.appendChild(self.nxtMedia.html as Node);
+                ($region) && $region.insertBefore(self.nxtMedia.html as Node, $region.lastElementChild);
             }
         }
     };

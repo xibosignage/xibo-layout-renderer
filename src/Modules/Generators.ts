@@ -9,8 +9,8 @@ export function nextId(options: { idCounter: number; }) {
     return options.idCounter;
 }
 
-export const getMediaId = ({mediaType, containerName, index}: IMedia) => {
-    let mediaId = containerName + '-' + index;
+export const getMediaId = ({mediaType, containerName}: IMedia) => {
+    let mediaId = containerName;
 
     if (mediaType === 'video') {
         mediaId = mediaId + '-vid';

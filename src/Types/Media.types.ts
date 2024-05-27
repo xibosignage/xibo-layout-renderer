@@ -6,6 +6,7 @@ export interface IMedia {
     region: IRegion;
     xml: null | Element;
     id: string;
+    idCounter: number;
     index: number;
     containerName: string;
     html: null | HTMLElement;
@@ -44,6 +45,7 @@ export const initialMedia: IMedia = {
     xml: null,
     id: '',
     index: 0,
+    idCounter: 0,
     containerName: '',
     html: null,
     iframe: null,
