@@ -1,13 +1,14 @@
 import { createNanoEvents } from "nanoevents";
-import {OptionsType} from "../Types/Layout.types";
-import {IRegion} from "../Types/Region.types";
-import {IMedia, initialMedia} from "../Types/Media.types";
-import {capitalizeStr, getMediaId, nextId, preloadVideo} from "./Generators";
-import { TransitionElementOptions, flyTransitionKeyframes, transitionElement } from "./Transitions";
+import {OptionsType} from "../../Types/Layout.types";
+import {IRegion} from "../../Types/Region.types";
+import {IMedia, initialMedia} from "../../Types/Media.types";
+import {fetchJSON, getMediaId, nextId, preloadVideo} from "../Generators";
+import { TransitionElementOptions, flyTransitionKeyframes, transitionElement } from "../Transitions";
+import VideoMedia from "./VideoMedia";
 
 export interface IMediaEvents {
-    start: (layout: IMedia) => void;
-    end: (layout: IMedia) => void;
+    start: (media: IMedia) => void;
+    end: (media: IMedia) => void;
 }
 
 export default function Media(
@@ -32,46 +33,16 @@ export default function Media(
 
     emitter.on('start', function(media) {
         if (media.mediaType === 'video') {
-            const $videoMedia = document.getElementById(getMediaId(media)) as HTMLVideoElement;
+            VideoMedia(media).init();
 
-            if ($videoMedia) {
-                $videoMedia.onloadstart = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
-                };
-                $videoMedia.ondurationchange = () => {
-                    media.duration = $videoMedia.duration;
-                    media.region.mediaObjects[media.index] = media;
-
-                    $videoMedia.autoplay = true;
-                    console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
-                };
-                $videoMedia.onloadeddata = () => {
-                    if ($videoMedia.readyState >= 2) {
-                        console.log(`${capitalizeStr(media.mediaType)} data for media > ${media.id} has been fully loaded . . .`);
+            if (media.duration > 0) {
+                mediaTimer = setInterval(() => {
+                    mediaTimeCount++;
+                    if (mediaTimeCount > media.duration) {
+                        media.emitter?.emit('end', media);
                     }
-                };
-                $videoMedia.oncanplay = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
-
-                    const videoPlayPromise = $videoMedia.play();
-
-                    if (videoPlayPromise !== undefined) {
-                        videoPlayPromise.then(() => {
-                            console.log('autoplay started . . .');
-                            // Autoplay restarted
-                        }).catch(error => {
-                            $videoMedia.muted = true;
-                            $videoMedia.play();
-                        });
-                    }
-                };
-                $videoMedia.onplaying = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
-                };
-                $videoMedia.onended = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    media.emitter?.emit('end', media);
-                };
+                }, 1000);
+                console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
             }
         } else {
             mediaTimer = setInterval(() => {
@@ -101,7 +72,7 @@ export default function Media(
         self.iframeName = `${self.containerName}-iframe`;
         self.mediaType = self.xml?.getAttribute('type') || '';
         self.render = self.xml?.getAttribute('render') || '';
-        self.duration = parseInt(self.xml?.getAttribute('duration') as string) || 5;
+        self.duration = parseInt(self.xml?.getAttribute('duration') as string) || 0;
         self.options = { ...props.options, mediaId };
 
         const $mediaIframe = document.createElement('iframe');
@@ -166,11 +137,31 @@ export default function Media(
 
         self.url = tmpUrl;
 
+        // Loop if media has loop, or if region has loop and a single media
+        self.loop =
+            self.options['loop'] == '1' ||
+            (self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1);
+
         $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
 
         if (self.render === 'html' || self.mediaType === 'ticker') {
             self.checkIframeStatus = true;
             self.iframe = $mediaIframe;
+            
+            /* Check if the ticker duration is based on the number of items in the feed */
+            if (self.options['durationisperitem'] === '1') {
+                const regex = new RegExp('<!-- NUMITEMS=(.*?) -->');
+
+                (async () => {
+                    let html = await fetchJSON(`${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`);
+                    console.log({html});
+                    const res = regex.exec(html);
+
+                    if (res !== null) {
+                        self.duration = parseInt(String(self.duration)) * parseInt(res[1]);
+                    }
+                })();
+            }
         }  else if (self.mediaType === "image") {
             // preload.addFiles(tmpUrl);
             $media.style.cssText = $media.style.cssText.concat(`background-image: url('${tmpUrl}');`);
@@ -197,7 +188,17 @@ export default function Media(
                 $videoMedia.muted = self.options.mute === '1';
             }
 
+            if (Boolean(self.options['scaletype'])) {
+                if (self.options.scaletype === 'stretch') {
+                    $videoMedia.style.objectFit = 'fill';
+                }
+            }
             $videoMedia.playsInline = true;
+
+            if (self.loop) {
+                $videoMedia.loop = true;
+            }
+
             $media = $videoMedia;
         }
 
@@ -213,7 +214,26 @@ export default function Media(
         // All added media will be hidden by default
         // It will start showing when region.nextMedia() function is called
 
+        // When there's only 1 item and loop = false, don't remove the item but leave it at its last state
+        // For image, and only 1 item, it should still have the transition for next state
+        // Add conditions for video duration being 0 or 1 and also the loop property
+        // For video url, we have to create a URL out of the XLF video URL
+
+        /**
+         * @DONE
+         * Case 1: Video duration = 0, this will play the video for its entire duration
+         * Case 2: Video duration is set > 0 and loop = false
+         * E.g. Set duration = 100s, video duration = 62s
+         * the video will play until 62s and will stop to its last frame until 100s
+         * After 100s, it will expire
+         * Case 3: Video duration is set > 0 and loop = true
+         * E.g. Set duration = 100s, video duration = 62s, loop = true
+         * the video will play until 62s and will loop through until the remaining 38s
+         * to complete the 100s set duration
+         */
+
         // Add html node to media for 
+
         self.html = $media;
 
         // Check/set iframe based widgets play status

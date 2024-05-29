@@ -1,5 +1,5 @@
 import { DefaultEvents, Emitter, Unsubscribe } from "nanoevents";
-import { IMediaEvents } from "../Modules/Media";
+import { IMediaEvents } from "../Modules/Media/Media";
 import {initialRegion, IRegion} from "./Region.types";
 
 export interface IMedia {
@@ -33,6 +33,7 @@ export interface IMedia {
     divWidth: number;
     divHeight: number;
     url: string | null;
+    loop: boolean;
     emitter?: Emitter<DefaultEvents>;
     run(): void;
     init(): void;
@@ -62,13 +63,14 @@ export const initialMedia: IMedia = {
     finished: false,
     schemaVersion: '1',
     type: '',
-    duration: 5,
+    duration: 0,
     useDuration: Boolean(0),
     fileId: '',
     options: {},
     divWidth: 0,
     divHeight: 0,
     url: null,
+    loop: false,
     run() {},
     init() {},
     stop() {

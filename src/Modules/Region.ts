@@ -3,7 +3,8 @@ import {ILayout, OptionsType} from "../Types/Layout.types";
 import {initialRegion, IRegion, IRegionEvents} from "../Types/Region.types";
 import {IMedia} from "../Types/Media.types";
 import {nextId} from "./Generators";
-import Media from "./Media";
+import { platform } from "./Platform";
+import Media from "./Media/Media";
 
 export default function Region(
     layout: ILayout,
@@ -27,7 +28,8 @@ export default function Region(
         const self = regionObject;
         const {layout, options} = self;
         self.id = props.regionId;
-        self.containerName = `R-${self.id}-${nextId(options)}`;
+        self.options = {...platform, ...props.options};
+        self.containerName = `R-${self.id}-${nextId(self.options as OptionsType & IRegion["options"])}`;
         self.xml = props.xml;
         self.mediaObjects = [];
 
@@ -36,6 +38,19 @@ export default function Region(
         self.offsetX = (self.xml) && Number(self.xml?.getAttribute('left')) * layout.scaleFactor;
         self.offsetY = (self.xml) && Number(self.xml?.getAttribute('top')) * layout.scaleFactor;
         self.zIndex = (self.xml) && Number(self.xml?.getAttribute('zindex')) * layout.scaleFactor;
+        
+        const regionOptions = self.xml?.getElementsByTagName('options');
+
+        if (regionOptions) {
+            for (let _options of Array.from(regionOptions)) {
+                // Get options
+                const _regionOptions = _options.children;
+                for (let regionOption of Array.from(_regionOptions)) {
+                    self.options[regionOption.nodeName.toLowerCase()] = regionOption.textContent;
+                }
+            }
+        }
+
 
         let $region = document.getElementById(self.containerName);
         const $layout = document.getElementById(`${self.layout.containerName}`);
@@ -60,13 +75,14 @@ export default function Region(
 
         /* Parse region media objects */
         const regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));
+        self.totalMediaObjects = regionMediaItems.length;
 
         Array.from(regionMediaItems).forEach((mediaXml, indx) => {
             const mediaObj = Media(
                 self,
                 mediaXml?.getAttribute('id') || '',
                 mediaXml,
-                options,
+                options as OptionsType & IRegion["options"],
             );
 
             mediaObj.index = indx;

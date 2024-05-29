@@ -27,7 +27,9 @@ export interface IRegion {
     currentMediaIndex: number;
     totalMediaObjects: number;
     ready: boolean;
-    options: OptionsType;
+    options: {
+        [k: string]: any;
+    };
     sWidth: number;
     sHeight: number;
     offsetX: number;
@@ -66,7 +68,7 @@ export const initialRegion: IRegion = {
     currentMediaIndex: 0,
     totalMediaObjects: 0,
     ready: false,
-    options: platform,
+    options: {},
     sWidth: 0,
     sHeight: 0,
     offsetX: 0,

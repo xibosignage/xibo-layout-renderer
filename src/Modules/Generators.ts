@@ -33,3 +33,11 @@ export async function preloadVideo(src: string) {
 
     return URL.createObjectURL(blob);
 }
+
+export function fetchJSON(url: string) {
+    return fetch(url)
+        .then(res => res.json())
+        .catch(err => {
+            console.log(err);
+        });
+}
