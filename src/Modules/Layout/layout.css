@@ -18,3 +18,63 @@ div.preview-canvas, div.player-preview, div.screen-preview {
 .preview-player {
     display: none;
 }
+div.preview-ended {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    background: #000000;
+    font-family: sans-serif;
+    color: #ffffff;
+    font-size: 2em;
+    margin: 0 auto;
+    z-index: 100;
+    text-align: center;
+}
+div.preview-ended a {
+    position: absolute;
+    width: 100%;
+    top: 50%;
+    left: 0;
+    -webkit-transform: translateY(-50%);
+    -moz-transform: translateY(-50%);
+    -ms-transform: translateY(-50%);
+    -o-transform: translateY(-50%);
+    transform: translateY(-50%);
+}
+.media--item.fade-in {
+    -webkit-animation-name: elemFadeIn;
+    -webkit-animation-timing-function: linear;
+    -webkit-animation-fill-mode: forwards;
+    animation-name: elemFadeIn;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+.media--item.fade-out {
+    -webkit-animation-name: elemFadeOut;
+    -webkit-animation-timing-function: linear;
+    -webkit-animation-fill-mode: forwards;
+    animation-name: elemFadeOut;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+@-webkit-keyframes elemFadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@-webkit-keyframes elemFadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes elemFadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes elemFadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}

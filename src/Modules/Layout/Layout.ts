@@ -4,19 +4,20 @@ import {
     GetLayoutType,
     ILayout,
     initialLayout,
-    InputLayoutType,
     OptionsType
-} from "../../Types/Layout.types.js";
-import {nextId} from "../Generators.js";
-import Region from "../Region.js";
+} from "../../Types/Layout.types";
+import {IXlr} from "../../Types/XLR.types";
+import {nextId} from "../Generators";
+import Region from "../Region";
 
 import './layout.css';
-import {IXlr} from "../../Types/XLR.types.js";
 
 export function initRenderingDOM(targetContainer: Element | null) {
     let _targetContainer = targetContainer;
     const previewPlayer = document.createElement('div');
     const previewScreen = document.createElement('div');
+    const endPlay = document.createElement('div');
+    const playAgainLink = document.createElement('a');
 
     // Preview player
     previewPlayer.className = 'player-preview';
@@ -25,6 +26,17 @@ export function initRenderingDOM(targetContainer: Element | null) {
     // Preview screen
     previewScreen.className = 'screen-preview';
     previewScreen.id = 'screen_container';
+
+    // Ended play
+    endPlay.className = 'preview-ended';
+    endPlay.id = 'play_ended';
+    endPlay.style.display = 'none';
+
+    // Play again link
+    playAgainLink.style.cssText = 'text-decoration: none; color: #ffffff;';
+    playAgainLink.href = 'javascript:history.go(0)';
+    playAgainLink.innerHTML = 'Play again?';
+
 
     if (!_targetContainer) {
         _targetContainer = document.body;
@@ -37,12 +49,19 @@ export function initRenderingDOM(targetContainer: Element | null) {
             if (previewPlayer.querySelector('#screen_container') === null) {
                 previewPlayer.appendChild(previewScreen);
             }
+
+            if (previewPlayer.querySelector('#play_ended') === null) {
+                previewPlayer.appendChild(endPlay);
+
+                if (endPlay.querySelector('a') === null) {
+                    endPlay.appendChild(playAgainLink);
+                }
+            }
         }
     }
 }
 
 export async function getXlf(layoutOptions: OptionsType) {
-    console.log({layoutOptions});
     const apiHost = 'http://localhost';
     const res = await fetch(apiHost + layoutOptions.xlfUrl, {mode: 'no-cors'});
     return await res.text();
@@ -58,25 +77,31 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
         currentLayoutIndex
     } = params.xlr;
     const hasLayout = inputLayouts.length > 0;
-    const layoutStartCount = currentLayoutIndex === -1 ? 0 : currentLayoutIndex;
     const nextLayoutIndex = currentLayoutIndex + 1;
 
     if (currentLayout === undefined && nextLayout === undefined) {
+        let activeLayout;
         // Preview just got started
         if (hasLayout) {
-            _currentLayout = {...initialLayout, ...inputLayouts[currentLayoutIndex]};
+            activeLayout = inputLayouts[currentLayoutIndex];
+            _currentLayout = {...initialLayout};
 
             if (inputLayouts.length > 1) {
-                _nextLayout = {...initialLayout, ...inputLayouts[nextLayoutIndex]};
+                activeLayout = inputLayouts[nextLayoutIndex];
+                _nextLayout = {...initialLayout};
             } else {
                 _nextLayout = _currentLayout;
             }
+
+            _currentLayout.id = activeLayout.layoutId;
+            _currentLayout.layoutId = activeLayout.layoutId;
+
+            _nextLayout.id = activeLayout.layoutId;
+            _nextLayout.layoutId = activeLayout.layoutId;
         }
     } else {
         if (hasLayout) {
-            if (params.moveNext) {
-                _currentLayout = nextLayout;
-            }
+            _currentLayout = nextLayout;
 
             if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
                 if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
@@ -85,7 +110,6 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
                     _nextLayout = {...initialLayout, ...inputLayouts[nextLayoutIndex]};
                 }
             }
-            console.log({nextLayout: _nextLayout});
 
             // If _nextLayout is undefined, then we go back to first layout
             if (_nextLayout === undefined) {
@@ -93,8 +117,6 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
             }
         }
     }
-
-    console.log({currentLayoutIndex});
 
     return {
         currentLayoutIndex,
@@ -128,9 +150,12 @@ export default function Layout(
     });
 
     emitter.on('end', (layout) => {
+        console.log('Ending layout with ID of > ', layout.layoutId);
         layout.done = true;
         /* Remove layout that has ended */
-        let $layout = document.getElementById(layout.containerName);
+        const $layout = document.getElementById(layout.containerName);
+
+        console.log({$layout});
 
         if ($layout !== null) {
             $layout.remove();
@@ -146,155 +171,210 @@ export default function Layout(
         ...props.layout,
         options: props.options,
         emitter,
-        on: function<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
-            return emitter.on(event, callback);
-        },
-        run() {
-            const layout = this;
-            const $layoutContainer = document.getElementById(`${layout.containerName}`);
-            const $splashScreen = document.getElementById(`splash_${layout.id}`);
+    };
 
-            if ($layoutContainer) {
-                $layoutContainer.style.display = 'block';
-            }
+    layoutObject.on = function<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
+        return emitter.on(event, callback);
+    };
+    layoutObject.run = function() {
+        const layout = layoutObject;
+        const $layoutContainer = document.getElementById(`${layout.containerName}`);
+        const $splashScreen = document.getElementById(`splash_${layout.id}`);
 
-            if ($splashScreen) {
-                $splashScreen.style.display = 'none';
-            }
+        if ($layoutContainer) {
+            $layoutContainer.style.display = 'block';
+        }
 
-            console.log('Layout running > Layout ID > ', layout.id);
-            console.log('Layout Regions > ', layout.regions);
-            for (let i = 0; i < layout.regions.length; i++) {
-                // playLog(4, "debug", "Running region " + self.regionObjects[i].id, false);
-                layout.regions[i].run();
-            }
-        },
+        if ($splashScreen) {
+            $splashScreen.style.display = 'none';
+        }
 
-        parseXlf() {
-            const layout = this;
-            const {data, options} = props;
-            layout.containerName = "L" + layout.id + "-" + nextId(options);
-            layout.regions = [];
+        console.log('Layout running > Layout ID > ', layout.id);
+        console.log('Layout Regions > ', layout.regions);
+        for (let i = 0; i < layout.regions.length; i++) {
+            // playLog(4, "debug", "Running region " + self.regions[i].id, false);
+            layout.regions[i].run();
+        }
+    };
 
-            /* Create a hidden div to show the layout in */
-            let $layout = document.getElementById(layout.containerName);
+    layoutObject.parseXlf = function() {
+        const layout = layoutObject;
+        const {data, options} = props;
+        layout.containerName = "L" + layout.id + "-" + nextId(options);
+        layout.regions = [];
 
-            if ($layout === null) {
-                $layout = document.createElement('div');
-                $layout.id = layout.containerName;
-            }
+        /* Create a hidden div to show the layout in */
+        let $layout = document.getElementById(layout.containerName);
 
-            let $screen = document.getElementById('screen_container');
-            ($screen) && $screen.appendChild($layout);
+        if ($layout === null) {
+            $layout = document.createElement('div');
+            $layout.id = layout.containerName;
+        }
 
+        let $screen = document.getElementById('screen_container');
+        ($screen) && $screen.appendChild($layout);
+
+        if ($layout) {
+            $layout.style.display = 'none';
+            $layout.style.outline = 'red solid thin';
+        }
+
+        layout.layoutNode = data;
+
+        /* Calculate the screen size */
+        layout.sw = $screen?.offsetWidth || 0;
+        layout.sh = $screen?.offsetHeight || 0;
+
+        layout.xw = Number(layout.layoutNode?.firstElementChild?.getAttribute('width'));
+        layout.xh = Number(layout.layoutNode?.firstElementChild?.getAttribute('height'));
+        layout.zIndex = Number(layout.layoutNode?.firstElementChild?.getAttribute('zindex')) || 0;
+
+        /* Calculate Scale Factor */
+        layout.scaleFactor = Math.min((layout.sw / layout.xw), (layout.sh / layout.xh));
+        layout.sWidth = Math.round(layout.xw * layout.scaleFactor);
+        layout.sHeight = Math.round(layout.xh * layout.scaleFactor);
+        layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
+        layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
+
+        const layoutStyles = `
+            width: ${layout.sWidth}px;
+            height: ${layout.sHeight}px;
+            position: absolute;
+            left: ${layout.offsetX}px;
+            top: ${layout.offsetY}px;
+        `;
+        /* Scale the Layout Container */
+        if ($layout) {
+            $layout.style.cssText = layoutStyles;
+        }
+
+        if ($layout && layout.zIndex !== null) {
+            $layout.style.cssText = layoutStyles.concat(`z-index: ${layout.zIndex};`);
+        }
+
+        /* Set the layout background */
+        layout.bgColor = layout.layoutNode?.firstElementChild?.getAttribute('bgcolor') || '';
+        layout.bgImage = layout.layoutNode?.firstElementChild?.getAttribute('background') || '';
+
+        if (!(layout.bgImage === "" || typeof layout.bgImage === 'undefined')) {
+            /* Extract the image ID from the filename */
+            layout.bgId = layout.bgImage.substring(0, layout.bgImage.indexOf('.'));
+
+            let tmpUrl = options.layoutBackgroundDownloadUrl.replace(":id", (layout.id as unknown) as string) + '?preview=1';
+
+            // preload.addFiles(tmpUrl + "&width=" + self.sWidth + "&height=" + self.sHeight + "&dynamic&proportional=0");
             if ($layout) {
-                $layout.style.display = 'none';
-                $layout.style.outline = 'red solid thin';
+                $layout.style.cssText = layoutStyles.concat(`
+                    background: url('${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0');
+                    backgroundRepeat: "no-repeat";
+                    backgroundSize: ${layout.sWidth}px ${layout.sHeight}px;
+                    backgroundPosition: "0px 0px";
+                `);
             }
+        }
 
-            layout.layoutNode = data;
+        // Set the background color
+        if ($layout) {
+            $layout.style.cssText = layoutStyles.concat(`background-color: layout.bgColor;`);
+        }
 
-            /* Calculate the screen size */
-            layout.sw = $screen?.offsetWidth || 0;
-            layout.sh = $screen?.offsetHeight || 0;
+        // Hide if layout is not the currentLayout
+        if ($layout && xlr.currentLayoutId !== undefined && xlr.currentLayoutId !== layout.id) {
+            $layout.style.cssText = $layout.style.cssText.concat('display: none;');
+        }
 
-            layout.xw = Number(layout.layoutNode?.firstElementChild?.getAttribute('width'));
-            layout.xh = Number(layout.layoutNode?.firstElementChild?.getAttribute('height'));
-            layout.zIndex = Number(layout.layoutNode?.firstElementChild?.getAttribute('zindex')) || 0;
+        // Create regions
+        const layoutRegions = Array.from(layout?.layoutNode?.getElementsByTagName('region') || []);
 
-            /* Calculate Scale Factor */
-            layout.scaleFactor = Math.min((layout.sw / layout.xw), (layout.sh / layout.xh));
-            layout.sWidth = Math.round(layout.xw * layout.scaleFactor);
-            layout.sHeight = Math.round(layout.xh * layout.scaleFactor);
-            layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
-            layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
+        Array.from(layoutRegions).forEach((regionXml, indx) => {
+            const regionObj = Region(
+                layout,
+                regionXml,
+                regionXml?.getAttribute('id') || '',
+                options,
+            );
 
-            const layoutStyles = `
-                width: ${layout.sWidth}px;
-                height: ${layout.sHeight}px;
-                position: absolute;
-                left: ${layout.offsetX}px;
-                top: ${layout.offsetY}px;
-            `;
-            /* Scale the Layout Container */
-            if ($layout) {
-                $layout.style.cssText = layoutStyles;
+            regionObj.index = indx;
+            layout.regions.push(regionObj);
+        });
+    };
+
+    layoutObject.prepareLayout = function() {
+        layoutObject.parseXlf();
+    };
+
+    layoutObject.regionExpired = function() {
+        const self = layoutObject;
+        self.allExpired = true;
+
+        for (let layoutRegion of self.regions) {
+            if (!layoutRegion.complete) {
+                self.allExpired = false;
             }
+        }
 
-            if ($layout && layout.zIndex !== null) {
-                $layout.style.cssText = layoutStyles.concat(`z-index: ${layout.zIndex};`);
+        if (self.allExpired) {
+            self.end();
+        }
+    };
+
+    layoutObject.regionEnded = function() {
+        const self = layoutObject;
+        self.allEnded = true;
+        
+        for (var i = 0; i < self.regions.length; i++) {
+            if (! self.regions[i].ended) {
+                self.allEnded = false;
             }
+        }
+        
+        if (self.allEnded) {
+            self.stopAllMedia().then(() => {
+                console.log('starting to end layout . . .');
+                const $end = document.getElementById('play_ended');
+                const $preview = document.getElementById('screen_container');
+    
+                // if ($preview) {
+                //     while($preview.firstChild) {
+                //         $preview.removeChild($preview.firstChild);
+                //     }
+    
+                //     $preview.style.display = 'none';
+                // }
+    
+                // if ($end) {
+                //     $end.style.display = 'block';
+                // }
+                
+                self.emitter?.emit('end', self);
+            });
 
-            /* Set the layout background */
-            layout.bgColor = layout.layoutNode?.firstElementChild?.getAttribute('bgcolor') || '';
-            layout.bgImage = layout.layoutNode?.firstElementChild?.getAttribute('background') || '';
+        }
+    };
 
-            if (!(layout.bgImage === "" || typeof layout.bgImage === 'undefined')) {
-                /* Extract the image ID from the filename */
-                layout.bgId = layout.bgImage.substring(0, layout.bgImage.indexOf('.'));
+    layoutObject.end = function() {
+        console.log('Executing Layout::end and Calling Region::end ', layoutObject);
 
-                let tmpUrl = options.layoutBackgroundDownloadUrl.replace(":id", (layout.id as unknown) as string) + '?preview=1';
+        /* Ask the layout to gracefully stop running now */
+        for (let layoutRegion of layoutObject.regions) {
+            layoutRegion.end();
+        }
+    };
 
-                // preload.addFiles(tmpUrl + "&width=" + self.sWidth + "&height=" + self.sHeight + "&dynamic&proportional=0");
-                if ($layout) {
-                    $layout.style.cssText = layoutStyles.concat(`
-                        background: url('${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0');
-                        backgroundRepeat: "no-repeat";
-                        backgroundSize: ${layout.sWidth}px ${layout.sHeight}px;
-                        backgroundPosition: "0px 0px";
-                    `);
+    layoutObject.stopAllMedia = function() {
+        console.log('Stopping all media . . .');
+        return new Promise(async (resolve) => {
+            for(var i = 0;i < layoutObject.regions.length;i++) {
+                var region = layoutObject.regions[i];
+                for(var j = 0;j < region.mediaObjects.length;j++) {
+                    var media = region.mediaObjects[j];
+                    await media.stop();
                 }
             }
 
-            // Set the background color
-            if ($layout) {
-                $layout.style.cssText = layoutStyles.concat(`background-color: layout.bgColor;`);
-            }
-
-            // Hide if layout is not the currentLayout
-            if ($layout && xlr.currentLayoutId !== undefined && xlr.currentLayoutId !== layout.id) {
-                $layout.style.cssText = $layout.style.cssText.concat('display: none;');
-            }
-
-            // Create regions
-            const layoutRegions = Array.from(layout?.layoutNode?.getElementsByTagName('region') || []);
-
-            for (let regionXml of layoutRegions) {
-                layout.regions.push(Region(
-                    layout,
-                    regionXml,
-                    regionXml?.getAttribute('id') || '',
-                    options,
-                ));
-            }
-        },
-
-        prepareLayout() {
-            this.parseXlf();
-        },
-
-        regionExpired() {
-            const self = this;
-            self.allExpired = true;
-
-            for (let layoutRegion of self.regions) {
-                if (!layoutRegion.complete) {
-                    self.allExpired = false;
-                }
-            }
-
-            if (self.allExpired) {
-                self.end();
-            }
-        },
-
-        end() {
-            /* Ask the layout to gracefully stop running now */
-            for (let layoutRegion of this.regions) {
-                layoutRegion.end();
-            }
-        },
-    }
+            resolve();
+        });
+    };
 
     layoutObject.prepareLayout();
 

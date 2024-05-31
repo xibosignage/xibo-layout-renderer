@@ -1,11 +1,9 @@
-import {GetLayoutType, ILayout, initialLayout, InputLayoutType, OptionsType} from "./Types/Layout.types.js";
-import Layout, {getLayout, getXlf, initRenderingDOM} from "./Modules/Layout/Layout.js";
-import {platform} from "./Modules/Platform.js";
-import {ELayoutType, initialXlr, IXlr, PrepareLayoutsType} from "./Types/XLR.types.js";
-import {resolve} from "path";
-// import {authApp} from "./Modules/Auth";
+import {ILayout, initialLayout, InputLayoutType, OptionsType} from "./Types/Layout.types";
+import Layout, {getLayout, getXlf, initRenderingDOM} from "./Modules/Layout/Layout";
+import {ELayoutType, initialXlr, IXlr} from "./Types/XLR.types";
+import {platform} from "./Modules/Platform";
 
-export default function XiboLayoutRenderer(
+function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
     options?: OptionsType,
 ) {
@@ -39,9 +37,7 @@ export default function XiboLayoutRenderer(
         },
 
         playSchedules(xlr: IXlr) {
-            // console.log({currentLayout: xlr.currentLayout});
             // Check if there's a current layout
-            console.log({xlr, currentLayoutIndex: xlr.currentLayoutIndex})
             if (xlr.currentLayout !== undefined) {
                 xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
                 xlr.currentLayout.run();
@@ -70,13 +66,13 @@ export default function XiboLayoutRenderer(
             }
 
             return new Promise<ILayout>((resolve) => {
-                resolve(Layout(layoutXlfNode, newOptions, self, {
-                    ...initialLayout,
-                    ...inputLayout,
-                    id: inputLayout?.layoutId,
-                    layoutId: inputLayout?.layoutId,
-                    options: newOptions,
-                }));
+                const xlrLayoutObj = initialLayout;
+                
+                xlrLayoutObj.id = inputLayout.layoutId;
+                xlrLayoutObj.layoutId = inputLayout.layoutId;
+                xlrLayoutObj.options = newOptions;
+
+                resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
             });
         },
 
@@ -107,3 +103,5 @@ export default function XiboLayoutRenderer(
 
     return xlrObject;
 }
+
+export default XiboLayoutRenderer;

@@ -1,9 +1,8 @@
-import {IRegion} from "./Region.types.js";
-import {platform} from "../Modules/Platform.js";
 import {DefaultEvents, Emitter, Unsubscribe} from "nanoevents";
-import {ILayoutEvents} from "../Modules/Layout/Layout.js";
+import {IRegion} from "./Region.types";
+import {platform} from "../Modules/Platform";
+import {ILayoutEvents} from "../Modules/Layout/Layout";
 import {IXlr} from "./XLR.types";
-// import Region from "../Modules/Region";
 
 export type InputLayoutType = {
     layoutId: string;
@@ -48,6 +47,7 @@ export interface ILayout {
     actions: String[];
     options: OptionsType;
     done: boolean;
+    allEnded: boolean;
     prepareLayout(): void;
     parseXlf(): void;
     run(): void;
@@ -55,6 +55,8 @@ export interface ILayout {
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;
+    regionEnded(): void;
+    stopAllMedia(): Promise<void>;
 }
 
 export const initialLayout: ILayout = {
@@ -84,6 +86,7 @@ export const initialLayout: ILayout = {
     actions: [],
     options: platform,
     done: false,
+    allEnded: false,
     prepareLayout() {
     },
     parseXlf() {
@@ -96,7 +99,12 @@ export const initialLayout: ILayout = {
     regionExpired() {
     },
     end() {
-    }
+    },
+    regionEnded() {
+    },
+    stopAllMedia() {
+        return Promise.resolve();
+    },
 };
 
 export type GetLayoutParamType = {

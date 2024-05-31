@@ -1,0 +1,51 @@
+import { IMedia } from "../../Types/Media.types";
+import { capitalizeStr, getMediaId } from "../Generators";
+
+export default function VideoMedia(media: IMedia) {
+    const videoMediaObject = {
+        init() {
+            const $videoMedia = document.getElementById(getMediaId(media)) as HTMLVideoElement;
+
+            if ($videoMedia) {
+                $videoMedia.onloadstart = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
+                };
+                $videoMedia.onloadeddata = () => {
+                    if ($videoMedia.readyState >= 2) {
+                        console.log(`${capitalizeStr(media.mediaType)} data for media > ${media.id} has been fully loaded . . .`);
+                    }
+                };
+                $videoMedia.oncanplay = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
+        
+                    const videoPlayPromise = $videoMedia.play();
+        
+                    if (videoPlayPromise !== undefined) {
+                        videoPlayPromise.then(() => {
+                            console.log('autoplay started . . .');
+                            // Autoplay restarted
+                        }).catch(error => {
+                            $videoMedia.muted = true;
+                            $videoMedia.play();
+                        });
+                    }
+                };
+                $videoMedia.onplaying = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+                };
+
+                if (media.duration === 0) {
+                    $videoMedia.ondurationchange = () => {
+                        console.log('Showing Media ' + media.id + ' for ' + $videoMedia.duration + 's of Region ' + media.region.regionId);
+                    };
+                    $videoMedia.onended = () => {
+                        console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                        media.emitter?.emit('end', media);
+                    };
+                }
+            }
+        }
+    }
+
+    return videoMediaObject;
+}
