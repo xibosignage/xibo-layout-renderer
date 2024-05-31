@@ -1,0 +1,42 @@
+import { DefaultEvents, Emitter, Unsubscribe } from "nanoevents";
+import { IMediaEvents } from "../Modules/Media/Media";
+import { IRegion } from "./Region.types";
+export interface IMedia {
+    region: IRegion;
+    xml: null | Element;
+    id: string;
+    idCounter: number;
+    index: number;
+    containerName: string;
+    html: null | HTMLElement;
+    iframe: null | HTMLIFrameElement;
+    iframeName: string;
+    mediaType: string;
+    render: string;
+    attachedAudio: boolean;
+    singlePlay: boolean;
+    timeoutId: ReturnType<typeof setTimeout>;
+    ready: boolean;
+    checkIframeStatus: boolean;
+    loadIframeOnRun: boolean;
+    tempSrc: string;
+    finished: boolean;
+    schemaVersion: string;
+    type: string;
+    duration: number;
+    useDuration: boolean;
+    fileId: string;
+    options: {
+        [k: string]: any;
+    };
+    divWidth: number;
+    divHeight: number;
+    url: string | null;
+    loop: boolean;
+    emitter?: Emitter<DefaultEvents>;
+    run(): void;
+    init(): void;
+    stop(): Promise<void>;
+    on<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]): Unsubscribe;
+}
+export declare const initialMedia: IMedia;
