@@ -2,7 +2,8 @@
   "include": [
     "src/**/*",
     "types/**/*",
-    "rollup.config.dev.ts"
+    "rollup.config.dev.ts",
+    "rollup.config.prod.ts"
   ],
   "compilerOptions": {
     "target": "ES2022",
