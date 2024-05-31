@@ -2,9 +2,10 @@ import { createNanoEvents } from "nanoevents";
 import {OptionsType} from "../../Types/Layout.types";
 import {IRegion} from "../../Types/Region.types";
 import {IMedia, initialMedia} from "../../Types/Media.types";
-import {fetchJSON, getMediaId, nextId, preloadVideo} from "../Generators";
+import {fetchJSON, getMediaId, nextId, preloadMediaBlob} from "../Generators";
 import { TransitionElementOptions, flyTransitionKeyframes, transitionElement } from "../Transitions";
 import VideoMedia from "./VideoMedia";
+import AudioMedia from "./AudioMedia";
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -30,28 +31,30 @@ export default function Media(
         ...initialMedia,
         ...props,
     };
+    const startMediaTimer = (media: IMedia) => {
+        mediaTimer = setInterval(() => {
+            mediaTimeCount++;
+            if (mediaTimeCount > media.duration) {
+                media.emitter?.emit('end', media);
+            }
+        }, 1000);
+        console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
+    };
 
     emitter.on('start', function(media) {
         if (media.mediaType === 'video') {
             VideoMedia(media).init();
 
             if (media.duration > 0) {
-                mediaTimer = setInterval(() => {
-                    mediaTimeCount++;
-                    if (mediaTimeCount > media.duration) {
-                        media.emitter?.emit('end', media);
-                    }
-                }, 1000);
-                console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
+                startMediaTimer(media);
+            }
+        } else if (media.mediaType === 'audio') {
+            AudioMedia(media).init();
+            if (media.duration > 0) {
+                startMediaTimer(media);
             }
         } else {
-            mediaTimer = setInterval(() => {
-                mediaTimeCount++;
-                if (mediaTimeCount > media.duration) {
-                    media.emitter?.emit('end', media);
-                }
-            }, 1000)
-            console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
+            startMediaTimer(media);
         }
     });
 
@@ -111,6 +114,8 @@ export default function Media(
         if ($media === null) {
             if (self.mediaType === 'video') {
                 $media = document.createElement('video');
+            } else if (self.mediaType === 'audio') {
+                $media = new Audio();
             } else {
                 $media = document.createElement('div');
             }
@@ -147,21 +152,6 @@ export default function Media(
         if (self.render === 'html' || self.mediaType === 'ticker') {
             self.checkIframeStatus = true;
             self.iframe = $mediaIframe;
-            
-            /* Check if the ticker duration is based on the number of items in the feed */
-            if (self.options['durationisperitem'] === '1') {
-                const regex = new RegExp('<!-- NUMITEMS=(.*?) -->');
-
-                (async () => {
-                    let html = await fetchJSON(`${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`);
-                    console.log({html});
-                    const res = regex.exec(html);
-
-                    if (res !== null) {
-                        self.duration = parseInt(String(self.duration)) * parseInt(res[1]);
-                    }
-                })();
-            }
         }  else if (self.mediaType === "image") {
             // preload.addFiles(tmpUrl);
             $media.style.cssText = $media.style.cssText.concat(`background-image: url('${tmpUrl}');`);
@@ -179,9 +169,6 @@ export default function Media(
             const $videoMedia = $media as HTMLVideoElement;
 
             $videoMedia.preload = 'auto';
-
-            // $videoSrc.src = tmpUrl;
-            // $videoMedia.appendChild($videoSrc);
             $videoMedia.textContent = 'Unsupported Video';
 
             if (Boolean(self.options['mute'])) {
@@ -200,6 +187,36 @@ export default function Media(
             }
 
             $media = $videoMedia;
+        } else if (self.mediaType === 'audio') {
+            const $audioMedia = $media as HTMLAudioElement;
+
+            $audioMedia.preload = 'auto';
+            $audioMedia.textContent = 'Unsupported Audio';
+            $audioMedia.autoplay = true;
+
+            if (self.loop) {
+                $audioMedia.loop = true;
+            }
+
+            $media = $audioMedia;
+        }
+
+        // Duration is per item condition
+        if (self.render === 'html' || self.mediaType === 'ticker') {
+            /* Check if the ticker duration is based on the number of items in the feed */
+            if (self.options['durationisperitem'] === '1') {
+                const regex = new RegExp('<!-- NUMITEMS=(.*?) -->');
+
+                (async () => {
+                    let html = await fetchJSON(`${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`);
+                    console.log({html});
+                    const res = regex.exec(html);
+
+                    if (res !== null) {
+                        self.duration = parseInt(String(self.duration)) * parseInt(res[1]);
+                    }
+                })();
+            }
         }
 
         // Check if the media has fade-in/out transitions
@@ -324,7 +341,9 @@ export default function Media(
                 }
 
                 if (self.mediaType === 'video' && self.url !== null) {
-                    ($media as HTMLVideoElement).src = await preloadVideo(self.url);
+                    ($media as HTMLVideoElement).src = await preloadMediaBlob(self.url, self.mediaType);
+                } else if (self.mediaType === 'audio' && self.url !== null) {
+                    ($media as HTMLAudioElement).src = await preloadMediaBlob(self.url, self.mediaType);
                 }
 
                 self.emitter?.emit('start', self);
