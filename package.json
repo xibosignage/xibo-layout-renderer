@@ -18,7 +18,8 @@
   "files": [
     "xibo-layout-renderer.min.js",
     "xibo-layout-renderer.min.js.map",
-    "xibo-layout-renderer.d.ts"
+    "xibo-layout-renderer.d.ts",
+    "styles.css"
   ],
   "author": "Xibo Signage Ltd",
   "license": "ISC",
