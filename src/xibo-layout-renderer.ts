@@ -47,7 +47,12 @@ function XiboLayoutRenderer(
         async prepareLayoutXlf(inputLayout: ILayout, type: ELayoutType) {
             const self = this;
             // Compose layout props first
-            const newOptions: OptionsType = Object.assign({}, platform);
+            let newOptions: OptionsType = Object.assign({}, platform);
+
+            newOptions = {
+                ...newOptions,
+                ...props.options,
+            };
 
             if (inputLayout && Boolean(inputLayout.layoutId)) {
                 newOptions.xlfUrl =

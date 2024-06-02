@@ -62,7 +62,12 @@ export function initRenderingDOM(targetContainer: Element | null) {
 }
 
 export async function getXlf(layoutOptions: OptionsType) {
-    const apiHost = 'http://localhost';
+    let apiHost = window.location.origin;
+
+    if (!layoutOptions.inPreview && layoutOptions.appHost) {
+        apiHost = layoutOptions.appHost;
+    }
+
     const res = await fetch(apiHost + layoutOptions.xlfUrl, {mode: 'no-cors'});
     return await res.text();
 }

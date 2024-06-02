@@ -13,4 +13,6 @@ export const platform = {
     libraryDownloadUrl: LIBRARY_DOWNLOAD_URL,
     loaderUrl: LOADER_URL,
     idCounter: 0,
+    inPreview: true,
+    appHost: null,
 };

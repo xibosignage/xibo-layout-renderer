@@ -18,6 +18,8 @@ export type OptionsType = {
     libraryDownloadUrl: string;
     loaderUrl: string;
     idCounter: number;
+    inPreview: boolean;
+    appHost?: string | null;
 };
 
 export interface ILayout {
