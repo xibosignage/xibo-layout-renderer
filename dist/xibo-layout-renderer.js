@@ -1169,10 +1169,12 @@ var XiboLayoutRenderer = (function () {
             if ($layout !== null) {
                 $layout.remove();
             }
-            // Transition next layout to current layout and prepare next layout if exist
-            xlr.prepareLayouts().then((parent) => {
-                xlr.playSchedules(parent);
-            });
+            if (!xlr.config.inPreview) {
+                // Transition next layout to current layout and prepare next layout if exist
+                xlr.prepareLayouts().then((parent) => {
+                    xlr.playSchedules(parent);
+                });
+            }
         });
         const layoutObject = {
             ...props.layout,
