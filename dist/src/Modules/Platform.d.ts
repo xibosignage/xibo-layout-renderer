@@ -6,4 +6,6 @@ export declare const platform: {
     libraryDownloadUrl: string;
     loaderUrl: string;
     idCounter: number;
+    inPreview: boolean;
+    appHost: null;
 };

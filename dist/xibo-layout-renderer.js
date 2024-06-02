@@ -15,6 +15,8 @@ var XiboLayoutRenderer = (function () {
         libraryDownloadUrl: LIBRARY_DOWNLOAD_URL,
         loaderUrl: LOADER_URL,
         idCounter: 0,
+        inPreview: true,
+        appHost: null,
     };
 
     const initialLayout = {
@@ -1091,7 +1093,10 @@ var XiboLayoutRenderer = (function () {
         }
     }
     async function getXlf(layoutOptions) {
-        const apiHost = 'http://localhost';
+        let apiHost = window.location.origin;
+        if (!layoutOptions.inPreview && layoutOptions.appHost) {
+            apiHost = layoutOptions.appHost;
+        }
         const res = await fetch(apiHost + layoutOptions.xlfUrl, { mode: 'no-cors' });
         return await res.text();
     }
@@ -1398,7 +1403,11 @@ var XiboLayoutRenderer = (function () {
             async prepareLayoutXlf(inputLayout, type) {
                 const self = this;
                 // Compose layout props first
-                const newOptions = Object.assign({}, platform);
+                let newOptions = Object.assign({}, platform);
+                newOptions = {
+                    ...newOptions,
+                    ...props.options,
+                };
                 if (inputLayout && Boolean(inputLayout.layoutId)) {
                     newOptions.xlfUrl =
                         newOptions.xlfUrl.replace(':layoutId', inputLayout.layoutId);
