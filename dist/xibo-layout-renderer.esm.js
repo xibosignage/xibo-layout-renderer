@@ -1299,17 +1299,19 @@ function Layout(data, options, xlr, layout) {
         if (self.allEnded) {
             self.stopAllMedia().then(() => {
                 console.log('starting to end layout . . .');
-                document.getElementById('play_ended');
-                document.getElementById('screen_container');
-                // if ($preview) {
-                //     while($preview.firstChild) {
-                //         $preview.removeChild($preview.firstChild);
-                //     }
-                //     $preview.style.display = 'none';
-                // }
-                // if ($end) {
-                //     $end.style.display = 'block';
-                // }
+                if (xlr.config.inPreview) {
+                    const $end = document.getElementById('play_ended');
+                    const $preview = document.getElementById('screen_container');
+                    if ($preview) {
+                        while ($preview.firstChild) {
+                            $preview.removeChild($preview.firstChild);
+                        }
+                        $preview.style.display = 'none';
+                    }
+                    if ($end) {
+                        $end.style.display = 'block';
+                    }
+                }
                 self.emitter?.emit('end', self);
             });
         }
