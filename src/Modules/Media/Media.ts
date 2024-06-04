@@ -276,23 +276,15 @@ export default function Media(
 
     mediaObject.run = function() {
         const self = mediaObject;
-        const regionOldMedia = self.region.oldMedia;
         let transInDuration = 1;
-        let transOutDuration = 1;
 
         if (Boolean(self.options['transinduration'])) {
             transInDuration = Number(self.options.transinduration);
         }
 
-        if (regionOldMedia && Boolean(regionOldMedia.options['transoutduration'])) {
-            transOutDuration = Number(regionOldMedia.options.transoutduration);
-        }
-
         let defaultTransInOptions: TransitionElementOptions = {duration: transInDuration};
-        let defaultTransOutOptions: TransitionElementOptions = {duration: transOutDuration};
         let transIn = transitionElement('defaultIn', {duration: defaultTransInOptions.duration});
-        let transOut = transitionElement('defaultOut', {duration: defaultTransOutOptions.duration});
-
+        
         if (Boolean(self.options['transin'])) {
             let transInName = self.options['transin'];
 
@@ -307,22 +299,6 @@ export default function Media(
             }
 
             transIn = transitionElement(transInName, defaultTransInOptions);
-        }
-
-        if (regionOldMedia && Boolean(regionOldMedia.options['transout'])) {
-            let transOutName = regionOldMedia.options['transout'];
-
-            if (transOutName === 'fly') {
-                transOutName = `${transOutName}Out`;
-                defaultTransOutOptions.keyframes = flyTransitionKeyframes({
-                    trans: 'out',
-                    direction: 'NE',
-                    height: regionOldMedia.divHeight,
-                    width: regionOldMedia.divWidth,
-                });
-            }
-            
-            transOut = transitionElement(transOutName, defaultTransOutOptions);
         }
 
         const showCurrentMedia = async () => {
@@ -349,33 +325,6 @@ export default function Media(
                 self.emitter?.emit('start', self);
             }
         };
-        const hideOldMedia = new Promise((resolve) => {
-            // Hide oldMedia
-            if (regionOldMedia) {
-                const $oldMedia = document.getElementById(getMediaId(regionOldMedia));
-                if ($oldMedia) {
-                    const removeOldMedia = () => {
-                        $oldMedia.style.display = 'none';
-                        $oldMedia.remove();
-                    };
-
-                    if (Boolean(regionOldMedia.options['transout'])) {
-                        $oldMedia.animate(transOut.keyframes, transOut.timing);
-                    }
-
-                    // Resolve this right away
-                    // As a result, the transition between two media object
-                    // seems like a cross-over
-                    resolve(true);
-
-                    if (Boolean(regionOldMedia.options['transout'])) {
-                        setTimeout(removeOldMedia, transOutDuration);
-                    } else {
-                        removeOldMedia();
-                    }
-                }
-            }
-        });
         const getNewMedia = (): HTMLElement | null => {
             const $region = document.getElementById(`${self.region.containerName}`);
             // This function is for checking whether
@@ -392,15 +341,7 @@ export default function Media(
             return null;
         };
 
-        if (regionOldMedia) {
-            hideOldMedia.then((isDone) => {
-                if (isDone) {
-                    showCurrentMedia();
-                }
-            });
-        } else {
-            showCurrentMedia();
-        }
+        showCurrentMedia();
     };
 
     mediaObject.stop = async function() {

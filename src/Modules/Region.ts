@@ -2,9 +2,10 @@ import { createNanoEvents } from "nanoevents";
 import {ILayout, OptionsType} from "../Types/Layout.types";
 import {initialRegion, IRegion, IRegionEvents} from "../Types/Region.types";
 import {IMedia} from "../Types/Media.types";
-import {nextId} from "./Generators";
+import {getMediaId, nextId} from "./Generators";
 import { platform } from "./Platform";
 import Media from "./Media/Media";
+import { TransitionElementOptions, TransitionNameType, flyTransitionKeyframes, transitionElement } from "./Transitions";
 
 export default function Region(
     layout: ILayout,
@@ -155,8 +156,94 @@ export default function Region(
     };
 
     regionObject.transitionNodes = function(oldMedia: IMedia | undefined, newMedia: IMedia | undefined) {
+        const self = regionObject;
+        let transOutDuration = 1;
+
         if (newMedia) {
-            newMedia.run();
+            if (oldMedia && Boolean(oldMedia.options['transoutduration'])) {
+                transOutDuration = Number(oldMedia.options.transoutduration);
+            }
+    
+            let defaultTransOutOptions: TransitionElementOptions = {duration: transOutDuration};
+            let transOut = transitionElement('defaultOut', {duration: defaultTransOutOptions.duration});
+    
+            let transOutName: TransitionNameType | string;
+            if (oldMedia && Boolean(oldMedia.options['transout'])) {
+                transOutName = oldMedia.options['transout'];
+    
+                if (transOutName === 'fly') {
+                    transOutName = `${transOutName}Out`;
+                    defaultTransOutOptions.keyframes = flyTransitionKeyframes({
+                        trans: 'out',
+                        direction: 'NE',
+                        height: oldMedia.divHeight,
+                        width: oldMedia.divWidth,
+                    });
+                }
+                
+                transOut = transitionElement(transOutName as TransitionNameType, defaultTransOutOptions);
+            }
+            
+            const hideOldMedia = new Promise((resolve) => {
+                // Hide oldMedia
+                if (oldMedia) {
+                    const $oldMedia = document.getElementById(getMediaId(oldMedia));
+                    if ($oldMedia) {
+                        const removeOldMedia = () => {
+                            $oldMedia.style.display = 'none';
+                            $oldMedia.remove();
+                        };
+
+                        let oldMediaAnimate = null;
+                        if (Boolean(oldMedia.options['transout'])) {
+                            oldMediaAnimate = $oldMedia.animate(transOut.keyframes, transOut.timing);
+                        }
+
+                        // Reset last item to original position and state
+                        // when region.completed = true
+                        if (self.mediaObjects.length === 2 &&
+                            self.currentMediaIndex === self.mediaObjects.length - 1 &&
+                            oldMediaAnimate !== null &&
+                            (transOutName && transOutName === 'flyOut')
+                        ) {
+                            oldMediaAnimate.onfinish = (ev) => {
+                                const resetTransOptions = {
+                                    keyframes: flyTransitionKeyframes({
+                                        trans: 'out',
+                                        direction: 'RESET',
+                                        height: 0,
+                                        width: 0,
+                                    }),
+                                    duration: transOutDuration,
+                                };
+                                const resetTrans = transitionElement(transOutName, resetTransOptions);
+                                $oldMedia.animate(resetTrans.keyframes, resetTrans.timing);
+                            };
+                        }
+
+                        // Resolve this right away
+                        // As a result, the transition between two media object
+                        // seems like a cross-over
+                        resolve(true);
+
+                        if (Boolean(oldMedia.options['transout'])) {
+                            setTimeout(removeOldMedia, transOutDuration);
+                        } else {
+                            removeOldMedia();
+                        }
+                    }
+                }
+            });
+    
+            if (oldMedia) {
+                hideOldMedia.then((isDone) => {
+                    if (isDone) {
+                        newMedia.run();
+                    }
+                });
+            } else {
+                newMedia.run();
+            }
         }
     };
 
@@ -174,6 +261,14 @@ export default function Region(
             if (self.layout.allEnded) {
                 return;
             }
+        }
+
+        // When the region is has completed and when currentMedia is html
+        // Then, preserve the currentMedia state
+        if (self.complete &&
+            self.curMedia?.render === 'html'
+        ) {
+            return;
         }
 
         self.currentMediaIndex = self.currentMediaIndex + 1;

@@ -123,7 +123,7 @@ export const transitionElement = (transition: TransitionNameType, options: Trans
     return transitions[transition];
 };
 
-export type compassPoints = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
+export type compassPoints = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | 'RESET';
 
 export type flyTransitionParams = {
     trans: 'in' | 'out';
@@ -232,6 +232,18 @@ export const flyTransitionKeyframes = (params: flyTransitionParams): KeyframeOpt
                 opacity: opacityAttr('to'),
                 top: params.trans === 'in' ? 0 : `-${params.height}px`,
                 left: params.trans === 'in' ? 0 : `-${params.width}px`,
+            };
+            break;
+        case 'RESET':
+            keyframes.from = {
+                opacity: 0,
+                top: 0,
+                left: 0,
+            };
+            keyframes.to = {
+                opacity: 0,
+                top: 0,
+                left: 0,
             };
             break;
         default:
