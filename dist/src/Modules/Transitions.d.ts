@@ -68,7 +68,7 @@ export declare const transitionElement: (transition: TransitionNameType, options
     }[];
     timing: KeyframeAnimationOptions;
 };
-export type compassPoints = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
+export type compassPoints = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | 'RESET';
 export type flyTransitionParams = {
     trans: 'in' | 'out';
     direction: compassPoints;

@@ -422,6 +422,18 @@ const flyTransitionKeyframes = (params) => {
                 left: params.trans === 'in' ? 0 : `-${params.width}px`,
             };
             break;
+        case 'RESET':
+            keyframes.from = {
+                opacity: 0,
+                top: 0,
+                left: 0,
+            };
+            keyframes.to = {
+                opacity: 0,
+                top: 0,
+                left: 0,
+            };
+            break;
         default:
             keyframes.from = {
                 opacity: opacityAttr('from'),
@@ -764,19 +776,12 @@ function Media(region, mediaId, xml, options) {
     };
     mediaObject.run = function () {
         const self = mediaObject;
-        const regionOldMedia = self.region.oldMedia;
         let transInDuration = 1;
-        let transOutDuration = 1;
         if (Boolean(self.options['transinduration'])) {
             transInDuration = Number(self.options.transinduration);
         }
-        if (regionOldMedia && Boolean(regionOldMedia.options['transoutduration'])) {
-            transOutDuration = Number(regionOldMedia.options.transoutduration);
-        }
         let defaultTransInOptions = { duration: transInDuration };
-        let defaultTransOutOptions = { duration: transOutDuration };
         let transIn = transitionElement('defaultIn', { duration: defaultTransInOptions.duration });
-        let transOut = transitionElement('defaultOut', { duration: defaultTransOutOptions.duration });
         if (Boolean(self.options['transin'])) {
             let transInName = self.options['transin'];
             if (transInName === 'fly') {
@@ -789,19 +794,6 @@ function Media(region, mediaId, xml, options) {
                 });
             }
             transIn = transitionElement(transInName, defaultTransInOptions);
-        }
-        if (regionOldMedia && Boolean(regionOldMedia.options['transout'])) {
-            let transOutName = regionOldMedia.options['transout'];
-            if (transOutName === 'fly') {
-                transOutName = `${transOutName}Out`;
-                defaultTransOutOptions.keyframes = flyTransitionKeyframes({
-                    trans: 'out',
-                    direction: 'NE',
-                    height: regionOldMedia.divHeight,
-                    width: regionOldMedia.divWidth,
-                });
-            }
-            transOut = transitionElement(transOutName, defaultTransOutOptions);
         }
         const showCurrentMedia = async () => {
             let $mediaId = getMediaId(self);
@@ -823,31 +815,6 @@ function Media(region, mediaId, xml, options) {
                 self.emitter?.emit('start', self);
             }
         };
-        const hideOldMedia = new Promise((resolve) => {
-            // Hide oldMedia
-            if (regionOldMedia) {
-                const $oldMedia = document.getElementById(getMediaId(regionOldMedia));
-                if ($oldMedia) {
-                    const removeOldMedia = () => {
-                        $oldMedia.style.display = 'none';
-                        $oldMedia.remove();
-                    };
-                    if (Boolean(regionOldMedia.options['transout'])) {
-                        $oldMedia.animate(transOut.keyframes, transOut.timing);
-                    }
-                    // Resolve this right away
-                    // As a result, the transition between two media object
-                    // seems like a cross-over
-                    resolve(true);
-                    if (Boolean(regionOldMedia.options['transout'])) {
-                        setTimeout(removeOldMedia, transOutDuration);
-                    }
-                    else {
-                        removeOldMedia();
-                    }
-                }
-            }
-        });
         const getNewMedia = () => {
             const $region = document.getElementById(`${self.region.containerName}`);
             // This function is for checking whether
@@ -860,16 +827,7 @@ function Media(region, mediaId, xml, options) {
             }
             return null;
         };
-        if (regionOldMedia) {
-            hideOldMedia.then((isDone) => {
-                if (isDone) {
-                    showCurrentMedia();
-                }
-            });
-        }
-        else {
-            showCurrentMedia();
-        }
+        showCurrentMedia();
     };
     mediaObject.stop = async function () {
         const self = mediaObject;
@@ -997,8 +955,84 @@ function Region(layout, xml, regionId, options) {
         }
     };
     regionObject.transitionNodes = function (oldMedia, newMedia) {
+        const self = regionObject;
+        let transOutDuration = 1;
         if (newMedia) {
-            newMedia.run();
+            if (oldMedia && Boolean(oldMedia.options['transoutduration'])) {
+                transOutDuration = Number(oldMedia.options.transoutduration);
+            }
+            let defaultTransOutOptions = { duration: transOutDuration };
+            let transOut = transitionElement('defaultOut', { duration: defaultTransOutOptions.duration });
+            let transOutName;
+            if (oldMedia && Boolean(oldMedia.options['transout'])) {
+                transOutName = oldMedia.options['transout'];
+                if (transOutName === 'fly') {
+                    transOutName = `${transOutName}Out`;
+                    defaultTransOutOptions.keyframes = flyTransitionKeyframes({
+                        trans: 'out',
+                        direction: 'NE',
+                        height: oldMedia.divHeight,
+                        width: oldMedia.divWidth,
+                    });
+                }
+                transOut = transitionElement(transOutName, defaultTransOutOptions);
+            }
+            const hideOldMedia = new Promise((resolve) => {
+                // Hide oldMedia
+                if (oldMedia) {
+                    const $oldMedia = document.getElementById(getMediaId(oldMedia));
+                    if ($oldMedia) {
+                        const removeOldMedia = () => {
+                            $oldMedia.style.display = 'none';
+                            $oldMedia.remove();
+                        };
+                        let oldMediaAnimate = null;
+                        if (Boolean(oldMedia.options['transout'])) {
+                            oldMediaAnimate = $oldMedia.animate(transOut.keyframes, transOut.timing);
+                        }
+                        // Reset last item to original position and state
+                        // when region.completed = true
+                        if (self.mediaObjects.length === 2 &&
+                            self.currentMediaIndex === self.mediaObjects.length - 1 &&
+                            oldMediaAnimate !== null &&
+                            (transOutName && transOutName === 'flyOut')) {
+                            oldMediaAnimate.onfinish = (ev) => {
+                                const resetTransOptions = {
+                                    keyframes: flyTransitionKeyframes({
+                                        trans: 'out',
+                                        direction: 'RESET',
+                                        height: 0,
+                                        width: 0,
+                                    }),
+                                    duration: transOutDuration,
+                                };
+                                const resetTrans = transitionElement(transOutName, resetTransOptions);
+                                $oldMedia.animate(resetTrans.keyframes, resetTrans.timing);
+                            };
+                        }
+                        // Resolve this right away
+                        // As a result, the transition between two media object
+                        // seems like a cross-over
+                        resolve(true);
+                        if (Boolean(oldMedia.options['transout'])) {
+                            setTimeout(removeOldMedia, transOutDuration);
+                        }
+                        else {
+                            removeOldMedia();
+                        }
+                    }
+                }
+            });
+            if (oldMedia) {
+                hideOldMedia.then((isDone) => {
+                    if (isDone) {
+                        newMedia.run();
+                    }
+                });
+            }
+            else {
+                newMedia.run();
+            }
         }
     };
     regionObject.playNextMedia = function () {
@@ -1012,6 +1046,12 @@ function Region(layout, xml, regionId, options) {
             if (self.layout.allEnded) {
                 return;
             }
+        }
+        // When the region is has completed and when currentMedia is html
+        // Then, preserve the currentMedia state
+        if (self.complete &&
+            self.curMedia?.render === 'html') {
+            return;
         }
         self.currentMediaIndex = self.currentMediaIndex + 1;
         self.prepareMediaObjects();
