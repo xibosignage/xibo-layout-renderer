@@ -1,6 +1,26 @@
 var XiboLayoutRenderer = (function () {
     'use strict';
 
+    /*
+     * Copyright (C) 2024 Xibo Signage Ltd
+     *
+     * Xibo - Digital Signage - http://www.xibo.org.uk
+     *
+     * This file is part of Xibo.
+     *
+     * Xibo is free software: you can redistribute it and/or modify
+     * it under the terms of the GNU Lesser General Public License as published by
+     * the Free Software Foundation, either version 3 of the License, or
+     * any later version.
+     *
+     * Xibo is distributed in the hope that it will be useful,
+     * but WITHOUT ANY WARRANTY; without even the implied warranty of
+     * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     * GNU Lesser General Public License for more details.
+     *
+     * You should have received a copy of the GNU Lesser General Public License
+     * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+     */
     const RESOURCE_URL = '/playlist/widget/resource/:regionId/:id';
     const XLF_URL = '/layout/xlf/:layoutId';
     const LAYOUT_BACKGROUND_DOWNLOAD_URL = '/layout/background/:id';
@@ -233,6 +253,26 @@ var XiboLayoutRenderer = (function () {
         },
     };
 
+    /*
+     * Copyright (C) 2024 Xibo Signage Ltd
+     *
+     * Xibo - Digital Signage - http://www.xibo.org.uk
+     *
+     * This file is part of Xibo.
+     *
+     * Xibo is free software: you can redistribute it and/or modify
+     * it under the terms of the GNU Lesser General Public License as published by
+     * the Free Software Foundation, either version 3 of the License, or
+     * any later version.
+     *
+     * Xibo is distributed in the hope that it will be useful,
+     * but WITHOUT ANY WARRANTY; without even the implied warranty of
+     * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     * GNU Lesser General Public License for more details.
+     *
+     * You should have received a copy of the GNU Lesser General Public License
+     * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+     */
     const defaultTrans = (duration, trans) => {
         const defaultKeyframes = [
             { display: trans === 'in' ? 'none' : 'block' },
@@ -263,7 +303,7 @@ var XiboLayoutRenderer = (function () {
     const fadeOutElem = (duration) => {
         const fadeOutKeyframes = [
             { opacity: 1 },
-            { opacity: 0 },
+            { opacity: 0, zIndex: -1 },
         ];
         const fadeOutTiming = {
             duration,
@@ -277,7 +317,7 @@ var XiboLayoutRenderer = (function () {
     const flyInElem = (duration, keyframeOptions, direction) => {
         const flyInKeyframes = [
             { opacity: 0 },
-            { opacity: 1 },
+            { opacity: 1, zIndex: 1 },
         ];
         const flyInTiming = {
             duration,
@@ -297,7 +337,7 @@ var XiboLayoutRenderer = (function () {
     const flyOutElem = (duration, keyframeOptions, direction) => {
         const flyOutKeyframes = [
             { opacity: 1 },
-            { opacity: 0 },
+            { opacity: 0, zIndex: -1 },
         ];
         const flyOutTiming = {
             duration,
@@ -425,18 +465,6 @@ var XiboLayoutRenderer = (function () {
                     left: params.trans === 'in' ? 0 : `-${params.width}px`,
                 };
                 break;
-            case 'RESET':
-                keyframes.from = {
-                    opacity: 0,
-                    top: 0,
-                    left: 0,
-                };
-                keyframes.to = {
-                    opacity: 0,
-                    top: 0,
-                    left: 0,
-                };
-                break;
             default:
                 keyframes.from = {
                     opacity: opacityAttr('from'),
@@ -552,6 +580,26 @@ var XiboLayoutRenderer = (function () {
         return audioMediaObject;
     }
 
+    /*
+     * Copyright (C) 2024 Xibo Signage Ltd
+     *
+     * Xibo - Digital Signage - http://www.xibo.org.uk
+     *
+     * This file is part of Xibo.
+     *
+     * Xibo is free software: you can redistribute it and/or modify
+     * it under the terms of the GNU Lesser General Public License as published by
+     * the Free Software Foundation, either version 3 of the License, or
+     * any later version.
+     *
+     * Xibo is distributed in the hope that it will be useful,
+     * but WITHOUT ANY WARRANTY; without even the implied warranty of
+     * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     * GNU Lesser General Public License for more details.
+     *
+     * You should have received a copy of the GNU Lesser General Public License
+     * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+     */
     function Media(region, mediaId, xml, options) {
         const props = {
             region: region,
@@ -780,8 +828,12 @@ var XiboLayoutRenderer = (function () {
         mediaObject.run = function () {
             const self = mediaObject;
             let transInDuration = 1;
+            let transInDirection = 'E';
             if (Boolean(self.options['transinduration'])) {
                 transInDuration = Number(self.options.transinduration);
+            }
+            if (Boolean(self.options['transindirection'])) {
+                transInDirection = self.options.transindirection;
             }
             let defaultTransInOptions = { duration: transInDuration };
             let transIn = transitionElement('defaultIn', { duration: defaultTransInOptions.duration });
@@ -791,7 +843,7 @@ var XiboLayoutRenderer = (function () {
                     transInName = `${transInName}In`;
                     defaultTransInOptions.keyframes = flyTransitionKeyframes({
                         trans: 'in',
-                        direction: 'NE',
+                        direction: transInDirection,
                         height: self.divHeight,
                         width: self.divWidth,
                     });
@@ -805,7 +857,7 @@ var XiboLayoutRenderer = (function () {
                     $media = getNewMedia();
                 }
                 if ($media !== null) {
-                    $media.style.display = 'block';
+                    $media.style.setProperty('display', 'block');
                     if (Boolean(self.options['transin'])) {
                         $media.animate(transIn.keyframes, transIn.timing);
                     }
@@ -848,6 +900,26 @@ var XiboLayoutRenderer = (function () {
         return mediaObject;
     }
 
+    /*
+     * Copyright (C) 2024 Xibo Signage Ltd
+     *
+     * Xibo - Digital Signage - http://www.xibo.org.uk
+     *
+     * This file is part of Xibo.
+     *
+     * Xibo is free software: you can redistribute it and/or modify
+     * it under the terms of the GNU Lesser General Public License as published by
+     * the Free Software Foundation, either version 3 of the License, or
+     * any later version.
+     *
+     * Xibo is distributed in the hope that it will be useful,
+     * but WITHOUT ANY WARRANTY; without even the implied warranty of
+     * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     * GNU Lesser General Public License for more details.
+     *
+     * You should have received a copy of the GNU Lesser General Public License
+     * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+     */
     function Region(layout, xml, regionId, options) {
         const props = {
             layout: layout,
@@ -960,9 +1032,16 @@ var XiboLayoutRenderer = (function () {
         regionObject.transitionNodes = function (oldMedia, newMedia) {
             const self = regionObject;
             let transOutDuration = 1;
+            let transOutDirection = 'E';
             if (newMedia) {
+                console.log({
+                    regionComplete: newMedia?.region.complete,
+                });
                 if (oldMedia && Boolean(oldMedia.options['transoutduration'])) {
                     transOutDuration = Number(oldMedia.options.transoutduration);
+                }
+                if (oldMedia && Boolean(oldMedia.options['transoutdirection'])) {
+                    transOutDirection = oldMedia.options.transoutdirection;
                 }
                 let defaultTransOutOptions = { duration: transOutDuration };
                 let transOut = transitionElement('defaultOut', { duration: defaultTransOutOptions.duration });
@@ -973,7 +1052,7 @@ var XiboLayoutRenderer = (function () {
                         transOutName = `${transOutName}Out`;
                         defaultTransOutOptions.keyframes = flyTransitionKeyframes({
                             trans: 'out',
-                            direction: 'NE',
+                            direction: transOutDirection,
                             height: oldMedia.divHeight,
                             width: oldMedia.divWidth,
                         });
@@ -986,42 +1065,34 @@ var XiboLayoutRenderer = (function () {
                         const $oldMedia = document.getElementById(getMediaId(oldMedia));
                         if ($oldMedia) {
                             const removeOldMedia = () => {
-                                $oldMedia.style.display = 'none';
+                                $oldMedia.style.setProperty('display', 'none');
                                 $oldMedia.remove();
                             };
                             let oldMediaAnimate = null;
                             if (Boolean(oldMedia.options['transout'])) {
                                 oldMediaAnimate = $oldMedia.animate(transOut.keyframes, transOut.timing);
                             }
-                            // Reset last item to original position and state
-                            // when region.completed = true
-                            if (self.mediaObjects.length === 2 &&
-                                self.currentMediaIndex === self.mediaObjects.length - 1 &&
-                                oldMediaAnimate !== null &&
-                                (transOutName && transOutName === 'flyOut')) {
-                                oldMediaAnimate.onfinish = (ev) => {
-                                    const resetTransOptions = {
-                                        keyframes: flyTransitionKeyframes({
-                                            trans: 'out',
-                                            direction: 'RESET',
-                                            height: 0,
-                                            width: 0,
-                                        }),
-                                        duration: transOutDuration,
-                                    };
-                                    const resetTrans = transitionElement(transOutName, resetTransOptions);
-                                    $oldMedia.animate(resetTrans.keyframes, resetTrans.timing);
-                                };
-                            }
-                            // Resolve this right away
-                            // As a result, the transition between two media object
-                            // seems like a cross-over
-                            resolve(true);
-                            if (Boolean(oldMedia.options['transout'])) {
-                                setTimeout(removeOldMedia, transOutDuration);
+                            if (Boolean(oldMedia.options['transout']) && self.totalMediaObjects > 1) {
+                                if (transOutName === 'flyOut') {
+                                    // Reset last item to original position and state
+                                    oldMediaAnimate?.finished
+                                        .then(() => {
+                                        resolve(true);
+                                        oldMediaAnimate?.effect?.updateTiming({ fill: 'none' });
+                                        removeOldMedia();
+                                    });
+                                }
+                                else {
+                                    setTimeout(removeOldMedia, transOutDuration / 2);
+                                    resolve(true);
+                                }
                             }
                             else {
                                 removeOldMedia();
+                                // Resolve this right away
+                                // As a result, the transition between two media object
+                                // seems like a cross-over
+                                resolve(true);
                             }
                         }
                     }
@@ -1050,10 +1121,19 @@ var XiboLayoutRenderer = (function () {
                     return;
                 }
             }
-            // When the region is has completed and when currentMedia is html
+            // When the region has completed and when currentMedia is html
             // Then, preserve the currentMedia state
             if (self.complete &&
                 self.curMedia?.render === 'html') {
+                return;
+            }
+            // When the region has completed and mediaObjects.length = 1
+            // and curMedia.loop = false, then put the media on
+            // its current state
+            if (self.complete && self.mediaObjects.length === 1 &&
+                self.curMedia?.render !== 'html' &&
+                self.curMedia?.mediaType === 'image' &&
+                !self.curMedia?.loop) {
                 return;
             }
             self.currentMediaIndex = self.currentMediaIndex + 1;
@@ -1094,6 +1174,26 @@ var XiboLayoutRenderer = (function () {
         return regionObject;
     }
 
+    /*
+     * Copyright (C) 2024 Xibo Signage Ltd
+     *
+     * Xibo - Digital Signage - http://www.xibo.org.uk
+     *
+     * This file is part of Xibo.
+     *
+     * Xibo is free software: you can redistribute it and/or modify
+     * it under the terms of the GNU Lesser General Public License as published by
+     * the Free Software Foundation, either version 3 of the License, or
+     * any later version.
+     *
+     * Xibo is distributed in the hope that it will be useful,
+     * but WITHOUT ANY WARRANTY; without even the implied warranty of
+     * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     * GNU Lesser General Public License for more details.
+     *
+     * You should have received a copy of the GNU Lesser General Public License
+     * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+     */
     function initRenderingDOM(targetContainer) {
         let _targetContainer = targetContainer;
         const previewPlayer = document.createElement('div');
@@ -1412,6 +1512,26 @@ var XiboLayoutRenderer = (function () {
         }
     };
 
+    /*
+     * Copyright (C) 2024 Xibo Signage Ltd
+     *
+     * Xibo - Digital Signage - http://www.xibo.org.uk
+     *
+     * This file is part of Xibo.
+     *
+     * Xibo is free software: you can redistribute it and/or modify
+     * it under the terms of the GNU Lesser General Public License as published by
+     * the Free Software Foundation, either version 3 of the License, or
+     * any later version.
+     *
+     * Xibo is distributed in the hope that it will be useful,
+     * but WITHOUT ANY WARRANTY; without even the implied warranty of
+     * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     * GNU Lesser General Public License for more details.
+     *
+     * You should have received a copy of the GNU Lesser General Public License
+     * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+     */
     function XiboLayoutRenderer(inputLayouts, options) {
         const props = {
             inputLayouts,

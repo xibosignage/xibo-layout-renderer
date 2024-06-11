@@ -11,9 +11,13 @@ export declare const fadeInElem: (duration: number) => {
     timing: KeyframeAnimationOptions;
 };
 export declare const fadeOutElem: (duration: number) => {
-    keyframes: {
+    keyframes: ({
         opacity: number;
-    }[];
+        zIndex?: undefined;
+    } | {
+        opacity: number;
+        zIndex: number;
+    })[];
     timing: KeyframeAnimationOptions;
 };
 export type KeyframeOptionsType = {
@@ -25,15 +29,17 @@ export type KeyframeOptionsType = {
     };
 };
 export declare const flyInElem: (duration: number, keyframeOptions: KeyframeOptionsType | undefined, direction?: string) => {
-    keyframes: {
+    keyframes: ({
         opacity: number;
-    }[];
+        zIndex?: undefined;
+    } | {
+        opacity: number;
+        zIndex: number;
+    })[];
     timing: KeyframeAnimationOptions;
 };
 export declare const flyOutElem: (duration: number, keyframeOptions: KeyframeOptionsType | undefined, direction?: string) => {
-    keyframes: {
-        opacity: number;
-    }[];
+    keyframes: Keyframe[];
     timing: KeyframeAnimationOptions;
 };
 export type TransitionNameType = 'fadeIn' | 'fadeOut' | 'flyIn' | 'flyOut' | 'defaultIn' | 'defaultOut';
@@ -53,22 +59,28 @@ export declare const transitionElement: (transition: TransitionNameType, options
     }[];
     timing: KeyframeAnimationOptions;
 } | {
-    keyframes: {
+    keyframes: ({
         opacity: number;
-    }[];
+        zIndex?: undefined;
+    } | {
+        opacity: number;
+        zIndex: number;
+    })[];
     timing: KeyframeAnimationOptions;
 } | {
-    keyframes: {
+    keyframes: ({
         opacity: number;
-    }[];
+        zIndex?: undefined;
+    } | {
+        opacity: number;
+        zIndex: number;
+    })[];
     timing: KeyframeAnimationOptions;
 } | {
-    keyframes: {
-        opacity: number;
-    }[];
+    keyframes: Keyframe[];
     timing: KeyframeAnimationOptions;
 };
-export type compassPoints = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | 'RESET';
+export type compassPoints = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
 export type flyTransitionParams = {
     trans: 'in' | 'out';
     direction: compassPoints;
