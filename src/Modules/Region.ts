@@ -1,3 +1,23 @@
+/*
+ * Copyright (C) 2024 Xibo Signage Ltd
+ *
+ * Xibo - Digital Signage - http://www.xibo.org.uk
+ *
+ * This file is part of Xibo.
+ *
+ * Xibo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * Xibo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+ */
 import { createNanoEvents } from "nanoevents";
 import {ILayout, OptionsType} from "../Types/Layout.types";
 import {initialRegion, IRegion, IRegionEvents} from "../Types/Region.types";
@@ -5,7 +25,7 @@ import {IMedia} from "../Types/Media.types";
 import {getMediaId, nextId} from "./Generators";
 import { platform } from "./Platform";
 import Media from "./Media/Media";
-import { TransitionElementOptions, TransitionNameType, flyTransitionKeyframes, transitionElement } from "./Transitions";
+import { TransitionElementOptions, TransitionNameType, compassPoints, flyTransitionKeyframes, transitionElement } from "./Transitions";
 
 export default function Region(
     layout: ILayout,
@@ -158,10 +178,18 @@ export default function Region(
     regionObject.transitionNodes = function(oldMedia: IMedia | undefined, newMedia: IMedia | undefined) {
         const self = regionObject;
         let transOutDuration = 1;
+        let transOutDirection: compassPoints = 'E';
 
         if (newMedia) {
+            console.log({
+                regionComplete: newMedia?.region.complete,
+            });
             if (oldMedia && Boolean(oldMedia.options['transoutduration'])) {
                 transOutDuration = Number(oldMedia.options.transoutduration);
+            }
+
+            if (oldMedia && Boolean(oldMedia.options['transoutdirection'])) {
+                transOutDirection = oldMedia.options.transoutdirection;
             }
     
             let defaultTransOutOptions: TransitionElementOptions = {duration: transOutDuration};
@@ -175,7 +203,7 @@ export default function Region(
                     transOutName = `${transOutName}Out`;
                     defaultTransOutOptions.keyframes = flyTransitionKeyframes({
                         trans: 'out',
-                        direction: 'NE',
+                        direction: transOutDirection,
                         height: oldMedia.divHeight,
                         width: oldMedia.divWidth,
                     });
@@ -190,7 +218,7 @@ export default function Region(
                     const $oldMedia = document.getElementById(getMediaId(oldMedia));
                     if ($oldMedia) {
                         const removeOldMedia = () => {
-                            $oldMedia.style.display = 'none';
+                            $oldMedia.style.setProperty('display', 'none');
                             $oldMedia.remove();
                         };
 
@@ -199,37 +227,26 @@ export default function Region(
                             oldMediaAnimate = $oldMedia.animate(transOut.keyframes, transOut.timing);
                         }
 
-                        // Reset last item to original position and state
-                        // when region.completed = true
-                        if (self.mediaObjects.length === 2 &&
-                            self.currentMediaIndex === self.mediaObjects.length - 1 &&
-                            oldMediaAnimate !== null &&
-                            (transOutName && transOutName === 'flyOut')
-                        ) {
-                            oldMediaAnimate.onfinish = (ev) => {
-                                const resetTransOptions = {
-                                    keyframes: flyTransitionKeyframes({
-                                        trans: 'out',
-                                        direction: 'RESET',
-                                        height: 0,
-                                        width: 0,
-                                    }),
-                                    duration: transOutDuration,
-                                };
-                                const resetTrans = transitionElement(transOutName, resetTransOptions);
-                                $oldMedia.animate(resetTrans.keyframes, resetTrans.timing);
-                            };
-                        }
-
-                        // Resolve this right away
-                        // As a result, the transition between two media object
-                        // seems like a cross-over
-                        resolve(true);
-
-                        if (Boolean(oldMedia.options['transout'])) {
-                            setTimeout(removeOldMedia, transOutDuration);
+                        if (Boolean(oldMedia.options['transout']) && self.totalMediaObjects > 1) {
+                            if (transOutName === 'flyOut') {
+                                // Reset last item to original position and state
+                                oldMediaAnimate?.finished
+                                    .then(() => {
+                                        resolve(true);
+                                        oldMediaAnimate?.effect?.updateTiming({fill: 'none'});
+                                        removeOldMedia();
+                                    });
+                            } else {
+                                setTimeout(removeOldMedia, transOutDuration / 2);
+                                resolve(true);
+                            }
                         } else {
                             removeOldMedia();
+                            // Resolve this right away
+                            // As a result, the transition between two media object
+                            // seems like a cross-over
+                            resolve(true);
+    
                         }
                     }
                 }
@@ -263,10 +280,21 @@ export default function Region(
             }
         }
 
-        // When the region is has completed and when currentMedia is html
+        // When the region has completed and when currentMedia is html
         // Then, preserve the currentMedia state
         if (self.complete &&
             self.curMedia?.render === 'html'
+        ) {
+            return;
+        }
+
+        // When the region has completed and mediaObjects.length = 1
+        // and curMedia.loop = false, then put the media on
+        // its current state
+        if (self.complete && self.mediaObjects.length === 1 &&
+            self.curMedia?.render !== 'html' &&
+            self.curMedia?.mediaType === 'image' &&
+            !self.curMedia?.loop
         ) {
             return;
         }

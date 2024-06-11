@@ -1,3 +1,23 @@
+/*
+ * Copyright (C) 2024 Xibo Signage Ltd
+ *
+ * Xibo - Digital Signage - http://www.xibo.org.uk
+ *
+ * This file is part of Xibo.
+ *
+ * Xibo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * Xibo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+ */
 export const defaultTrans = (duration: number, trans: 'in' | 'out') => {
     const defaultKeyframes = [
         { display: trans === 'in' ? 'none' : 'block' },
@@ -32,7 +52,7 @@ export const fadeInElem = (duration: number) => {
 export const fadeOutElem = (duration: number) => {
     const fadeOutKeyframes = [
         { opacity: 1 },
-        { opacity: 0 },
+        { opacity: 0, zIndex: -1 },
     ];
     const fadeOutTiming: number | KeyframeAnimationOptions | undefined = {
         duration,
@@ -57,7 +77,7 @@ export type KeyframeOptionsType = {
 export const flyInElem = (duration: number, keyframeOptions: KeyframeOptionsType | undefined, direction?: string) => {
     const flyInKeyframes = [
         {opacity: 0},
-        {opacity: 1},
+        {opacity: 1, zIndex: 1},
     ];
     const flyInTiming: number | KeyframeAnimationOptions | undefined = {
         duration,
@@ -79,9 +99,9 @@ export const flyInElem = (duration: number, keyframeOptions: KeyframeOptionsType
 };
 
 export const flyOutElem = (duration: number, keyframeOptions: KeyframeOptionsType | undefined, direction?: string) => {
-    const flyOutKeyframes = [
+    const flyOutKeyframes: Keyframe[] = [
         {opacity: 1},
-        {opacity: 0},
+        {opacity: 0, zIndex: -1},
     ];
     const flyOutTiming: number | KeyframeAnimationOptions | undefined = {
         duration,
@@ -123,7 +143,7 @@ export const transitionElement = (transition: TransitionNameType, options: Trans
     return transitions[transition];
 };
 
-export type compassPoints = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | 'RESET';
+export type compassPoints = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
 
 export type flyTransitionParams = {
     trans: 'in' | 'out';
@@ -232,18 +252,6 @@ export const flyTransitionKeyframes = (params: flyTransitionParams): KeyframeOpt
                 opacity: opacityAttr('to'),
                 top: params.trans === 'in' ? 0 : `-${params.height}px`,
                 left: params.trans === 'in' ? 0 : `-${params.width}px`,
-            };
-            break;
-        case 'RESET':
-            keyframes.from = {
-                opacity: 0,
-                top: 0,
-                left: 0,
-            };
-            keyframes.to = {
-                opacity: 0,
-                top: 0,
-                left: 0,
             };
             break;
         default:

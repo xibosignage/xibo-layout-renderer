@@ -1,9 +1,29 @@
+/*
+ * Copyright (C) 2024 Xibo Signage Ltd
+ *
+ * Xibo - Digital Signage - http://www.xibo.org.uk
+ *
+ * This file is part of Xibo.
+ *
+ * Xibo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * Xibo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+ */
 import { createNanoEvents } from "nanoevents";
 import {OptionsType} from "../../Types/Layout.types";
 import {IRegion} from "../../Types/Region.types";
 import {IMedia, initialMedia} from "../../Types/Media.types";
 import {fetchJSON, getMediaId, nextId, preloadMediaBlob} from "../Generators";
-import { TransitionElementOptions, flyTransitionKeyframes, transitionElement } from "../Transitions";
+import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from "../Transitions";
 import VideoMedia from "./VideoMedia";
 import AudioMedia from "./AudioMedia";
 
@@ -277,9 +297,14 @@ export default function Media(
     mediaObject.run = function() {
         const self = mediaObject;
         let transInDuration = 1;
+        let transInDirection: compassPoints = 'E';
 
         if (Boolean(self.options['transinduration'])) {
             transInDuration = Number(self.options.transinduration);
+        }
+
+        if (Boolean(self.options['transindirection'])) {
+            transInDirection = self.options.transindirection;
         }
 
         let defaultTransInOptions: TransitionElementOptions = {duration: transInDuration};
@@ -292,7 +317,7 @@ export default function Media(
                 transInName = `${transInName}In`;
                 defaultTransInOptions.keyframes = flyTransitionKeyframes({
                     trans: 'in',
-                    direction: 'NE',
+                    direction: transInDirection,
                     height: self.divHeight,
                     width: self.divWidth,
                 });
@@ -310,7 +335,7 @@ export default function Media(
             }
 
             if ($media !== null) {
-                $media.style.display = 'block'
+                $media.style.setProperty('display', 'block');
 
                 if (Boolean(self.options['transin'])) {
                     $media.animate(transIn.keyframes, transIn.timing);
