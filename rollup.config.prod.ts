@@ -76,8 +76,6 @@ const config: RollupOptions[] = [
             {
                 file: `${outputPath}${libName}.cjs.js`,
                 format: 'cjs',
-                sourcemap: true,
-                plugins: [terserPlugin()]
             }
         ],
     },

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2024 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - http://www.xibo.org.uk
+ * Xibo - Digital Signage - https://www.xibosignage.com
  *
  * This file is part of Xibo.
  *
