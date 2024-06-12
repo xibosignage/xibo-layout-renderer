@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2024 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - http://www.xibo.org.uk
+ * Xibo - Digital Signage - https://www.xibosignage.com
  *
  * This file is part of Xibo.
  *
@@ -253,7 +253,7 @@ const initialMedia = {
 /*
  * Copyright (C) 2024 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - http://www.xibo.org.uk
+ * Xibo - Digital Signage - https://www.xibosignage.com
  *
  * This file is part of Xibo.
  *
@@ -580,7 +580,7 @@ function AudioMedia(media) {
 /*
  * Copyright (C) 2024 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - http://www.xibo.org.uk
+ * Xibo - Digital Signage - https://www.xibosignage.com
  *
  * This file is part of Xibo.
  *
@@ -900,7 +900,7 @@ function Media(region, mediaId, xml, options) {
 /*
  * Copyright (C) 2024 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - http://www.xibo.org.uk
+ * Xibo - Digital Signage - https://www.xibosignage.com
  *
  * This file is part of Xibo.
  *
@@ -1174,7 +1174,7 @@ function Region(layout, xml, regionId, options) {
 /*
  * Copyright (C) 2024 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - http://www.xibo.org.uk
+ * Xibo - Digital Signage - https://www.xibosignage.com
  *
  * This file is part of Xibo.
  *
@@ -1512,7 +1512,7 @@ const initialXlr = {
 /*
  * Copyright (C) 2024 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - http://www.xibo.org.uk
+ * Xibo - Digital Signage - https://www.xibosignage.com
  *
  * This file is part of Xibo.
  *

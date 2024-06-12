@@ -1,2 +1,1618 @@
-"use strict";const e={getResourceUrl:"/playlist/widget/resource/:regionId/:id",xlfUrl:"/layout/xlf/:layoutId",layoutBackgroundDownloadUrl:"/layout/background/:id",layoutPreviewUrl:"/layout/preview/[layoutCode]",libraryDownloadUrl:"/library/download/:id",loaderUrl:"/theme/default/img/loader.gif",idCounter:0,inPreview:!0,appHost:null},t={id:"",layoutId:"",sw:0,sh:0,xw:0,xh:0,zIndex:0,scaleFactor:1,sWidth:0,sHeight:0,offsetX:0,offsetY:0,bgColor:"",bgImage:"",bgId:"",containerName:"",layoutNode:null,regionMaxZIndex:0,ready:!1,regionObjects:[],drawer:[],allExpired:!1,regions:[],actions:[],options:e,done:!1,allEnded:!1,prepareLayout(){},parseXlf(){},run(){},on:(e,t)=>({}),regionExpired(){},end(){},regionEnded(){},stopAllMedia:()=>Promise.resolve()};let o=()=>({emit(e,...t){for(let o=0,n=this.events[e]||[],i=n.length;o<i;o++)n[o](...t)},events:{},on(e,t){return(this.events[e]||=[]).push(t),()=>{this.events[e]=this.events[e]?.filter((e=>t!==e))}}});function n(e){return e.idCounter>500&&(e.idCounter=0),e.idCounter=e.idCounter+1,e.idCounter}const i=({mediaType:e,containerName:t})=>{let o=t;return"video"===e?o+="-vid":"audio"===e&&(o+="-aud"),o},a=e=>null===e?"":String(e).charAt(0).toUpperCase()+String(e).substring(1);async function r(e,t){const o=await fetch(e);let n=new Blob;if("video"===t)n=await o.blob();else if("audio"===t){const t=await o.arrayBuffer();n=new Blob([t],{type:l(d(e))})}return URL.createObjectURL(n)}function d(e){const t=String(e).split(".");return t[t.length-1]}function l(e){const t={mp3:"audio/mp3",wav:"audio/wav",ogg:"audio/ogg"};if(Boolean(t[e]))return t[e]}const s={layout:t,id:"",regionId:"",xml:null,mediaObjects:[],mediaObjectsActions:[],currentMedia:-1,complete:!1,containerName:"",ending:!1,ended:!1,oneMedia:!1,oldMedia:void 0,curMedia:void 0,nxtMedia:void 0,currentMediaIndex:0,totalMediaObjects:0,ready:!1,options:{},sWidth:0,sHeight:0,offsetX:0,offsetY:0,zIndex:0,index:-1,prepareRegion(){},playNextMedia(){},transitionNodes(){},finished(){},run(){},end(){},exitTransition(){},exitTransitionComplete(){},on:(e,t)=>({}),prepareMediaObjects(){}},c={region:s,xml:null,id:"",index:0,idCounter:0,containerName:"",html:null,iframe:null,iframeName:"",mediaType:"",render:"html",attachedAudio:!1,singlePlay:!1,timeoutId:setTimeout((()=>{}),100),ready:!0,checkIframeStatus:!1,loadIframeOnRun:!1,tempSrc:"",finished:!1,schemaVersion:"1",type:"",duration:0,useDuration:Boolean(0),fileId:"",options:{},divWidth:0,divHeight:0,url:null,loop:!1,run(){},init(){},stop:()=>Promise.resolve(),on:(e,t)=>({})},u=(e,t)=>({keyframes:[{display:"in"===t?"none":"block"},{display:"out"===t?"none":"block"}],timing:{duration:e}}),p=e=>({keyframes:[{opacity:1},{opacity:0,zIndex:-1}],timing:{duration:e,fill:"forwards"}}),m=(e,t,o)=>{const n=[{opacity:0},{opacity:1,zIndex:1}],i={duration:e,fill:"forwards"};return t&&Boolean(t.from)&&(n[0]={...t.from,...n[0]}),t&&Boolean(t.to)&&(n[1]={...t.to,...n[1]}),{keyframes:n,timing:i}},y=(e,t,o)=>{const n=[{opacity:1},{opacity:0,zIndex:-1}],i={duration:e,fill:"forwards"};return t&&Boolean(t.from)&&(n[0]={...t.from,...n[0]}),t&&Boolean(t.to)&&(n[1]={...t.to,...n[1]}),{keyframes:n,timing:i}},g=(e,t)=>{var o;return{fadeIn:(o=t.duration,{keyframes:[{opacity:0},{opacity:1}],timing:{duration:o,fill:"forwards"}}),fadeOut:p(t.duration),flyIn:m(t.duration,t.keyframes,t.direction),flyOut:y(t.duration,t.keyframes,t.direction),defaultIn:u(t.duration,"in"),defaultOut:u(t.duration,"out")}[e]},f=e=>{const t={from:{},to:{}},o=t=>"from"===t?"in"===e.trans?0:1:"out"===e.trans?1:0;switch(e.direction){case"N":default:t.from={opacity:o("from"),top:"in"===e.trans?`${e.height}px`:0},t.to={opacity:o("to"),top:"in"===e.trans?0:`-${e.height}px`};break;case"NE":t.from={opacity:o("from"),top:"in"===e.trans?`${e.height}px`:0,left:"in"===e.trans?`-${e.width}px`:0},t.to={opacity:o("to"),top:"in"===e.trans?0:`-${e.height}px`,left:"in"===e.trans?0:`${e.width}px`};break;case"E":t.from={opacity:o("from"),left:"in"===e.trans?`-${e.width}px`:0},t.to={opacity:o("to"),left:"in"===e.trans?0:`${e.width}px`};break;case"SE":t.from={opacity:o("from"),top:"in"===e.trans?`-${e.height}px`:0,left:"in"===e.trans?`-${e.width}px`:0},t.to={opacity:o("to"),top:"in"===e.trans?0:`${e.height}px`,left:"in"===e.trans?0:`${e.width}px`};break;case"S":t.from={opacity:o("from"),top:"in"===e.trans?`-${e.height}px`:0},t.to={opacity:o("to"),top:"in"===e.trans?0:`${e.height}px`};break;case"SW":t.from={opacity:o("from"),top:"in"===e.trans?`-${e.height}px`:0,left:"in"===e.trans?`${e.width}px`:0},t.to={opacity:o("to"),top:"in"===e.trans?0:`${e.height}px`,left:"in"===e.trans?0:`-${e.width}px`};break;case"W":t.from={opacity:o("from"),left:"in"===e.trans?`${e.width}px`:0},t.to={opacity:o("to"),left:"in"===e.trans?0:`-${e.width}px`};break;case"NW":t.from={opacity:o("from"),top:"in"===e.trans?`${e.height}px`:0,left:"in"===e.trans?`${e.width}px`:0},t.to={opacity:o("to"),top:"in"===e.trans?0:`-${e.height}px`,left:"in"===e.trans?0:`-${e.width}px`}}return t};function h(e,t,d,l){const s={region:e,mediaId:t,xml:d,options:l};let u=null,p=0;const m=o(),y={...c,...s},h=e=>{u=setInterval((()=>{p++,p>e.duration&&e.emitter?.emit("end",e)}),1e3),console.log("Showing Media "+e.id+" for "+e.duration+"s of Region "+e.region.regionId)};return m.on("start",(function(e){"video"===e.mediaType?(function(e){return{init(){const t=document.getElementById(i(e));t&&(t.onloadstart=()=>{console.log(`${a(e.mediaType)} for media > ${e.id} has started loading data . . .`)},t.onloadeddata=()=>{t.readyState>=2&&console.log(`${a(e.mediaType)} data for media > ${e.id} has been fully loaded . . .`)},t.oncanplay=()=>{console.log(`${a(e.mediaType)} for media > ${e.id} can be played . . .`);const o=t.play();void 0!==o&&o.then((()=>{console.log("autoplay started . . .")})).catch((e=>{t.muted=!0,t.play()}))},t.onplaying=()=>{console.log(`${a(e.mediaType)} for media > ${e.id} is now playing . . .`)},0===e.duration&&(t.ondurationchange=()=>{console.log("Showing Media "+e.id+" for "+t.duration+"s of Region "+e.region.regionId)},t.onended=()=>{console.log(`${a(e.mediaType)} for media > ${e.id} has ended playing . . .`),e.emitter?.emit("end",e)}))}}}(e).init(),e.duration>0&&h(e)):"audio"===e.mediaType?(function(e){return{init(){const t=document.getElementById(i(e));let o=null;if(t){t.onloadstart=()=>{console.log(`${a(e.mediaType)} for media > ${e.id} has started loading data . . .`)},t.onloadeddata=()=>{t.readyState>=2&&console.log(`${a(e.mediaType)} data for media > ${e.id} has been fully loaded . . .`)},t.oncanplay=()=>{console.log(`${a(e.mediaType)} for media > ${e.id} can be played . . .`)},t.onplaying=()=>{console.log(`${a(e.mediaType)} for media > ${e.id} is now playing . . .`),null!==o&&o.remove()};const n=t.play();void 0!==n&&n.then((()=>{console.log("autoplay started . . .")})).catch((e=>{"NotAllowedError"===e.name&&(o=document.createElement("button"),o.classList.add("play-audio-btn"),o.textContent="Play Audio",o.addEventListener("click",(()=>{t.muted=!1,t.play()})),t.parentNode?.insertBefore(o,t.nextSibling))})),0===e.duration&&(t.ondurationchange=()=>{console.log("Showing Media "+e.id+" for "+t.duration+"s of Region "+e.region.regionId)},t.onended=()=>{console.log(`${a(e.mediaType)} for media > ${e.id} has ended playing . . .`),e.emitter?.emit("end",e)})}}}}(e).init(),e.duration>0&&h(e)):h(e)})),m.on("end",(function(e){u&&(clearInterval(u),p=0),e.region.playNextMedia()})),y.init=function(){const e=y;e.id=s.mediaId,e.idCounter=n(s.options),e.containerName=`M-${e.id}-${e.idCounter}`,e.iframeName=`${e.containerName}-iframe`,e.mediaType=e.xml?.getAttribute("type")||"",e.render=e.xml?.getAttribute("render")||"",e.duration=parseInt(e.xml?.getAttribute("duration"))||0,e.options={...s.options,mediaId:t};const o=document.createElement("iframe"),a=e.xml?.getElementsByTagName("options");if(a)for(let t of Array.from(a)){const o=t.children;for(let t of Array.from(o))e.options[t.nodeName.toLowerCase()]=t.textContent}"1"===e.options.showfullscreen?(e.divWidth=e.region.layout.sWidth,e.divHeight=e.region.layout.sHeight):(e.divWidth=e.region.sWidth,e.divHeight=e.region.sHeight),o.scrolling="no",o.id=e.iframeName,o.width=`${e.divWidth}px`,o.height=`${e.divHeight}px`,o.style.cssText="border: 0; visibility: hidden;";const r=i(e);let d=document.getElementById(r);null===d&&(d="video"===e.mediaType?document.createElement("video"):"audio"===e.mediaType?new Audio:document.createElement("div"),d.id=r),d.className="media--item",d.style.cssText=`\n            display: none;\n            width: ${e.divWidth}px;\n            height: ${e.divHeight}px;\n            position: absolute;\n            background-size: contain;\n            background-repeat: no-repeat;\n            background-position: center;\n        `,document.getElementById(`${e.region.containerName}`);const l=e.region.options.getResourceUrl.replace(":regionId",e.region.id).replace(":id",e.id)+"?preview=1&layoutPreview=1&scale_override="+e.region.layout.scaleFactor;if(e.url=l,e.loop="1"==e.options.loop||"1"==e.region.options.loop&&1==e.region.totalMediaObjects,o.src=`${l}&width=${e.divWidth}&height=${e.divHeight}`,"html"===e.render||"ticker"===e.mediaType)e.checkIframeStatus=!0,e.iframe=o;else if("image"===e.mediaType)if(d.style.cssText=d.style.cssText.concat(`background-image: url('${l}');`),"stretch"===e.options.scaletype)d.style.cssText=d.style.cssText.concat("background-size: 100% 100%;");else if("fit"===e.options.scaletype)d.style.cssText=d.style.cssText.concat("background-size: cover;");else{const t=""==e.options.align?"center":e.options.align,o=""==e.options.valign||"middle"==e.options.valign?"center":e.options.valign;d.style.cssText=d.style.cssText.concat(`background-position: ${t} ${o}`)}else if("video"===e.mediaType){const t=d;t.preload="auto",t.textContent="Unsupported Video",Boolean(e.options.mute)&&(t.muted="1"===e.options.mute),Boolean(e.options.scaletype)&&"stretch"===e.options.scaletype&&(t.style.objectFit="fill"),t.playsInline=!0,e.loop&&(t.loop=!0),d=t}else if("audio"===e.mediaType){const t=d;t.preload="auto",t.textContent="Unsupported Audio",t.autoplay=!0,e.loop&&(t.loop=!0),d=t}if(("html"===e.render||"ticker"===e.mediaType)&&"1"===e.options.durationisperitem){const t=new RegExp("\x3c!-- NUMITEMS=(.*?) --\x3e");(async()=>{let o=await(n=`${l}&width=${e.divWidth}&height=${e.divHeight}`,fetch(n).then((e=>e.json())).catch((e=>{console.log(e)})));var n;console.log({html:o});const i=t.exec(o);null!==i&&(e.duration=parseInt(String(e.duration))*parseInt(i[1]))})()}if(Boolean(e.options.transin)&&Boolean(e.options.transinduration)){const t=Number(e.options.transinduration),o=g("fadeIn",{duration:t});d.animate(o.keyframes,o.timing)}e.html=d,e.iframe&&e.checkIframeStatus&&(e.ready=!1,d.innerHTML="",d.appendChild(e.iframe),e.iframe&&e.iframe.addEventListener("load",(function(){if(e.ready=!0,e.iframe){const t=e.iframe.style.cssText;e.iframe.style.cssText=t?.concat("visibility: visible;")}})))},y.run=function(){const e=y;let t=1,o="E";Boolean(e.options.transinduration)&&(t=Number(e.options.transinduration)),Boolean(e.options.transindirection)&&(o=e.options.transindirection);let n={duration:t},a=g("defaultIn",{duration:n.duration});if(Boolean(e.options.transin)){let t=e.options.transin;"fly"===t&&(t=`${t}In`,n.keyframes=f({trans:"in",direction:o,height:e.divHeight,width:e.divWidth})),a=g(t,n)}const d=()=>{const t=document.getElementById(`${e.region.containerName}`);return e.region.complete&&!e.region.layout.allEnded?(t&&t.insertBefore(e.html,t.lastElementChild),e.html):null};(async()=>{let t=i(e),o=document.getElementById(t);null===o&&(o=d()),null!==o&&(o.style.setProperty("display","block"),Boolean(e.options.transin)&&o.animate(a.keyframes,a.timing),("video"===e.mediaType&&null!==e.url||"audio"===e.mediaType&&null!==e.url)&&(o.src=await r(e.url,e.mediaType)),e.emitter?.emit("start",e))})()},y.stop=async function(){const e=y,t=document.getElementById(i(e));t&&(t.style.display="none",t.remove())},y.on=function(e,t){return m.on(e,t)},y.emitter=m,y.init(),y}function x(a,r,d,l){const c={data:a,options:r,layout:l||t},u=o();u.on("start",(e=>{e.done=!1,console.log("Layout start emitted > Layout ID > ",e.id)})),u.on("end",(e=>{console.log("Ending layout with ID of > ",e.layoutId),e.done=!0;const t=document.getElementById(e.containerName);console.log({$layout:t}),null!==t&&t.remove(),d.config.inPreview||d.prepareLayouts().then((e=>{d.playSchedules(e)}))}));const p={...c.layout,options:c.options,emitter:u};return p.on=function(e,t){return u.on(e,t)},p.run=function(){const e=p,t=document.getElementById(`${e.containerName}`),o=document.getElementById(`splash_${e.id}`);t&&(t.style.display="block"),o&&(o.style.display="none"),console.log("Layout running > Layout ID > ",e.id),console.log("Layout Regions > ",e.regions);for(let t=0;t<e.regions.length;t++)e.regions[t].run()},p.parseXlf=function(){const t=p,{data:a,options:r}=c;t.containerName="L"+t.id+"-"+n(r),t.regions=[];let l=document.getElementById(t.containerName);null===l&&(l=document.createElement("div"),l.id=t.containerName);let u=document.getElementById("screen_container");u&&u.appendChild(l),l&&(l.style.display="none",l.style.outline="red solid thin"),t.layoutNode=a,t.sw=u?.offsetWidth||0,t.sh=u?.offsetHeight||0,t.xw=Number(t.layoutNode?.firstElementChild?.getAttribute("width")),t.xh=Number(t.layoutNode?.firstElementChild?.getAttribute("height")),t.zIndex=Number(t.layoutNode?.firstElementChild?.getAttribute("zindex"))||0,t.scaleFactor=Math.min(t.sw/t.xw,t.sh/t.xh),t.sWidth=Math.round(t.xw*t.scaleFactor),t.sHeight=Math.round(t.xh*t.scaleFactor),t.offsetX=Math.abs(t.sw-t.sWidth)/2,t.offsetY=Math.abs(t.sh-t.sHeight)/2;const m=`\n            width: ${t.sWidth}px;\n            height: ${t.sHeight}px;\n            position: absolute;\n            left: ${t.offsetX}px;\n            top: ${t.offsetY}px;\n        `;if(l&&(l.style.cssText=m),l&&null!==t.zIndex&&(l.style.cssText=m.concat(`z-index: ${t.zIndex};`)),t.bgColor=t.layoutNode?.firstElementChild?.getAttribute("bgcolor")||"",t.bgImage=t.layoutNode?.firstElementChild?.getAttribute("background")||"",""!==t.bgImage&&void 0!==t.bgImage){t.bgId=t.bgImage.substring(0,t.bgImage.indexOf("."));let e=r.layoutBackgroundDownloadUrl.replace(":id",t.id)+"?preview=1";l&&(l.style.cssText=m.concat(`\n                    background: url('${e}&width=${t.sWidth}&height=${t.sHeight}&dynamic&proportional=0');\n                    backgroundRepeat: "no-repeat";\n                    backgroundSize: ${t.sWidth}px ${t.sHeight}px;\n                    backgroundPosition: "0px 0px";\n                `))}l&&(l.style.cssText=m.concat("background-color: layout.bgColor;")),l&&void 0!==d.currentLayoutId&&d.currentLayoutId!==t.id&&(l.style.cssText=l.style.cssText.concat("display: none;"));const y=Array.from(t?.layoutNode?.getElementsByTagName("region")||[]);Array.from(y).forEach(((a,d)=>{const l=function(t,a,r,d){const l={layout:t,xml:a,regionId:r,options:d},c=o();let u={...s,...l};return u.prepareRegion=function(){const t=u,{layout:o,options:i}=t;t.id=l.regionId,t.options={...e,...l.options},t.containerName=`R-${t.id}-${n(t.options)}`,t.xml=l.xml,t.mediaObjects=[],t.sWidth=t.xml&&Number(t.xml?.getAttribute("width"))*o.scaleFactor,t.sHeight=t.xml&&Number(t.xml?.getAttribute("height"))*o.scaleFactor,t.offsetX=t.xml&&Number(t.xml?.getAttribute("left"))*o.scaleFactor,t.offsetY=t.xml&&Number(t.xml?.getAttribute("top"))*o.scaleFactor,t.zIndex=t.xml&&Number(t.xml?.getAttribute("zindex"))*o.scaleFactor;const a=t.xml?.getElementsByTagName("options");if(a)for(let e of Array.from(a)){const o=e.children;for(let e of Array.from(o))t.options[e.nodeName.toLowerCase()]=e.textContent}let r=document.getElementById(t.containerName);const d=document.getElementById(`${t.layout.containerName}`);null===r&&(r=document.createElement("div"),r.id=t.containerName),d&&d.appendChild(r),r.style.cssText=`\n            width: ${t.sWidth}px;\n            height: ${t.sHeight}px;\n            position: absolute;\n            left: ${t.offsetX}px;\n            top: ${t.offsetY}px;\n        `,r.className="region--item";const s=Array.from(t.xml.getElementsByTagName("media"));t.totalMediaObjects=s.length,Array.from(s).forEach(((e,o)=>{const n=h(t,e?.getAttribute("id")||"",e,i);n.index=o,t.mediaObjects.push(n)})),t.prepareMediaObjects()},u.finished=function(){const e=u;console.log("Region::finished called . . . ",e.id),e.complete=!0,e.layout.regions[u.index]=u,e.layout.regionExpired()},u.prepareMediaObjects=function(){const e=u;let t;if(e.mediaObjects.length>0){e.curMedia?e.oldMedia=e.curMedia:e.oldMedia=void 0,e.currentMediaIndex>=e.mediaObjects.length&&(e.currentMediaIndex=0),e.curMedia=e.mediaObjects[e.currentMediaIndex],t=e.currentMediaIndex+1,(t>=e.mediaObjects.length||!Boolean(e.mediaObjects[t])&&1===e.mediaObjects.length)&&(t=0),Boolean(e.mediaObjects[t])&&(e.nxtMedia=e.mediaObjects[t]);const o=document.getElementById(`${e.containerName}`);e.curMedia&&o&&o.insertBefore(e.curMedia.html,o.lastElementChild),e.nxtMedia&&o&&o.insertBefore(e.nxtMedia.html,o.lastElementChild)}},u.run=function(){console.log("Called Region::run > ",u.id),u.curMedia&&u.transitionNodes(u.oldMedia,u.curMedia)},u.transitionNodes=function(e,t){const o=u;let n=1,a="E";if(t){console.log({regionComplete:t?.region.complete}),e&&Boolean(e.options.transoutduration)&&(n=Number(e.options.transoutduration)),e&&Boolean(e.options.transoutdirection)&&(a=e.options.transoutdirection);let r,d={duration:n},l=g("defaultOut",{duration:d.duration});e&&Boolean(e.options.transout)&&(r=e.options.transout,"fly"===r&&(r=`${r}Out`,d.keyframes=f({trans:"out",direction:a,height:e.divHeight,width:e.divWidth})),l=g(r,d));const s=new Promise((t=>{if(e){const a=document.getElementById(i(e));if(a){const i=()=>{a.style.setProperty("display","none"),a.remove()};let d=null;Boolean(e.options.transout)&&(d=a.animate(l.keyframes,l.timing)),Boolean(e.options.transout)&&o.totalMediaObjects>1?"flyOut"===r?d?.finished.then((()=>{t(!0),d?.effect?.updateTiming({fill:"none"}),i()})):(setTimeout(i,n/2),t(!0)):(i(),t(!0))}}}));e?s.then((e=>{e&&t.run()})):t.run()}},u.playNextMedia=function(){const e=u;e.ended||e.currentMediaIndex===e.mediaObjects.length-1&&(e.finished(),e.layout.allEnded)||e.complete&&"html"===e.curMedia?.render||e.complete&&1===e.mediaObjects.length&&"html"!==e.curMedia?.render&&"image"===e.curMedia?.mediaType&&!e.curMedia?.loop||(e.currentMediaIndex=e.currentMediaIndex+1,e.prepareMediaObjects(),e.transitionNodes(e.oldMedia,e.curMedia))},u.end=function(){const e=u;e.ending=!0,e.layout.regions[e.index]=e,console.log("Calling Region::end ",e),e.exitTransition()},u.exitTransition=function(){const e=u,t=document.getElementById(`${e.containerName}`);t&&(t.style.display="none"),console.log("Called Region::exitTransition ",e.id),e.exitTransitionComplete()},u.exitTransitionComplete=function(){const e=u;console.log("Called Region::exitTransitionComplete ",e.id),e.ended=!0,e.layout.regions[e.index]=e,e.layout.regionEnded()},u.on=function(e,t){return c.on(e,t)},u.emitter=c,u.prepareRegion(),u}(t,a,a?.getAttribute("id")||"",r);l.index=d,t.regions.push(l)}))},p.prepareLayout=function(){p.parseXlf()},p.regionExpired=function(){const e=p;e.allExpired=!0;for(let t of e.regions)t.complete||(e.allExpired=!1);e.allExpired&&e.end()},p.regionEnded=function(){const e=p;e.allEnded=!0;for(var t=0;t<e.regions.length;t++)e.regions[t].ended||(e.allEnded=!1);e.allEnded&&e.stopAllMedia().then((()=>{if(console.log("starting to end layout . . ."),d.config.inPreview){const e=document.getElementById("play_ended"),t=document.getElementById("screen_container");if(t){for(;t.firstChild;)t.removeChild(t.firstChild);t.style.display="none"}e&&(e.style.display="block")}e.emitter?.emit("end",e)}))},p.end=function(){console.log("Executing Layout::end and Calling Region::end ",p);for(let e of p.regions)e.end()},p.stopAllMedia=function(){return console.log("Stopping all media . . ."),new Promise((async e=>{for(var t=0;t<p.regions.length;t++)for(var o=p.regions[t],n=0;n<o.mediaObjects.length;n++){var i=o.mediaObjects[n];await i.stop()}e()}))},p.prepareLayout(),p}var b;!function(e){e[e.CURRENT=0]="CURRENT",e[e.NEXT=1]="NEXT"}(b||(b={}));const I={inputLayouts:[],config:e,layouts:[],currentLayoutIndex:0,currentLayoutId:void 0,currentLayout:void 0,nextLayout:void 0,bootstrap(){},init(){},playSchedules(){},prepareLayoutXlf:(e,t)=>Promise.resolve({}),prepareLayouts:()=>Promise.resolve({})};module.exports=function(o,n){const i={inputLayouts:o,options:n},a={...I,bootstrap(){this.inputLayouts=Array.isArray(i.inputLayouts)?i.inputLayouts:[i.inputLayouts],this.config=JSON.parse(JSON.stringify({...e,...i.options}))},init(){return new Promise((e=>{!function(e){let t=e;const o=document.createElement("div"),n=document.createElement("div"),i=document.createElement("div"),a=document.createElement("a");o.className="player-preview",o.id="player_container",n.className="screen-preview",n.id="screen_container",i.className="preview-ended",i.id="play_ended",i.style.display="none",a.style.cssText="text-decoration: none; color: #ffffff;",a.href="javascript:history.go(0)",a.innerHTML="Play again?",t||(t=document.body),t&&null===t.querySelector("#player_container")&&(t.insertBefore(o,t.firstChild),null===o.querySelector("#screen_container")&&o.appendChild(n),null===o.querySelector("#play_ended")&&(o.appendChild(i),null===i.querySelector("a")&&i.appendChild(a)))}(document.querySelector(".preview-canvas")),this.prepareLayouts().then((t=>{e(t)}))}))},playSchedules(e){void 0!==e.currentLayout&&(e.currentLayout.emitter?.emit("start",e.currentLayout),e.currentLayout.run())},async prepareLayoutXlf(o,n){const a=this;let r,d,l=Object.assign({},e);if(l={...l,...i.options},o&&Boolean(o.layoutId)&&(l.xlfUrl=l.xlfUrl.replace(":layoutId",o.layoutId)),o&&null===o.layoutNode){r=await async function(e){let t=window.location.origin;!e.inPreview&&e.appHost&&(t=e.appHost);const o=await fetch(t+e.xlfUrl,{mode:"no-cors"});return await o.text()}(l);const e=new window.DOMParser;d=e.parseFromString(r,"text/xml")}else d=o&&o.layoutNode;return new Promise((e=>{const n=t;n.id=o.layoutId,n.layoutId=o.layoutId,n.options=l,e(x(d,l,a,n))}))},async prepareLayouts(){const e=this,o=function(e){let o,n,{inputLayouts:i,currentLayout:a,nextLayout:r,currentLayoutIndex:d}=e.xlr;const l=i.length>0,s=d+1;if(void 0===a&&void 0===r){let e;l&&(e=i[d],o={...t},i.length>1?(e=i[s],n={...t}):n=o,o.id=e.layoutId,o.layoutId=e.layoutId,n.id=e.layoutId,n.layoutId=e.layoutId)}else l&&(o=r,i.length>1&&s<i.length&&(n=Boolean(e.xlr.layouts[s])?e.xlr.layouts[s]:{...t,...i[s]}),void 0===n&&(n=e.xlr.layouts[0]));return{currentLayoutIndex:d,inputLayouts:e.xlr.inputLayouts,current:o,next:n}}({xlr:e});e.currentLayoutId=o.current?.layoutId;const n=await Promise.all([e.prepareLayoutXlf(o.current,b.CURRENT),e.prepareLayoutXlf(o.next,b.NEXT)]);return new Promise((t=>{e.currentLayout=n[0],e.nextLayout=n[1],e.currentLayoutIndex=o.currentLayoutIndex,e.layouts[e.currentLayoutIndex]=e.currentLayout,t(e)}))}};return a.bootstrap(),a};
-//# sourceMappingURL=xibo-layout-renderer.cjs.js.map
+'use strict';
+
+/*
+ * Copyright (C) 2024 Xibo Signage Ltd
+ *
+ * Xibo - Digital Signage - https://www.xibosignage.com
+ *
+ * This file is part of Xibo.
+ *
+ * Xibo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * Xibo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+ */
+const RESOURCE_URL = '/playlist/widget/resource/:regionId/:id';
+const XLF_URL = '/layout/xlf/:layoutId';
+const LAYOUT_BACKGROUND_DOWNLOAD_URL = '/layout/background/:id';
+const LAYOUT_PREVIEW_URL = '/layout/preview/[layoutCode]';
+const LIBRARY_DOWNLOAD_URL = '/library/download/:id';
+const LOADER_URL = '/theme/default/img/loader.gif';
+const platform = {
+    getResourceUrl: RESOURCE_URL,
+    xlfUrl: XLF_URL,
+    layoutBackgroundDownloadUrl: LAYOUT_BACKGROUND_DOWNLOAD_URL,
+    layoutPreviewUrl: LAYOUT_PREVIEW_URL,
+    libraryDownloadUrl: LIBRARY_DOWNLOAD_URL,
+    loaderUrl: LOADER_URL,
+    idCounter: 0,
+    inPreview: true,
+    appHost: null,
+};
+
+const initialLayout = {
+    id: '',
+    layoutId: '',
+    sw: 0,
+    sh: 0,
+    xw: 0,
+    xh: 0,
+    zIndex: 0,
+    scaleFactor: 1,
+    sWidth: 0,
+    sHeight: 0,
+    offsetX: 0,
+    offsetY: 0,
+    bgColor: '',
+    bgImage: '',
+    bgId: '',
+    containerName: '',
+    layoutNode: null,
+    regionMaxZIndex: 0,
+    ready: false,
+    regionObjects: [],
+    drawer: [],
+    allExpired: false,
+    regions: [],
+    actions: [],
+    options: platform,
+    done: false,
+    allEnded: false,
+    prepareLayout() {
+    },
+    parseXlf() {
+    },
+    run() {
+    },
+    on(event, callback) {
+        return {};
+    },
+    regionExpired() {
+    },
+    end() {
+    },
+    regionEnded() {
+    },
+    stopAllMedia() {
+        return Promise.resolve();
+    },
+};
+
+let createNanoEvents = () => ({
+  emit(event, ...args) {
+    for (
+      let i = 0,
+        callbacks = this.events[event] || [],
+        length = callbacks.length;
+      i < length;
+      i++
+    ) {
+      callbacks[i](...args);
+    }
+  },
+  events: {},
+  on(event, cb) {
+(this.events[event] ||= []).push(cb);
+    return () => {
+      this.events[event] = this.events[event]?.filter(i => cb !== i);
+    }
+  }
+});
+
+function nextId(options) {
+    if (options.idCounter > 500) {
+        options.idCounter = 0;
+    }
+    options.idCounter = options.idCounter + 1;
+    return options.idCounter;
+}
+const getMediaId = ({ mediaType, containerName }) => {
+    let mediaId = containerName;
+    if (mediaType === 'video') {
+        mediaId = mediaId + '-vid';
+    }
+    else if (mediaType === 'audio') {
+        mediaId = mediaId + '-aud';
+    }
+    return mediaId;
+};
+const capitalizeStr = (inputStr) => {
+    if (inputStr === null) {
+        return '';
+    }
+    return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
+};
+async function preloadMediaBlob(src, type) {
+    const res = await fetch(src);
+    let blob = new Blob();
+    if (type === 'video') {
+        blob = await res.blob();
+    }
+    else if (type === 'audio') {
+        const data = await res.arrayBuffer();
+        blob = new Blob([data], { type: audioFileType(getFileExt(src)) });
+    }
+    return URL.createObjectURL(blob);
+}
+function fetchJSON(url) {
+    return fetch(url)
+        .then(res => res.json())
+        .catch(err => {
+        console.log(err);
+    });
+}
+function getFileExt(filename) {
+    const filenameArr = String(filename).split('.');
+    return filenameArr[filenameArr.length - 1];
+}
+function audioFileType(str) {
+    const validAudioTypes = {
+        'mp3': 'audio/mp3',
+        'wav': 'audio/wav',
+        'ogg': 'audio/ogg',
+    };
+    if (Boolean(validAudioTypes[str])) {
+        return validAudioTypes[str];
+    }
+    return undefined;
+}
+
+const initialRegion = {
+    layout: initialLayout,
+    id: '',
+    regionId: '',
+    xml: null,
+    mediaObjects: [],
+    mediaObjectsActions: [],
+    currentMedia: -1,
+    complete: false,
+    containerName: '',
+    ending: false,
+    ended: false,
+    oneMedia: false,
+    oldMedia: undefined,
+    curMedia: undefined,
+    nxtMedia: undefined,
+    currentMediaIndex: 0,
+    totalMediaObjects: 0,
+    ready: false,
+    options: {},
+    sWidth: 0,
+    sHeight: 0,
+    offsetX: 0,
+    offsetY: 0,
+    zIndex: 0,
+    index: -1,
+    prepareRegion() {
+    },
+    playNextMedia() {
+    },
+    transitionNodes() {
+    },
+    finished() {
+    },
+    run() {
+    },
+    end() {
+    },
+    exitTransition() { },
+    exitTransitionComplete() { },
+    on(event, callback) {
+        return {};
+    },
+    prepareMediaObjects() {
+    },
+};
+
+const initialMedia = {
+    region: initialRegion,
+    xml: null,
+    id: '',
+    index: 0,
+    idCounter: 0,
+    containerName: '',
+    html: null,
+    iframe: null,
+    iframeName: '',
+    mediaType: '',
+    render: 'html',
+    attachedAudio: false,
+    singlePlay: false,
+    timeoutId: setTimeout(() => { }, 100),
+    ready: true,
+    checkIframeStatus: false,
+    loadIframeOnRun: false,
+    tempSrc: '',
+    finished: false,
+    schemaVersion: '1',
+    type: '',
+    duration: 0,
+    useDuration: Boolean(0),
+    fileId: '',
+    options: {},
+    divWidth: 0,
+    divHeight: 0,
+    url: null,
+    loop: false,
+    run() { },
+    init() { },
+    stop() {
+        return Promise.resolve();
+    },
+    on(event, callback) {
+        return {};
+    },
+};
+
+/*
+ * Copyright (C) 2024 Xibo Signage Ltd
+ *
+ * Xibo - Digital Signage - https://www.xibosignage.com
+ *
+ * This file is part of Xibo.
+ *
+ * Xibo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * Xibo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+ */
+const defaultTrans = (duration, trans) => {
+    const defaultKeyframes = [
+        { display: trans === 'in' ? 'none' : 'block' },
+        { display: trans === 'out' ? 'none' : 'block' },
+    ];
+    const defaultTiming = {
+        duration,
+    };
+    return {
+        keyframes: defaultKeyframes,
+        timing: defaultTiming,
+    };
+};
+const fadeInElem = (duration) => {
+    const fadeInKeyframes = [
+        { opacity: 0 },
+        { opacity: 1 },
+    ];
+    const fadeInTiming = {
+        duration,
+        fill: 'forwards',
+    };
+    return {
+        keyframes: fadeInKeyframes,
+        timing: fadeInTiming,
+    };
+};
+const fadeOutElem = (duration) => {
+    const fadeOutKeyframes = [
+        { opacity: 1 },
+        { opacity: 0, zIndex: -1 },
+    ];
+    const fadeOutTiming = {
+        duration,
+        fill: 'forwards',
+    };
+    return {
+        keyframes: fadeOutKeyframes,
+        timing: fadeOutTiming,
+    };
+};
+const flyInElem = (duration, keyframeOptions, direction) => {
+    const flyInKeyframes = [
+        { opacity: 0 },
+        { opacity: 1, zIndex: 1 },
+    ];
+    const flyInTiming = {
+        duration,
+        fill: 'forwards',
+    };
+    if (keyframeOptions && Boolean(keyframeOptions.from)) {
+        flyInKeyframes[0] = { ...keyframeOptions.from, ...flyInKeyframes[0] };
+    }
+    if (keyframeOptions && Boolean(keyframeOptions.to)) {
+        flyInKeyframes[1] = { ...keyframeOptions.to, ...flyInKeyframes[1] };
+    }
+    return {
+        keyframes: flyInKeyframes,
+        timing: flyInTiming,
+    };
+};
+const flyOutElem = (duration, keyframeOptions, direction) => {
+    const flyOutKeyframes = [
+        { opacity: 1 },
+        { opacity: 0, zIndex: -1 },
+    ];
+    const flyOutTiming = {
+        duration,
+        fill: 'forwards',
+    };
+    if (keyframeOptions && Boolean(keyframeOptions.from)) {
+        flyOutKeyframes[0] = { ...keyframeOptions.from, ...flyOutKeyframes[0] };
+    }
+    if (keyframeOptions && Boolean(keyframeOptions.to)) {
+        flyOutKeyframes[1] = { ...keyframeOptions.to, ...flyOutKeyframes[1] };
+    }
+    return {
+        keyframes: flyOutKeyframes,
+        timing: flyOutTiming,
+    };
+};
+const transitionElement = (transition, options) => {
+    const transitions = {
+        fadeIn: fadeInElem(options.duration),
+        fadeOut: fadeOutElem(options.duration),
+        flyIn: flyInElem(options.duration, options.keyframes, options.direction),
+        flyOut: flyOutElem(options.duration, options.keyframes, options.direction),
+        defaultIn: defaultTrans(options.duration, 'in'),
+        defaultOut: defaultTrans(options.duration, 'out'),
+    };
+    return transitions[transition];
+};
+const flyTransitionKeyframes = (params) => {
+    const keyframes = {
+        from: {},
+        to: {},
+    };
+    const opacityAttr = (source) => {
+        if (source === 'from') {
+            return params.trans === 'in' ? 0 : 1;
+        }
+        return params.trans === 'out' ? 1 : 0;
+    };
+    switch (params.direction) {
+        case 'N':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `${params.height}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `-${params.height}px`,
+            };
+            break;
+        case 'NE':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `${params.height}px` : 0,
+                left: params.trans === 'in' ? `-${params.width}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `-${params.height}px`,
+                left: params.trans === 'in' ? 0 : `${params.width}px`,
+            };
+            break;
+        case 'E':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                left: params.trans === 'in' ? `-${params.width}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                left: params.trans === 'in' ? 0 : `${params.width}px`,
+            };
+            break;
+        case 'SE':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `-${params.height}px` : 0,
+                left: params.trans === 'in' ? `-${params.width}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `${params.height}px`,
+                left: params.trans === 'in' ? 0 : `${params.width}px`,
+            };
+            break;
+        case 'S':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `-${params.height}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `${params.height}px`,
+            };
+            break;
+        case 'SW':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `-${params.height}px` : 0,
+                left: params.trans === 'in' ? `${params.width}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `${params.height}px`,
+                left: params.trans === 'in' ? 0 : `-${params.width}px`,
+            };
+            break;
+        case 'W':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                left: params.trans === 'in' ? `${params.width}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                left: params.trans === 'in' ? 0 : `-${params.width}px`,
+            };
+            break;
+        case 'NW':
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `${params.height}px` : 0,
+                left: params.trans === 'in' ? `${params.width}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `-${params.height}px`,
+                left: params.trans === 'in' ? 0 : `-${params.width}px`,
+            };
+            break;
+        default:
+            keyframes.from = {
+                opacity: opacityAttr('from'),
+                top: params.trans === 'in' ? `${params.height}px` : 0,
+            };
+            keyframes.to = {
+                opacity: opacityAttr('to'),
+                top: params.trans === 'in' ? 0 : `-${params.height}px`,
+            };
+            break;
+    }
+    return keyframes;
+};
+
+function VideoMedia(media) {
+    const videoMediaObject = {
+        init() {
+            const $videoMedia = document.getElementById(getMediaId(media));
+            if ($videoMedia) {
+                $videoMedia.onloadstart = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
+                };
+                $videoMedia.onloadeddata = () => {
+                    if ($videoMedia.readyState >= 2) {
+                        console.log(`${capitalizeStr(media.mediaType)} data for media > ${media.id} has been fully loaded . . .`);
+                    }
+                };
+                $videoMedia.oncanplay = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
+                    const videoPlayPromise = $videoMedia.play();
+                    if (videoPlayPromise !== undefined) {
+                        videoPlayPromise.then(() => {
+                            console.log('autoplay started . . .');
+                            // Autoplay restarted
+                        }).catch(error => {
+                            $videoMedia.muted = true;
+                            $videoMedia.play();
+                        });
+                    }
+                };
+                $videoMedia.onplaying = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+                };
+                if (media.duration === 0) {
+                    $videoMedia.ondurationchange = () => {
+                        console.log('Showing Media ' + media.id + ' for ' + $videoMedia.duration + 's of Region ' + media.region.regionId);
+                    };
+                    $videoMedia.onended = () => {
+                        console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                        media.emitter?.emit('end', media);
+                    };
+                }
+            }
+        }
+    };
+    return videoMediaObject;
+}
+
+function AudioMedia(media) {
+    const audioMediaObject = {
+        init() {
+            const $audioMedia = document.getElementById(getMediaId(media));
+            let $playBtn = null;
+            if ($audioMedia) {
+                $audioMedia.onloadstart = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
+                };
+                $audioMedia.onloadeddata = () => {
+                    if ($audioMedia.readyState >= 2) {
+                        console.log(`${capitalizeStr(media.mediaType)} data for media > ${media.id} has been fully loaded . . .`);
+                    }
+                };
+                $audioMedia.oncanplay = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
+                };
+                $audioMedia.onplaying = () => {
+                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+                    if ($playBtn !== null) {
+                        $playBtn.remove();
+                    }
+                };
+                const audioPlayPromise = $audioMedia.play();
+                if (audioPlayPromise !== undefined) {
+                    audioPlayPromise.then(() => {
+                        console.log('autoplay started . . .');
+                        // Autoplay restarted
+                    }).catch(error => {
+                        if (error.name === 'NotAllowedError') {
+                            // Let's show a play audio button
+                            $playBtn = document.createElement('button');
+                            $playBtn.classList.add('play-audio-btn');
+                            $playBtn.textContent = 'Play Audio';
+                            $playBtn.addEventListener('click', () => {
+                                $audioMedia.muted = false;
+                                $audioMedia.play();
+                            });
+                            $audioMedia.parentNode?.insertBefore($playBtn, $audioMedia.nextSibling);
+                        }
+                    });
+                }
+                if (media.duration === 0) {
+                    $audioMedia.ondurationchange = () => {
+                        console.log('Showing Media ' + media.id + ' for ' + $audioMedia.duration + 's of Region ' + media.region.regionId);
+                    };
+                    $audioMedia.onended = () => {
+                        console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                        media.emitter?.emit('end', media);
+                    };
+                }
+            }
+        },
+    };
+    return audioMediaObject;
+}
+
+/*
+ * Copyright (C) 2024 Xibo Signage Ltd
+ *
+ * Xibo - Digital Signage - https://www.xibosignage.com
+ *
+ * This file is part of Xibo.
+ *
+ * Xibo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * Xibo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+ */
+function Media(region, mediaId, xml, options) {
+    const props = {
+        region: region,
+        mediaId: mediaId,
+        xml: xml,
+        options: options,
+    };
+    let mediaTimer = null;
+    let mediaTimeCount = 0;
+    const emitter = createNanoEvents();
+    const mediaObject = {
+        ...initialMedia,
+        ...props,
+    };
+    const startMediaTimer = (media) => {
+        mediaTimer = setInterval(() => {
+            mediaTimeCount++;
+            if (mediaTimeCount > media.duration) {
+                media.emitter?.emit('end', media);
+            }
+        }, 1000);
+        console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
+    };
+    emitter.on('start', function (media) {
+        if (media.mediaType === 'video') {
+            VideoMedia(media).init();
+            if (media.duration > 0) {
+                startMediaTimer(media);
+            }
+        }
+        else if (media.mediaType === 'audio') {
+            AudioMedia(media).init();
+            if (media.duration > 0) {
+                startMediaTimer(media);
+            }
+        }
+        else {
+            startMediaTimer(media);
+        }
+    });
+    emitter.on('end', function (media) {
+        if (mediaTimer) {
+            clearInterval(mediaTimer);
+            mediaTimeCount = 0;
+        }
+        media.region.playNextMedia();
+    });
+    mediaObject.init = function () {
+        const self = mediaObject;
+        self.id = props.mediaId;
+        self.idCounter = nextId(props.options);
+        self.containerName = `M-${self.id}-${self.idCounter}`;
+        self.iframeName = `${self.containerName}-iframe`;
+        self.mediaType = self.xml?.getAttribute('type') || '';
+        self.render = self.xml?.getAttribute('render') || '';
+        self.duration = parseInt(self.xml?.getAttribute('duration')) || 0;
+        self.options = { ...props.options, mediaId };
+        const $mediaIframe = document.createElement('iframe');
+        const mediaOptions = self.xml?.getElementsByTagName('options');
+        if (mediaOptions) {
+            for (let _options of Array.from(mediaOptions)) {
+                // Get options
+                const _mediaOptions = _options.children;
+                for (let mediaOption of Array.from(_mediaOptions)) {
+                    self.options[mediaOption.nodeName.toLowerCase()] = mediaOption.textContent;
+                }
+            }
+        }
+        // Show in fullscreen?
+        if (self.options.showfullscreen === "1") {
+            // Set dimensions as the layout ones
+            self.divWidth = self.region.layout.sWidth;
+            self.divHeight = self.region.layout.sHeight;
+        }
+        else {
+            // Set dimensions as the region ones
+            self.divWidth = self.region.sWidth;
+            self.divHeight = self.region.sHeight;
+        }
+        $mediaIframe.scrolling = 'no';
+        $mediaIframe.id = self.iframeName;
+        $mediaIframe.width = `${self.divWidth}px`;
+        $mediaIframe.height = `${self.divHeight}px`;
+        $mediaIframe.style.cssText = `border: 0; visibility: hidden;`;
+        const $mediaId = getMediaId(self);
+        let $media = document.getElementById($mediaId);
+        if ($media === null) {
+            if (self.mediaType === 'video') {
+                $media = document.createElement('video');
+            }
+            else if (self.mediaType === 'audio') {
+                $media = new Audio();
+            }
+            else {
+                $media = document.createElement('div');
+            }
+            $media.id = $mediaId;
+        }
+        $media.className = 'media--item';
+        /* Scale the Content Container */
+        $media.style.cssText = `
+            display: none;
+            width: ${self.divWidth}px;
+            height: ${self.divHeight}px;
+            position: absolute;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        `;
+        document.getElementById(`${self.region.containerName}`);
+        const tmpUrl = self.region.options.getResourceUrl.replace(":regionId", self.region.id).replace(":id", self.id) + '?preview=1&layoutPreview=1&scale_override=' + self.region.layout.scaleFactor;
+        self.url = tmpUrl;
+        // Loop if media has loop, or if region has loop and a single media
+        self.loop =
+            self.options['loop'] == '1' ||
+                (self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1);
+        $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
+        if (self.render === 'html' || self.mediaType === 'ticker') {
+            self.checkIframeStatus = true;
+            self.iframe = $mediaIframe;
+        }
+        else if (self.mediaType === "image") {
+            // preload.addFiles(tmpUrl);
+            $media.style.cssText = $media.style.cssText.concat(`background-image: url('${tmpUrl}');`);
+            if (self.options['scaletype'] === 'stretch') {
+                $media.style.cssText = $media.style.cssText.concat(`background-size: 100% 100%;`);
+            }
+            else if (self.options['scaletype'] === 'fit') {
+                $media.style.cssText = $media.style.cssText.concat(`background-size: cover;`);
+            }
+            else {
+                // Center scale type, do we have align or valign?
+                const align = (self.options['align'] == "") ? "center" : self.options['align'];
+                const valign = (self.options['valign'] == "" || self.options['valign'] == "middle") ? "center" : self.options['valign'];
+                $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
+            }
+        }
+        else if (self.mediaType === 'video') {
+            const $videoMedia = $media;
+            $videoMedia.preload = 'auto';
+            $videoMedia.textContent = 'Unsupported Video';
+            if (Boolean(self.options['mute'])) {
+                $videoMedia.muted = self.options.mute === '1';
+            }
+            if (Boolean(self.options['scaletype'])) {
+                if (self.options.scaletype === 'stretch') {
+                    $videoMedia.style.objectFit = 'fill';
+                }
+            }
+            $videoMedia.playsInline = true;
+            if (self.loop) {
+                $videoMedia.loop = true;
+            }
+            $media = $videoMedia;
+        }
+        else if (self.mediaType === 'audio') {
+            const $audioMedia = $media;
+            $audioMedia.preload = 'auto';
+            $audioMedia.textContent = 'Unsupported Audio';
+            $audioMedia.autoplay = true;
+            if (self.loop) {
+                $audioMedia.loop = true;
+            }
+            $media = $audioMedia;
+        }
+        // Duration is per item condition
+        if (self.render === 'html' || self.mediaType === 'ticker') {
+            /* Check if the ticker duration is based on the number of items in the feed */
+            if (self.options['durationisperitem'] === '1') {
+                const regex = new RegExp('<!-- NUMITEMS=(.*?) -->');
+                (async () => {
+                    let html = await fetchJSON(`${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`);
+                    console.log({ html });
+                    const res = regex.exec(html);
+                    if (res !== null) {
+                        self.duration = parseInt(String(self.duration)) * parseInt(res[1]);
+                    }
+                })();
+            }
+        }
+        // Check if the media has fade-in/out transitions
+        if (Boolean(self.options['transin']) && Boolean(self.options['transinduration'])) {
+            const transInDuration = Number(self.options.transinduration);
+            const fadeInTrans = transitionElement('fadeIn', { duration: transInDuration });
+            $media.animate(fadeInTrans.keyframes, fadeInTrans.timing);
+        }
+        // Add media to the region
+        // Second media if exists, will be off-canvas
+        // All added media will be hidden by default
+        // It will start showing when region.nextMedia() function is called
+        // When there's only 1 item and loop = false, don't remove the item but leave it at its last state
+        // For image, and only 1 item, it should still have the transition for next state
+        // Add conditions for video duration being 0 or 1 and also the loop property
+        // For video url, we have to create a URL out of the XLF video URL
+        /**
+         * @DONE
+         * Case 1: Video duration = 0, this will play the video for its entire duration
+         * Case 2: Video duration is set > 0 and loop = false
+         * E.g. Set duration = 100s, video duration = 62s
+         * the video will play until 62s and will stop to its last frame until 100s
+         * After 100s, it will expire
+         * Case 3: Video duration is set > 0 and loop = true
+         * E.g. Set duration = 100s, video duration = 62s, loop = true
+         * the video will play until 62s and will loop through until the remaining 38s
+         * to complete the 100s set duration
+         */
+        // Add html node to media for 
+        self.html = $media;
+        // Check/set iframe based widgets play status
+        if (self.iframe && self.checkIframeStatus) {
+            // Set state as false ( for now )
+            self.ready = false;
+            // Append iframe
+            $media.innerHTML = '';
+            $media.appendChild(self.iframe);
+            // On iframe load, set state as ready to play full preview
+            (self.iframe) && self.iframe.addEventListener('load', function () {
+                self.ready = true;
+                if (self.iframe) {
+                    const iframeStyles = self.iframe.style.cssText;
+                    self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
+                }
+            });
+        }
+    };
+    mediaObject.run = function () {
+        const self = mediaObject;
+        let transInDuration = 1;
+        let transInDirection = 'E';
+        if (Boolean(self.options['transinduration'])) {
+            transInDuration = Number(self.options.transinduration);
+        }
+        if (Boolean(self.options['transindirection'])) {
+            transInDirection = self.options.transindirection;
+        }
+        let defaultTransInOptions = { duration: transInDuration };
+        let transIn = transitionElement('defaultIn', { duration: defaultTransInOptions.duration });
+        if (Boolean(self.options['transin'])) {
+            let transInName = self.options['transin'];
+            if (transInName === 'fly') {
+                transInName = `${transInName}In`;
+                defaultTransInOptions.keyframes = flyTransitionKeyframes({
+                    trans: 'in',
+                    direction: transInDirection,
+                    height: self.divHeight,
+                    width: self.divWidth,
+                });
+            }
+            transIn = transitionElement(transInName, defaultTransInOptions);
+        }
+        const showCurrentMedia = async () => {
+            let $mediaId = getMediaId(self);
+            let $media = document.getElementById($mediaId);
+            if ($media === null) {
+                $media = getNewMedia();
+            }
+            if ($media !== null) {
+                $media.style.setProperty('display', 'block');
+                if (Boolean(self.options['transin'])) {
+                    $media.animate(transIn.keyframes, transIn.timing);
+                }
+                if (self.mediaType === 'video' && self.url !== null) {
+                    $media.src = await preloadMediaBlob(self.url, self.mediaType);
+                }
+                else if (self.mediaType === 'audio' && self.url !== null) {
+                    $media.src = await preloadMediaBlob(self.url, self.mediaType);
+                }
+                self.emitter?.emit('start', self);
+            }
+        };
+        const getNewMedia = () => {
+            const $region = document.getElementById(`${self.region.containerName}`);
+            // This function is for checking whether
+            // the region still has to show a media item
+            // when another region is not finished yet
+            if (self.region.complete && !self.region.layout.allEnded) {
+                // Add currentMedia to the region
+                ($region) && $region.insertBefore(self.html, $region.lastElementChild);
+                return self.html;
+            }
+            return null;
+        };
+        showCurrentMedia();
+    };
+    mediaObject.stop = async function () {
+        const self = mediaObject;
+        const $media = document.getElementById(getMediaId(self));
+        if ($media) {
+            $media.style.display = 'none';
+            $media.remove();
+        }
+    };
+    mediaObject.on = function (event, callback) {
+        return emitter.on(event, callback);
+    };
+    mediaObject.emitter = emitter;
+    mediaObject.init();
+    return mediaObject;
+}
+
+/*
+ * Copyright (C) 2024 Xibo Signage Ltd
+ *
+ * Xibo - Digital Signage - https://www.xibosignage.com
+ *
+ * This file is part of Xibo.
+ *
+ * Xibo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * Xibo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+ */
+function Region(layout, xml, regionId, options) {
+    const props = {
+        layout: layout,
+        xml: xml,
+        regionId: regionId,
+        options: options,
+    };
+    const emitter = createNanoEvents();
+    let regionObject = {
+        ...initialRegion,
+        ...props,
+    };
+    regionObject.prepareRegion = function () {
+        const self = regionObject;
+        const { layout, options } = self;
+        self.id = props.regionId;
+        self.options = { ...platform, ...props.options };
+        self.containerName = `R-${self.id}-${nextId(self.options)}`;
+        self.xml = props.xml;
+        self.mediaObjects = [];
+        self.sWidth = (self.xml) && Number(self.xml?.getAttribute('width')) * layout.scaleFactor;
+        self.sHeight = (self.xml) && Number(self.xml?.getAttribute('height')) * layout.scaleFactor;
+        self.offsetX = (self.xml) && Number(self.xml?.getAttribute('left')) * layout.scaleFactor;
+        self.offsetY = (self.xml) && Number(self.xml?.getAttribute('top')) * layout.scaleFactor;
+        self.zIndex = (self.xml) && Number(self.xml?.getAttribute('zindex')) * layout.scaleFactor;
+        const regionOptions = self.xml?.getElementsByTagName('options');
+        if (regionOptions) {
+            for (let _options of Array.from(regionOptions)) {
+                // Get options
+                const _regionOptions = _options.children;
+                for (let regionOption of Array.from(_regionOptions)) {
+                    self.options[regionOption.nodeName.toLowerCase()] = regionOption.textContent;
+                }
+            }
+        }
+        let $region = document.getElementById(self.containerName);
+        const $layout = document.getElementById(`${self.layout.containerName}`);
+        if ($region === null) {
+            $region = document.createElement('div');
+            $region.id = self.containerName;
+        }
+        ($layout) && $layout.appendChild($region);
+        /* Scale the Layout Container */
+        /* Add region styles */
+        $region.style.cssText = `
+            width: ${self.sWidth}px;
+            height: ${self.sHeight}px;
+            position: absolute;
+            left: ${self.offsetX}px;
+            top: ${self.offsetY}px;
+        `;
+        $region.className = 'region--item';
+        /* Parse region media objects */
+        const regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));
+        self.totalMediaObjects = regionMediaItems.length;
+        Array.from(regionMediaItems).forEach((mediaXml, indx) => {
+            const mediaObj = Media(self, mediaXml?.getAttribute('id') || '', mediaXml, options);
+            mediaObj.index = indx;
+            self.mediaObjects.push(mediaObj);
+        });
+        self.prepareMediaObjects();
+    };
+    regionObject.finished = function () {
+        const self = regionObject;
+        console.log('Region::finished called . . . ', self.id);
+        // Mark as complete
+        self.complete = true;
+        self.layout.regions[regionObject.index] = regionObject;
+        self.layout.regionExpired();
+    };
+    regionObject.prepareMediaObjects = function () {
+        const self = regionObject;
+        let nextMediaIndex;
+        if (self.mediaObjects.length > 0) {
+            if (self.curMedia) {
+                self.oldMedia = self.curMedia;
+            }
+            else {
+                self.oldMedia = undefined;
+            }
+            if (self.currentMediaIndex >= self.mediaObjects.length) {
+                self.currentMediaIndex = 0;
+            }
+            self.curMedia = self.mediaObjects[self.currentMediaIndex];
+            nextMediaIndex = self.currentMediaIndex + 1;
+            if (nextMediaIndex >= self.mediaObjects.length ||
+                (!Boolean(self.mediaObjects[nextMediaIndex]) &&
+                    self.mediaObjects.length === 1)) {
+                nextMediaIndex = 0;
+            }
+            if (Boolean(self.mediaObjects[nextMediaIndex])) {
+                self.nxtMedia = self.mediaObjects[nextMediaIndex];
+            }
+            const $region = document.getElementById(`${self.containerName}`);
+            // Append available media to region DOM
+            if (self.curMedia) {
+                ($region) && $region.insertBefore(self.curMedia.html, $region.lastElementChild);
+            }
+            if (self.nxtMedia) {
+                ($region) && $region.insertBefore(self.nxtMedia.html, $region.lastElementChild);
+            }
+        }
+    };
+    regionObject.run = function () {
+        console.log('Called Region::run > ', regionObject.id);
+        if (regionObject.curMedia) {
+            regionObject.transitionNodes(regionObject.oldMedia, regionObject.curMedia);
+        }
+    };
+    regionObject.transitionNodes = function (oldMedia, newMedia) {
+        const self = regionObject;
+        let transOutDuration = 1;
+        let transOutDirection = 'E';
+        if (newMedia) {
+            console.log({
+                regionComplete: newMedia?.region.complete,
+            });
+            if (oldMedia && Boolean(oldMedia.options['transoutduration'])) {
+                transOutDuration = Number(oldMedia.options.transoutduration);
+            }
+            if (oldMedia && Boolean(oldMedia.options['transoutdirection'])) {
+                transOutDirection = oldMedia.options.transoutdirection;
+            }
+            let defaultTransOutOptions = { duration: transOutDuration };
+            let transOut = transitionElement('defaultOut', { duration: defaultTransOutOptions.duration });
+            let transOutName;
+            if (oldMedia && Boolean(oldMedia.options['transout'])) {
+                transOutName = oldMedia.options['transout'];
+                if (transOutName === 'fly') {
+                    transOutName = `${transOutName}Out`;
+                    defaultTransOutOptions.keyframes = flyTransitionKeyframes({
+                        trans: 'out',
+                        direction: transOutDirection,
+                        height: oldMedia.divHeight,
+                        width: oldMedia.divWidth,
+                    });
+                }
+                transOut = transitionElement(transOutName, defaultTransOutOptions);
+            }
+            const hideOldMedia = new Promise((resolve) => {
+                // Hide oldMedia
+                if (oldMedia) {
+                    const $oldMedia = document.getElementById(getMediaId(oldMedia));
+                    if ($oldMedia) {
+                        const removeOldMedia = () => {
+                            $oldMedia.style.setProperty('display', 'none');
+                            $oldMedia.remove();
+                        };
+                        let oldMediaAnimate = null;
+                        if (Boolean(oldMedia.options['transout'])) {
+                            oldMediaAnimate = $oldMedia.animate(transOut.keyframes, transOut.timing);
+                        }
+                        if (Boolean(oldMedia.options['transout']) && self.totalMediaObjects > 1) {
+                            if (transOutName === 'flyOut') {
+                                // Reset last item to original position and state
+                                oldMediaAnimate?.finished
+                                    .then(() => {
+                                    resolve(true);
+                                    oldMediaAnimate?.effect?.updateTiming({ fill: 'none' });
+                                    removeOldMedia();
+                                });
+                            }
+                            else {
+                                setTimeout(removeOldMedia, transOutDuration / 2);
+                                resolve(true);
+                            }
+                        }
+                        else {
+                            removeOldMedia();
+                            // Resolve this right away
+                            // As a result, the transition between two media object
+                            // seems like a cross-over
+                            resolve(true);
+                        }
+                    }
+                }
+            });
+            if (oldMedia) {
+                hideOldMedia.then((isDone) => {
+                    if (isDone) {
+                        newMedia.run();
+                    }
+                });
+            }
+            else {
+                newMedia.run();
+            }
+        }
+    };
+    regionObject.playNextMedia = function () {
+        const self = regionObject;
+        /* The current media has finished running */
+        if (self.ended) {
+            return;
+        }
+        if (self.currentMediaIndex === self.mediaObjects.length - 1) {
+            self.finished();
+            if (self.layout.allEnded) {
+                return;
+            }
+        }
+        // When the region has completed and when currentMedia is html
+        // Then, preserve the currentMedia state
+        if (self.complete &&
+            self.curMedia?.render === 'html') {
+            return;
+        }
+        // When the region has completed and mediaObjects.length = 1
+        // and curMedia.loop = false, then put the media on
+        // its current state
+        if (self.complete && self.mediaObjects.length === 1 &&
+            self.curMedia?.render !== 'html' &&
+            self.curMedia?.mediaType === 'image' &&
+            !self.curMedia?.loop) {
+            return;
+        }
+        self.currentMediaIndex = self.currentMediaIndex + 1;
+        self.prepareMediaObjects();
+        self.transitionNodes(self.oldMedia, self.curMedia);
+    };
+    regionObject.end = function () {
+        const self = regionObject;
+        self.ending = true;
+        /* The Layout has finished running */
+        /* Do any region exit transition then clean up */
+        self.layout.regions[self.index] = self;
+        console.log('Calling Region::end ', self);
+        self.exitTransition();
+    };
+    regionObject.exitTransition = function () {
+        const self = regionObject;
+        /* TODO: Actually implement region exit transitions */
+        const $region = document.getElementById(`${self.containerName}`);
+        if ($region) {
+            $region.style.display = 'none';
+        }
+        console.log('Called Region::exitTransition ', self.id);
+        self.exitTransitionComplete();
+    };
+    regionObject.exitTransitionComplete = function () {
+        const self = regionObject;
+        console.log('Called Region::exitTransitionComplete ', self.id);
+        self.ended = true;
+        self.layout.regions[self.index] = self;
+        self.layout.regionEnded();
+    };
+    regionObject.on = function (event, callback) {
+        return emitter.on(event, callback);
+    };
+    regionObject.emitter = emitter;
+    regionObject.prepareRegion();
+    return regionObject;
+}
+
+/*
+ * Copyright (C) 2024 Xibo Signage Ltd
+ *
+ * Xibo - Digital Signage - https://www.xibosignage.com
+ *
+ * This file is part of Xibo.
+ *
+ * Xibo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * Xibo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+ */
+function initRenderingDOM(targetContainer) {
+    let _targetContainer = targetContainer;
+    const previewPlayer = document.createElement('div');
+    const previewScreen = document.createElement('div');
+    const endPlay = document.createElement('div');
+    const playAgainLink = document.createElement('a');
+    // Preview player
+    previewPlayer.className = 'player-preview';
+    previewPlayer.id = 'player_container';
+    // Preview screen
+    previewScreen.className = 'screen-preview';
+    previewScreen.id = 'screen_container';
+    // Ended play
+    endPlay.className = 'preview-ended';
+    endPlay.id = 'play_ended';
+    endPlay.style.display = 'none';
+    // Play again link
+    playAgainLink.style.cssText = 'text-decoration: none; color: #ffffff;';
+    playAgainLink.href = 'javascript:history.go(0)';
+    playAgainLink.innerHTML = 'Play again?';
+    if (!_targetContainer) {
+        _targetContainer = document.body;
+    }
+    if (_targetContainer) {
+        if (_targetContainer.querySelector('#player_container') === null) {
+            _targetContainer.insertBefore(previewPlayer, _targetContainer.firstChild);
+            if (previewPlayer.querySelector('#screen_container') === null) {
+                previewPlayer.appendChild(previewScreen);
+            }
+            if (previewPlayer.querySelector('#play_ended') === null) {
+                previewPlayer.appendChild(endPlay);
+                if (endPlay.querySelector('a') === null) {
+                    endPlay.appendChild(playAgainLink);
+                }
+            }
+        }
+    }
+}
+async function getXlf(layoutOptions) {
+    let apiHost = window.location.origin;
+    if (!layoutOptions.inPreview && layoutOptions.appHost) {
+        apiHost = layoutOptions.appHost;
+    }
+    const res = await fetch(apiHost + layoutOptions.xlfUrl, { mode: 'no-cors' });
+    return await res.text();
+}
+function getLayout(params) {
+    let _currentLayout = undefined;
+    let _nextLayout = undefined;
+    let { inputLayouts, currentLayout, nextLayout, currentLayoutIndex } = params.xlr;
+    const hasLayout = inputLayouts.length > 0;
+    const nextLayoutIndex = currentLayoutIndex + 1;
+    if (currentLayout === undefined && nextLayout === undefined) {
+        let activeLayout;
+        // Preview just got started
+        if (hasLayout) {
+            activeLayout = inputLayouts[currentLayoutIndex];
+            _currentLayout = { ...initialLayout };
+            if (inputLayouts.length > 1) {
+                activeLayout = inputLayouts[nextLayoutIndex];
+                _nextLayout = { ...initialLayout };
+            }
+            else {
+                _nextLayout = _currentLayout;
+            }
+            _currentLayout.id = activeLayout.layoutId;
+            _currentLayout.layoutId = activeLayout.layoutId;
+            _nextLayout.id = activeLayout.layoutId;
+            _nextLayout.layoutId = activeLayout.layoutId;
+        }
+    }
+    else {
+        if (hasLayout) {
+            _currentLayout = nextLayout;
+            if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
+                if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
+                    _nextLayout = params.xlr.layouts[nextLayoutIndex];
+                }
+                else {
+                    _nextLayout = { ...initialLayout, ...inputLayouts[nextLayoutIndex] };
+                }
+            }
+            // If _nextLayout is undefined, then we go back to first layout
+            if (_nextLayout === undefined) {
+                _nextLayout = params.xlr.layouts[0];
+            }
+        }
+    }
+    return {
+        currentLayoutIndex,
+        inputLayouts: params.xlr.inputLayouts,
+        current: _currentLayout,
+        next: _nextLayout,
+    };
+}
+function Layout(data, options, xlr, layout) {
+    const props = {
+        data: data,
+        options: options,
+        layout: layout || initialLayout,
+    };
+    const emitter = createNanoEvents();
+    emitter.on('start', (layout) => {
+        layout.done = false;
+        console.log('Layout start emitted > Layout ID > ', layout.id);
+    });
+    emitter.on('end', (layout) => {
+        console.log('Ending layout with ID of > ', layout.layoutId);
+        layout.done = true;
+        /* Remove layout that has ended */
+        const $layout = document.getElementById(layout.containerName);
+        console.log({ $layout });
+        if ($layout !== null) {
+            $layout.remove();
+        }
+        if (!xlr.config.inPreview) {
+            // Transition next layout to current layout and prepare next layout if exist
+            xlr.prepareLayouts().then((parent) => {
+                xlr.playSchedules(parent);
+            });
+        }
+    });
+    const layoutObject = {
+        ...props.layout,
+        options: props.options,
+        emitter,
+    };
+    layoutObject.on = function (event, callback) {
+        return emitter.on(event, callback);
+    };
+    layoutObject.run = function () {
+        const layout = layoutObject;
+        const $layoutContainer = document.getElementById(`${layout.containerName}`);
+        const $splashScreen = document.getElementById(`splash_${layout.id}`);
+        if ($layoutContainer) {
+            $layoutContainer.style.display = 'block';
+        }
+        if ($splashScreen) {
+            $splashScreen.style.display = 'none';
+        }
+        console.log('Layout running > Layout ID > ', layout.id);
+        console.log('Layout Regions > ', layout.regions);
+        for (let i = 0; i < layout.regions.length; i++) {
+            // playLog(4, "debug", "Running region " + self.regions[i].id, false);
+            layout.regions[i].run();
+        }
+    };
+    layoutObject.parseXlf = function () {
+        const layout = layoutObject;
+        const { data, options } = props;
+        layout.containerName = "L" + layout.id + "-" + nextId(options);
+        layout.regions = [];
+        /* Create a hidden div to show the layout in */
+        let $layout = document.getElementById(layout.containerName);
+        if ($layout === null) {
+            $layout = document.createElement('div');
+            $layout.id = layout.containerName;
+        }
+        let $screen = document.getElementById('screen_container');
+        ($screen) && $screen.appendChild($layout);
+        if ($layout) {
+            $layout.style.display = 'none';
+            $layout.style.outline = 'red solid thin';
+        }
+        layout.layoutNode = data;
+        /* Calculate the screen size */
+        layout.sw = $screen?.offsetWidth || 0;
+        layout.sh = $screen?.offsetHeight || 0;
+        layout.xw = Number(layout.layoutNode?.firstElementChild?.getAttribute('width'));
+        layout.xh = Number(layout.layoutNode?.firstElementChild?.getAttribute('height'));
+        layout.zIndex = Number(layout.layoutNode?.firstElementChild?.getAttribute('zindex')) || 0;
+        /* Calculate Scale Factor */
+        layout.scaleFactor = Math.min((layout.sw / layout.xw), (layout.sh / layout.xh));
+        layout.sWidth = Math.round(layout.xw * layout.scaleFactor);
+        layout.sHeight = Math.round(layout.xh * layout.scaleFactor);
+        layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
+        layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
+        const layoutStyles = `
+            width: ${layout.sWidth}px;
+            height: ${layout.sHeight}px;
+            position: absolute;
+            left: ${layout.offsetX}px;
+            top: ${layout.offsetY}px;
+        `;
+        /* Scale the Layout Container */
+        if ($layout) {
+            $layout.style.cssText = layoutStyles;
+        }
+        if ($layout && layout.zIndex !== null) {
+            $layout.style.cssText = layoutStyles.concat(`z-index: ${layout.zIndex};`);
+        }
+        /* Set the layout background */
+        layout.bgColor = layout.layoutNode?.firstElementChild?.getAttribute('bgcolor') || '';
+        layout.bgImage = layout.layoutNode?.firstElementChild?.getAttribute('background') || '';
+        if (!(layout.bgImage === "" || typeof layout.bgImage === 'undefined')) {
+            /* Extract the image ID from the filename */
+            layout.bgId = layout.bgImage.substring(0, layout.bgImage.indexOf('.'));
+            let tmpUrl = options.layoutBackgroundDownloadUrl.replace(":id", layout.id) + '?preview=1';
+            // preload.addFiles(tmpUrl + "&width=" + self.sWidth + "&height=" + self.sHeight + "&dynamic&proportional=0");
+            if ($layout) {
+                $layout.style.cssText = layoutStyles.concat(`
+                    background: url('${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0');
+                    backgroundRepeat: "no-repeat";
+                    backgroundSize: ${layout.sWidth}px ${layout.sHeight}px;
+                    backgroundPosition: "0px 0px";
+                `);
+            }
+        }
+        // Set the background color
+        if ($layout) {
+            $layout.style.cssText = layoutStyles.concat(`background-color: layout.bgColor;`);
+        }
+        // Hide if layout is not the currentLayout
+        if ($layout && xlr.currentLayoutId !== undefined && xlr.currentLayoutId !== layout.id) {
+            $layout.style.cssText = $layout.style.cssText.concat('display: none;');
+        }
+        // Create regions
+        const layoutRegions = Array.from(layout?.layoutNode?.getElementsByTagName('region') || []);
+        Array.from(layoutRegions).forEach((regionXml, indx) => {
+            const regionObj = Region(layout, regionXml, regionXml?.getAttribute('id') || '', options);
+            regionObj.index = indx;
+            layout.regions.push(regionObj);
+        });
+    };
+    layoutObject.prepareLayout = function () {
+        layoutObject.parseXlf();
+    };
+    layoutObject.regionExpired = function () {
+        const self = layoutObject;
+        self.allExpired = true;
+        for (let layoutRegion of self.regions) {
+            if (!layoutRegion.complete) {
+                self.allExpired = false;
+            }
+        }
+        if (self.allExpired) {
+            self.end();
+        }
+    };
+    layoutObject.regionEnded = function () {
+        const self = layoutObject;
+        self.allEnded = true;
+        for (var i = 0; i < self.regions.length; i++) {
+            if (!self.regions[i].ended) {
+                self.allEnded = false;
+            }
+        }
+        if (self.allEnded) {
+            self.stopAllMedia().then(() => {
+                console.log('starting to end layout . . .');
+                if (xlr.config.inPreview) {
+                    const $end = document.getElementById('play_ended');
+                    const $preview = document.getElementById('screen_container');
+                    if ($preview) {
+                        while ($preview.firstChild) {
+                            $preview.removeChild($preview.firstChild);
+                        }
+                        $preview.style.display = 'none';
+                    }
+                    if ($end) {
+                        $end.style.display = 'block';
+                    }
+                }
+                self.emitter?.emit('end', self);
+            });
+        }
+    };
+    layoutObject.end = function () {
+        console.log('Executing Layout::end and Calling Region::end ', layoutObject);
+        /* Ask the layout to gracefully stop running now */
+        for (let layoutRegion of layoutObject.regions) {
+            layoutRegion.end();
+        }
+    };
+    layoutObject.stopAllMedia = function () {
+        console.log('Stopping all media . . .');
+        return new Promise(async (resolve) => {
+            for (var i = 0; i < layoutObject.regions.length; i++) {
+                var region = layoutObject.regions[i];
+                for (var j = 0; j < region.mediaObjects.length; j++) {
+                    var media = region.mediaObjects[j];
+                    await media.stop();
+                }
+            }
+            resolve();
+        });
+    };
+    layoutObject.prepareLayout();
+    return layoutObject;
+}
+
+var ELayoutType;
+(function (ELayoutType) {
+    ELayoutType[ELayoutType["CURRENT"] = 0] = "CURRENT";
+    ELayoutType[ELayoutType["NEXT"] = 1] = "NEXT";
+})(ELayoutType || (ELayoutType = {}));
+const initialXlr = {
+    inputLayouts: [],
+    config: platform,
+    layouts: [],
+    currentLayoutIndex: 0,
+    currentLayoutId: undefined,
+    currentLayout: undefined,
+    nextLayout: undefined,
+    bootstrap() {
+    },
+    init() {
+    },
+    playSchedules() {
+    },
+    prepareLayoutXlf(inputLayout, type) {
+        return Promise.resolve({});
+    },
+    prepareLayouts() {
+        return Promise.resolve({});
+    }
+};
+
+/*
+ * Copyright (C) 2024 Xibo Signage Ltd
+ *
+ * Xibo - Digital Signage - https://www.xibosignage.com
+ *
+ * This file is part of Xibo.
+ *
+ * Xibo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * Xibo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+ */
+function XiboLayoutRenderer(inputLayouts, options) {
+    const props = {
+        inputLayouts,
+        options,
+    };
+    const xlrObject = {
+        ...initialXlr,
+        bootstrap() {
+            // Place to set configurations and initialize required props
+            const self = this;
+            self.inputLayouts = !Array.isArray(props.inputLayouts) ?
+                [props.inputLayouts] : props.inputLayouts;
+            self.config = JSON.parse(JSON.stringify({ ...platform, ...props.options }));
+        },
+        init() {
+            return new Promise((resolve) => {
+                const self = this;
+                // Prepare rendering DOM
+                const previewCanvas = document.querySelector('.preview-canvas');
+                initRenderingDOM(previewCanvas);
+                self.prepareLayouts().then((xlr) => {
+                    resolve(xlr);
+                });
+            });
+        },
+        playSchedules(xlr) {
+            // Check if there's a current layout
+            if (xlr.currentLayout !== undefined) {
+                xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
+                xlr.currentLayout.run();
+            }
+        },
+        async prepareLayoutXlf(inputLayout, type) {
+            const self = this;
+            // Compose layout props first
+            let newOptions = Object.assign({}, platform);
+            newOptions = {
+                ...newOptions,
+                ...props.options,
+            };
+            if (inputLayout && Boolean(inputLayout.layoutId)) {
+                newOptions.xlfUrl =
+                    newOptions.xlfUrl.replace(':layoutId', inputLayout.layoutId);
+            }
+            let layoutXlf;
+            let layoutXlfNode;
+            if (inputLayout && inputLayout.layoutNode === null) {
+                layoutXlf = await getXlf(newOptions);
+                const parser = new window.DOMParser();
+                layoutXlfNode = parser.parseFromString(layoutXlf, 'text/xml');
+            }
+            else {
+                layoutXlfNode = inputLayout && inputLayout.layoutNode;
+            }
+            return new Promise((resolve) => {
+                const xlrLayoutObj = initialLayout;
+                xlrLayoutObj.id = inputLayout.layoutId;
+                xlrLayoutObj.layoutId = inputLayout.layoutId;
+                xlrLayoutObj.options = newOptions;
+                resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
+            });
+        },
+        async prepareLayouts() {
+            const self = this;
+            // Get layouts
+            const xlrLayouts = getLayout({ xlr: self });
+            self.currentLayoutId = xlrLayouts.current?.layoutId;
+            const layouts = await Promise.all([
+                self.prepareLayoutXlf(xlrLayouts.current, ELayoutType.CURRENT),
+                self.prepareLayoutXlf(xlrLayouts.next, ELayoutType.NEXT)
+            ]);
+            return new Promise((resolve) => {
+                self.currentLayout = layouts[0];
+                self.nextLayout = layouts[1];
+                self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
+                self.layouts[self.currentLayoutIndex] = self.currentLayout;
+                resolve(self);
+            });
+        },
+    };
+    xlrObject.bootstrap();
+    return xlrObject;
+}
+
+module.exports = XiboLayoutRenderer;
