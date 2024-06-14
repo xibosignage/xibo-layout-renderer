@@ -181,9 +181,6 @@ export default function Region(
         let transOutDirection: compassPoints = 'E';
 
         if (newMedia) {
-            console.log({
-                regionComplete: newMedia?.region.complete,
-            });
             if (oldMedia && Boolean(oldMedia.options['transoutduration'])) {
                 transOutDuration = Number(oldMedia.options.transoutduration);
             }

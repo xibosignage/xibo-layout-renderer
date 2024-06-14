@@ -32,6 +32,11 @@ import Region from "../Region";
 
 import './layout.css';
 
+const playAgainClickHandle = function(ev: { preventDefault: () => void; }) {
+    ev.preventDefault();
+    history.go(0);
+};
+
 export function initRenderingDOM(targetContainer: Element | null) {
     let _targetContainer = targetContainer;
     const previewPlayer = document.createElement('div');
@@ -53,10 +58,11 @@ export function initRenderingDOM(targetContainer: Element | null) {
     endPlay.style.display = 'none';
 
     // Play again link
+    playAgainLink.id = 'play-back-preview';
     playAgainLink.style.cssText = 'text-decoration: none; color: #ffffff;';
     playAgainLink.href = 'javascript:history.go(0)';
     playAgainLink.innerHTML = 'Play again?';
-
+    playAgainLink.addEventListener('click', playAgainClickHandle);
 
     if (!_targetContainer) {
         _targetContainer = document.body;
@@ -191,6 +197,13 @@ export default function Layout(
             xlr.prepareLayouts().then((parent) => {
                 xlr.playSchedules(parent);
             });
+        } else {
+            // Clean event handlers
+            const $playBack = document.getElementById('play-back-preview');
+
+            if ($playBack) {
+                $playBack.removeEventListener('click', playAgainClickHandle);
+            }
         }
     });
 
