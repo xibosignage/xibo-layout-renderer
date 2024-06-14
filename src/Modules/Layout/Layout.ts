@@ -58,9 +58,11 @@ export function initRenderingDOM(targetContainer: Element | null) {
     endPlay.style.display = 'none';
 
     // Play again link
-    playAgainLink.id = 'play-back-preview';
+    playAgainLink.id = 'play_back_preview';
+    playAgainLink.className = 'play-back-preview';
     playAgainLink.style.cssText = 'text-decoration: none; color: #ffffff;';
     playAgainLink.innerHTML = 'Play again?';
+    playAgainLink.removeEventListener('click', playAgainClickHandle);
     playAgainLink.addEventListener('click', playAgainClickHandle);
 
     if (!_targetContainer) {
@@ -196,13 +198,6 @@ export default function Layout(
             xlr.prepareLayouts().then((parent) => {
                 xlr.playSchedules(parent);
             });
-        } else {
-            // Clean event handlers
-            const $playBack = document.getElementById('play-back-preview');
-
-            if ($playBack) {
-                $playBack.removeEventListener('click', playAgainClickHandle);
-            }
         }
     });
 
