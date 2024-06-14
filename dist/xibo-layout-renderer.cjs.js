@@ -1193,6 +1193,10 @@ function Region(layout, xml, regionId, options) {
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
+const playAgainClickHandle = function (ev) {
+    ev.preventDefault();
+    history.go(0);
+};
 function initRenderingDOM(targetContainer) {
     let _targetContainer = targetContainer;
     const previewPlayer = document.createElement('div');
@@ -1210,9 +1214,11 @@ function initRenderingDOM(targetContainer) {
     endPlay.id = 'play_ended';
     endPlay.style.display = 'none';
     // Play again link
+    playAgainLink.id = 'play-back-preview';
     playAgainLink.style.cssText = 'text-decoration: none; color: #ffffff;';
     playAgainLink.href = 'javascript:history.go(0)';
     playAgainLink.innerHTML = 'Play again?';
+    playAgainLink.addEventListener('click', playAgainClickHandle);
     if (!_targetContainer) {
         _targetContainer = document.body;
     }
@@ -1313,6 +1319,13 @@ function Layout(data, options, xlr, layout) {
             xlr.prepareLayouts().then((parent) => {
                 xlr.playSchedules(parent);
             });
+        }
+        else {
+            // Clean event handlers
+            const $playBack = document.getElementById('play-back-preview');
+            if ($playBack) {
+                $playBack.removeEventListener('click', playAgainClickHandle);
+            }
         }
     });
     const layoutObject = {
