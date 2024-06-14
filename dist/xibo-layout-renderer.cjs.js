@@ -1033,9 +1033,6 @@ function Region(layout, xml, regionId, options) {
         let transOutDuration = 1;
         let transOutDirection = 'E';
         if (newMedia) {
-            console.log({
-                regionComplete: newMedia?.region.complete,
-            });
             if (oldMedia && Boolean(oldMedia.options['transoutduration'])) {
                 transOutDuration = Number(oldMedia.options.transoutduration);
             }
@@ -1216,7 +1213,6 @@ function initRenderingDOM(targetContainer) {
     // Play again link
     playAgainLink.id = 'play-back-preview';
     playAgainLink.style.cssText = 'text-decoration: none; color: #ffffff;';
-    playAgainLink.href = 'javascript:history.go(0)';
     playAgainLink.innerHTML = 'Play again?';
     playAgainLink.addEventListener('click', playAgainClickHandle);
     if (!_targetContainer) {
