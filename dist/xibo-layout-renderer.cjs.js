@@ -1211,9 +1211,11 @@ function initRenderingDOM(targetContainer) {
     endPlay.id = 'play_ended';
     endPlay.style.display = 'none';
     // Play again link
-    playAgainLink.id = 'play-back-preview';
+    playAgainLink.id = 'play_back_preview';
+    playAgainLink.className = 'play-back-preview';
     playAgainLink.style.cssText = 'text-decoration: none; color: #ffffff;';
     playAgainLink.innerHTML = 'Play again?';
+    playAgainLink.removeEventListener('click', playAgainClickHandle);
     playAgainLink.addEventListener('click', playAgainClickHandle);
     if (!_targetContainer) {
         _targetContainer = document.body;
@@ -1315,13 +1317,6 @@ function Layout(data, options, xlr, layout) {
             xlr.prepareLayouts().then((parent) => {
                 xlr.playSchedules(parent);
             });
-        }
-        else {
-            // Clean event handlers
-            const $playBack = document.getElementById('play-back-preview');
-            if ($playBack) {
-                $playBack.removeEventListener('click', playAgainClickHandle);
-            }
         }
     });
     const layoutObject = {

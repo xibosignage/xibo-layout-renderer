@@ -94,6 +94,8 @@ div.preview-ended a {
     width: 100%;
     top: 50%;
     left: 0;
+    cursor: pointer;
+    text-decoration: none;
     -webkit-transform: translateY(-50%);
     -moz-transform: translateY(-50%);
     -ms-transform: translateY(-50%);
