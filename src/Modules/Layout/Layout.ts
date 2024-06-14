@@ -60,7 +60,6 @@ export function initRenderingDOM(targetContainer: Element | null) {
     // Play again link
     playAgainLink.id = 'play-back-preview';
     playAgainLink.style.cssText = 'text-decoration: none; color: #ffffff;';
-    playAgainLink.href = 'javascript:history.go(0)';
     playAgainLink.innerHTML = 'Play again?';
     playAgainLink.addEventListener('click', playAgainClickHandle);
 
