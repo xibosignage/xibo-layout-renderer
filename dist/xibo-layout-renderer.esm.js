@@ -1623,4 +1623,4 @@ function XiboLayoutRenderer(inputLayouts, options) {
     return xlrObject;
 }
 
-export { AudioMedia, ELayoutType, Layout, Media, Region, VideoMedia, audioFileType, capitalizeStr, XiboLayoutRenderer as default, defaultTrans, fadeInElem, fadeOutElem, fetchJSON, flyInElem, flyOutElem, flyTransitionKeyframes, getFileExt, getLayout, getMediaId, getXlf, initRenderingDOM, initialLayout, initialMedia, initialRegion, initialXlr, nextId, platform, preloadMediaBlob, transitionElement };
+export { AudioMedia, ELayoutType, Layout, Media, Region, VideoMedia, XiboLayoutRenderer, audioFileType, capitalizeStr, defaultTrans, fadeInElem, fadeOutElem, fetchJSON, flyInElem, flyOutElem, flyTransitionKeyframes, getFileExt, getLayout, getMediaId, getXlf, initRenderingDOM, initialLayout, initialMedia, initialRegion, initialXlr, nextId, platform, preloadMediaBlob, transitionElement };

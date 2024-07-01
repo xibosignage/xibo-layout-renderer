@@ -1,4 +1,4 @@
-export { default } from './xibo-layout-renderer';
+export { default as XiboLayoutRenderer } from './xibo-layout-renderer';
 export * from './Modules/Layout';
 export * from './Modules/Region';
 export * from './Modules/Media';

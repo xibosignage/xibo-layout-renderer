@@ -60,14 +60,12 @@ const config: RollupOptions[] = [
                 ...iifeCommonOutputOptions,
                 file: `${outputPath}${libName}.js`,
                 format: 'iife',
-                exports: 'named',
                 sourcemap: true,
             },
             {
                 ...iifeCommonOutputOptions,
                 file: `${outputPath}${libName}.min.js`,
                 format: 'iife',
-                exports: 'named',
                 plugins: [terserPlugin()],
             }
         ],

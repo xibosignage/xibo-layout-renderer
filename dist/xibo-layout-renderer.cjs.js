@@ -1,7 +1,5 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', { value: true });
-
 let createNanoEvents = () => ({
   emit(event, ...args) {
     for (
@@ -1632,9 +1630,9 @@ exports.Layout = Layout;
 exports.Media = Media;
 exports.Region = Region;
 exports.VideoMedia = VideoMedia;
+exports.XiboLayoutRenderer = XiboLayoutRenderer;
 exports.audioFileType = audioFileType;
 exports.capitalizeStr = capitalizeStr;
-exports.default = XiboLayoutRenderer;
 exports.defaultTrans = defaultTrans;
 exports.fadeInElem = fadeInElem;
 exports.fadeOutElem = fadeOutElem;

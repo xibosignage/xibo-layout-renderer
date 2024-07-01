@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-export { default } from './xibo-layout-renderer';
+export { default as XiboLayoutRenderer } from './xibo-layout-renderer';
 export * from './Modules/Layout';
 export * from './Modules/Region';
 export * from './Modules/Media';
