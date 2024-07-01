@@ -1506,6 +1506,7 @@ var XiboLayoutRenderer = (function (exports) {
       bootstrap() {
       },
       init() {
+          return Promise.resolve({});
       },
       playSchedules() {
       },
@@ -1659,3 +1660,4 @@ var XiboLayoutRenderer = (function (exports) {
   return exports;
 
 })({});
+//# sourceMappingURL=xibo-layout-renderer.js.map

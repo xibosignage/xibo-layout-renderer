@@ -1503,6 +1503,7 @@ const initialXlr = {
     bootstrap() {
     },
     init() {
+        return Promise.resolve({});
     },
     playSchedules() {
     },
