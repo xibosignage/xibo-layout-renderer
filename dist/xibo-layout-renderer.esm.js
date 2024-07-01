@@ -64,6 +64,7 @@ const initialLayout = {
     options: platform,
     done: false,
     allEnded: false,
+    path: '',
     prepareLayout() {
     },
     parseXlf() {
@@ -1573,9 +1574,13 @@ function XiboLayoutRenderer(inputLayouts, options) {
                 ...newOptions,
                 ...props.options,
             };
-            if (inputLayout && Boolean(inputLayout.layoutId)) {
+            if (self.config.platform === 'CMS' &&
+                inputLayout && Boolean(inputLayout.layoutId)) {
                 newOptions.xlfUrl =
                     newOptions.xlfUrl.replace(':layoutId', inputLayout.layoutId);
+            }
+            else if (self.config.platform === 'chromeOS') {
+                newOptions.xlfUrl = inputLayout.path;
             }
             let layoutXlf;
             let layoutXlfNode;

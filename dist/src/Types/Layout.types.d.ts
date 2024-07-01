@@ -4,8 +4,8 @@ import { ILayoutEvents } from "../Modules/Layout/Layout";
 import { IXlr } from "./XLR.types";
 export type InputLayoutType = {
     layoutId: string;
+    path?: string;
 };
-export type TargetContainerType = HTMLElement;
 export type OptionsType = {
     xlfUrl: string;
     getResourceUrl: string;
@@ -16,6 +16,7 @@ export type OptionsType = {
     idCounter: number;
     inPreview: boolean;
     appHost?: string | null;
+    platform?: 'CMS' | 'chromeOS';
 };
 export interface ILayout {
     id: string;
@@ -45,6 +46,7 @@ export interface ILayout {
     options: OptionsType;
     done: boolean;
     allEnded: boolean;
+    path?: string;
     prepareLayout(): void;
     parseXlf(): void;
     run(): void;

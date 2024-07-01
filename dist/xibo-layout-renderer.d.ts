@@ -115,6 +115,7 @@ interface ILayoutEvents {
 
 type InputLayoutType = {
     layoutId: string;
+    path?: string;
 };
 type OptionsType = {
     xlfUrl: string;
@@ -126,6 +127,7 @@ type OptionsType = {
     idCounter: number;
     inPreview: boolean;
     appHost?: string | null;
+    platform?: 'CMS' | 'chromeOS';
 };
 interface ILayout {
     id: string;
@@ -155,6 +157,7 @@ interface ILayout {
     options: OptionsType;
     done: boolean;
     allEnded: boolean;
+    path?: string;
     prepareLayout(): void;
     parseXlf(): void;
     run(): void;
