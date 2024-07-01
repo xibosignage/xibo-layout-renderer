@@ -66,12 +66,14 @@ const config: RollupOptions[] = [
                 ...iifeCommonOutputOptions,
                 file: `${outputPath}${libName}.min.js`,
                 format: 'iife',
+                sourcemap: true,
                 plugins: [terserPlugin()],
             }
         ],
     },
     {
         ...commonInputOptions,
+        plugins: [commonInputOptions.plugins, dtsPlugin()],
         output: [
             {
                 file: `${outputPath}${libName}.cjs.js`,
