@@ -1,5 +1,7 @@
 'use strict';
 
+Object.defineProperty(exports, '__esModule', { value: true });
+
 /*
  * Copyright (C) 2024 Xibo Signage Ltd
  *
@@ -1624,4 +1626,5 @@ function XiboLayoutRenderer(inputLayouts, options) {
     return xlrObject;
 }
 
-module.exports = XiboLayoutRenderer;
+exports.default = XiboLayoutRenderer;
+exports.platform = platform;

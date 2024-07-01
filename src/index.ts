@@ -19,3 +19,4 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 export { default } from './xibo-layout-renderer';
+export { platform } from './Modules/Platform';

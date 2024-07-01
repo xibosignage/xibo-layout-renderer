@@ -171,4 +171,16 @@ interface ILayout {
 
 declare function XiboLayoutRenderer(inputLayouts: InputLayoutType[], options?: OptionsType): IXlr;
 
-export { XiboLayoutRenderer as default };
+declare const platform: {
+    getResourceUrl: string;
+    xlfUrl: string;
+    layoutBackgroundDownloadUrl: string;
+    layoutPreviewUrl: string;
+    libraryDownloadUrl: string;
+    loaderUrl: string;
+    idCounter: number;
+    inPreview: boolean;
+    appHost: null;
+};
+
+export { XiboLayoutRenderer as default, platform };

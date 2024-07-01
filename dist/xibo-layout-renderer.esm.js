@@ -1622,4 +1622,4 @@ function XiboLayoutRenderer(inputLayouts, options) {
     return xlrObject;
 }
 
-export { XiboLayoutRenderer as default };
+export { XiboLayoutRenderer as default, platform };

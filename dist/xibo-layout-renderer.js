@@ -1,4 +1,4 @@
-var XiboLayoutRenderer = (function () {
+var XiboLayoutRenderer = (function (exports) {
     'use strict';
 
     /*
@@ -1625,6 +1625,11 @@ var XiboLayoutRenderer = (function () {
         return xlrObject;
     }
 
-    return XiboLayoutRenderer;
+    exports.default = XiboLayoutRenderer;
+    exports.platform = platform;
 
-})();
+    Object.defineProperty(exports, '__esModule', { value: true });
+
+    return exports;
+
+})({});
