@@ -1,4 +1,4 @@
-import { InputLayoutType, OptionsType } from "./Types/Layout.types";
-import { IXlr } from "./Types/XLR.types";
+import { InputLayoutType, OptionsType } from "./Types/Layout";
+import { IXlr } from './Types/XLR';
 declare function XiboLayoutRenderer(inputLayouts: InputLayoutType[], options?: OptionsType): IXlr;
 export default XiboLayoutRenderer;

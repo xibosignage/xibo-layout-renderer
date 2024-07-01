@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { IMedia } from "../Types/Media.types";
+import { IMedia } from '../../Types/Media';
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -63,16 +63,12 @@ export async function preloadMediaBlob(src: string, type: 'video' | 'audio') {
     return URL.createObjectURL(blob);
 }
 
-export function fetchJSON(url: string) {
+export async function fetchJSON(url: string) {
     return fetch(url)
         .then(res => res.json())
         .catch(err => {
             console.log(err);
         });
-}
-
-export function isAudioType(filename: string) {
-    return /\.(mp3|mp4|ogg)$/i.test(filename);
 }
 
 export function getFileExt(filename: string) {

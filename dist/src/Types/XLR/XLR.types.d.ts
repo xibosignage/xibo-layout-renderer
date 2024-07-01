@@ -1,4 +1,4 @@
-import { ILayout, InputLayoutType, OptionsType } from "./Layout.types";
+import { ILayout, InputLayoutType, OptionsType } from "../Layout/Layout.types";
 export type PrepareLayoutsType = {
     moveNext?: boolean;
 };

@@ -1,5 +1,5 @@
-import { GetLayoutParamType, GetLayoutType, ILayout, OptionsType } from "../../Types/Layout.types";
-import { IXlr } from "../../Types/XLR.types";
+import { GetLayoutParamType, GetLayoutType, ILayout, OptionsType } from '../../Types/Layout';
+import { IXlr } from '../../Types/XLR';
 import './layout.css';
 export declare function initRenderingDOM(targetContainer: Element | null): void;
 export declare function getXlf(layoutOptions: OptionsType): Promise<string>;

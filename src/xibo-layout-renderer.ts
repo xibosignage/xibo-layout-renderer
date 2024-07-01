@@ -18,10 +18,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {ILayout, initialLayout, InputLayoutType, OptionsType} from "./Types/Layout.types";
-import Layout, {getLayout, getXlf, initRenderingDOM} from "./Modules/Layout/Layout";
-import {ELayoutType, initialXlr, IXlr} from "./Types/XLR.types";
-import {platform} from "./Modules/Platform";
+import {
+    Layout, getLayout, getXlf, initRenderingDOM
+} from "./Modules/Layout";
+import { platform } from './Modules/Platform';
+import {
+    ILayout, initialLayout, InputLayoutType, OptionsType,
+} from "./Types/Layout";
+import { ELayoutType, initialXlr, IXlr } from './Types/XLR';
 
 function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],

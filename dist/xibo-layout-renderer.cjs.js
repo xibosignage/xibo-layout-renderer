@@ -2,6 +2,27 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+let createNanoEvents = () => ({
+  emit(event, ...args) {
+    for (
+      let i = 0,
+        callbacks = this.events[event] || [],
+        length = callbacks.length;
+      i < length;
+      i++
+    ) {
+      callbacks[i](...args);
+    }
+  },
+  events: {},
+  on(event, cb) {
+(this.events[event] ||= []).push(cb);
+    return () => {
+      this.events[event] = this.events[event]?.filter(i => cb !== i);
+    }
+  }
+});
+
 /*
  * Copyright (C) 2024 Xibo Signage Ltd
  *
@@ -89,27 +110,6 @@ const initialLayout = {
     },
 };
 
-let createNanoEvents = () => ({
-  emit(event, ...args) {
-    for (
-      let i = 0,
-        callbacks = this.events[event] || [],
-        length = callbacks.length;
-      i < length;
-      i++
-    ) {
-      callbacks[i](...args);
-    }
-  },
-  events: {},
-  on(event, cb) {
-(this.events[event] ||= []).push(cb);
-    return () => {
-      this.events[event] = this.events[event]?.filter(i => cb !== i);
-    }
-  }
-});
-
 function nextId(options) {
     if (options.idCounter > 500) {
         options.idCounter = 0;
@@ -145,7 +145,7 @@ async function preloadMediaBlob(src, type) {
     }
     return URL.createObjectURL(blob);
 }
-function fetchJSON(url) {
+async function fetchJSON(url) {
     return fetch(url)
         .then(res => res.json())
         .catch(err => {
@@ -1067,19 +1067,19 @@ function Region(layout, xml, regionId, options) {
                             $oldMedia.style.setProperty('display', 'none');
                             $oldMedia.remove();
                         };
-                        let oldMediaAnimate = null;
+                        let oldMediaAnimate;
                         if (Boolean(oldMedia.options['transout'])) {
                             oldMediaAnimate = $oldMedia.animate(transOut.keyframes, transOut.timing);
                         }
                         if (Boolean(oldMedia.options['transout']) && self.totalMediaObjects > 1) {
                             if (transOutName === 'flyOut') {
                                 // Reset last item to original position and state
-                                oldMediaAnimate?.finished
+                                oldMediaAnimate ? oldMediaAnimate.finished
                                     .then(() => {
                                     resolve(true);
                                     oldMediaAnimate?.effect?.updateTiming({ fill: 'none' });
                                     removeOldMedia();
-                                });
+                                }) : undefined;
                             }
                             else {
                                 setTimeout(removeOldMedia, transOutDuration / 2);
@@ -1491,11 +1491,11 @@ function Layout(data, options, xlr, layout) {
     return layoutObject;
 }
 
-var ELayoutType;
+exports.ELayoutType = void 0;
 (function (ELayoutType) {
     ELayoutType[ELayoutType["CURRENT"] = 0] = "CURRENT";
     ELayoutType[ELayoutType["NEXT"] = 1] = "NEXT";
-})(ELayoutType || (ELayoutType = {}));
+})(exports.ELayoutType || (exports.ELayoutType = {}));
 const initialXlr = {
     inputLayouts: [],
     config: platform,
@@ -1610,8 +1610,8 @@ function XiboLayoutRenderer(inputLayouts, options) {
             const xlrLayouts = getLayout({ xlr: self });
             self.currentLayoutId = xlrLayouts.current?.layoutId;
             const layouts = await Promise.all([
-                self.prepareLayoutXlf(xlrLayouts.current, ELayoutType.CURRENT),
-                self.prepareLayoutXlf(xlrLayouts.next, ELayoutType.NEXT)
+                self.prepareLayoutXlf(xlrLayouts.current, exports.ELayoutType.CURRENT),
+                self.prepareLayoutXlf(xlrLayouts.next, exports.ELayoutType.NEXT)
             ]);
             return new Promise((resolve) => {
                 self.currentLayout = layouts[0];
@@ -1626,5 +1626,31 @@ function XiboLayoutRenderer(inputLayouts, options) {
     return xlrObject;
 }
 
+exports.AudioMedia = AudioMedia;
+exports.Layout = Layout;
+exports.Media = Media;
+exports.Region = Region;
+exports.VideoMedia = VideoMedia;
+exports.audioFileType = audioFileType;
+exports.capitalizeStr = capitalizeStr;
 exports.default = XiboLayoutRenderer;
+exports.defaultTrans = defaultTrans;
+exports.fadeInElem = fadeInElem;
+exports.fadeOutElem = fadeOutElem;
+exports.fetchJSON = fetchJSON;
+exports.flyInElem = flyInElem;
+exports.flyOutElem = flyOutElem;
+exports.flyTransitionKeyframes = flyTransitionKeyframes;
+exports.getFileExt = getFileExt;
+exports.getLayout = getLayout;
+exports.getMediaId = getMediaId;
+exports.getXlf = getXlf;
+exports.initRenderingDOM = initRenderingDOM;
+exports.initialLayout = initialLayout;
+exports.initialMedia = initialMedia;
+exports.initialRegion = initialRegion;
+exports.initialXlr = initialXlr;
+exports.nextId = nextId;
 exports.platform = platform;
+exports.preloadMediaBlob = preloadMediaBlob;
+exports.transitionElement = transitionElement;

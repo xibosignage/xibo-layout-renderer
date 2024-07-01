@@ -1,6 +1,6 @@
-import { OptionsType } from "../../Types/Layout.types";
-import { IRegion } from "../../Types/Region.types";
-import { IMedia } from "../../Types/Media.types";
+import { OptionsType } from '../../Types/Layout';
+import { IRegion } from '../../Types/Region';
+import { IMedia } from '../../Types/Media';
 export interface IMediaEvents {
     start: (media: IMedia) => void;
     end: (media: IMedia) => void;

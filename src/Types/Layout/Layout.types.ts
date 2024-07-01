@@ -19,10 +19,10 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {DefaultEvents, Emitter, Unsubscribe} from "nanoevents";
-import {IRegion} from "./Region.types";
-import {platform} from "../Modules/Platform";
-import {ILayoutEvents} from "../Modules/Layout/Layout";
-import {IXlr} from "./XLR.types";
+import {IRegion} from "../Region";
+import {platform} from "../../Modules/Platform";
+import {ILayoutEvents} from "../../Modules/Layout";
+import {IXlr} from "../XLR";
 
 export type InputLayoutType = {
     layoutId: string;

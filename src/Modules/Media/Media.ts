@@ -19,13 +19,13 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { createNanoEvents } from "nanoevents";
-import {OptionsType} from "../../Types/Layout.types";
-import {IRegion} from "../../Types/Region.types";
-import {IMedia, initialMedia} from "../../Types/Media.types";
-import {fetchJSON, getMediaId, nextId, preloadMediaBlob} from "../Generators";
-import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from "../Transitions";
-import VideoMedia from "./VideoMedia";
-import AudioMedia from "./AudioMedia";
+import { OptionsType } from '../../Types/Layout';
+import { IRegion } from '../../Types/Region';
+import { IMedia, initialMedia } from '../../Types/Media';
+import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
+import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
+import VideoMedia from './VideoMedia';
+import AudioMedia from './AudioMedia';
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;

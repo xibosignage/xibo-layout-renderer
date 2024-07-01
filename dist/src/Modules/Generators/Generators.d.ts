@@ -1,4 +1,4 @@
-import { IMedia } from "../Types/Media.types";
+import { IMedia } from '../../Types/Media';
 export declare function nextId(options: {
     idCounter: number;
 }): number;
@@ -6,6 +6,5 @@ export declare const getMediaId: ({ mediaType, containerName }: IMedia) => strin
 export declare const capitalizeStr: (inputStr: string) => string;
 export declare function preloadMediaBlob(src: string, type: 'video' | 'audio'): Promise<string>;
 export declare function fetchJSON(url: string): Promise<any>;
-export declare function isAudioType(filename: string): boolean;
 export declare function getFileExt(filename: string): string;
 export declare function audioFileType(str: string): string | undefined;

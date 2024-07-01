@@ -24,11 +24,11 @@ import {
     GetLayoutType,
     ILayout,
     initialLayout,
-    OptionsType
-} from "../../Types/Layout.types";
-import {IXlr} from "../../Types/XLR.types";
-import {nextId} from "../Generators";
-import Region from "../Region";
+    OptionsType,
+} from '../../Types/Layout';
+import { IXlr } from '../../Types/XLR';
+import { nextId } from '../Generators';
+import { Region } from '../Region';
 
 import './layout.css';
 

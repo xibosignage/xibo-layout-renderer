@@ -18,8 +18,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {ILayout, InputLayoutType, OptionsType} from "./Layout.types";
-import {platform} from "../Modules/Platform";
+import {ILayout, InputLayoutType, OptionsType} from "../Layout/Layout.types";
+import {platform} from "../../Modules/Platform/Platform";
 
 export type PrepareLayoutsType = {
     moveNext?: boolean;

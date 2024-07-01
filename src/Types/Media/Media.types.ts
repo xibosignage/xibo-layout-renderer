@@ -19,8 +19,8 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { DefaultEvents, Emitter, Unsubscribe } from "nanoevents";
-import { IMediaEvents } from "../Modules/Media/Media";
-import {initialRegion, IRegion} from "./Region.types";
+import { IMediaEvents } from "../../Modules/Media/Media";
+import {initialRegion, IRegion} from "../Region/Region.types";
 
 export interface IMedia {
     region: IRegion;

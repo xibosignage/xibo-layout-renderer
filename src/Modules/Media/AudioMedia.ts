@@ -18,8 +18,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { IMedia } from "../../Types/Media.types";
-import { capitalizeStr, getMediaId } from "../Generators";
+import { IMedia } from '../../Types/Media';
+import { capitalizeStr, getMediaId } from '../Generators';
 
 import './media.css';
 

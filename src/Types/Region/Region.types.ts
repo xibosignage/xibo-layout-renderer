@@ -19,9 +19,9 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { DefaultEvents, Emitter, Unsubscribe } from "nanoevents";
-import {ILayout, initialLayout, OptionsType} from "./Layout.types";
-import {platform} from "../Modules/Platform";
-import {IMedia} from "./Media.types";
+import {ILayout, initialLayout, OptionsType} from "../Layout/Layout.types";
+import {platform} from "../../Modules/Platform/Platform";
+import {IMedia} from "../Media/Media.types";
 
 export interface IRegionEvents {
     start: (layout: IRegion) => void;

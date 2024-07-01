@@ -19,13 +19,19 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { createNanoEvents } from "nanoevents";
-import {ILayout, OptionsType} from "../Types/Layout.types";
-import {initialRegion, IRegion, IRegionEvents} from "../Types/Region.types";
-import {IMedia} from "../Types/Media.types";
-import {getMediaId, nextId} from "./Generators";
-import { platform } from "./Platform";
-import Media from "./Media/Media";
-import { TransitionElementOptions, TransitionNameType, compassPoints, flyTransitionKeyframes, transitionElement } from "./Transitions";
+import { ILayout, OptionsType } from '../../Types/Layout';
+import { initialRegion, IRegion, IRegionEvents } from '../../Types/Region';
+import { IMedia } from '../../Types/Media';
+import { getMediaId, nextId } from '../Generators';
+import { platform } from '../Platform';
+import { Media } from '../Media';
+import {
+    TransitionElementOptions,
+    TransitionNameType,
+    compassPoints,
+    flyTransitionKeyframes,
+    transitionElement,
+} from '../Transitions';
 
 export default function Region(
     layout: ILayout,
@@ -219,7 +225,7 @@ export default function Region(
                             $oldMedia.remove();
                         };
 
-                        let oldMediaAnimate = null;
+                        let oldMediaAnimate: any;
                         if (Boolean(oldMedia.options['transout'])) {
                             oldMediaAnimate = $oldMedia.animate(transOut.keyframes, transOut.timing);
                         }
@@ -227,12 +233,12 @@ export default function Region(
                         if (Boolean(oldMedia.options['transout']) && self.totalMediaObjects > 1) {
                             if (transOutName === 'flyOut') {
                                 // Reset last item to original position and state
-                                oldMediaAnimate?.finished
+                                oldMediaAnimate ? oldMediaAnimate.finished
                                     .then(() => {
                                         resolve(true);
                                         oldMediaAnimate?.effect?.updateTiming({fill: 'none'});
                                         removeOldMedia();
-                                    });
+                                    }) : undefined;
                             } else {
                                 setTimeout(removeOldMedia, transOutDuration / 2);
                                 resolve(true);
@@ -243,7 +249,7 @@ export default function Region(
                             // As a result, the transition between two media object
                             // seems like a cross-over
                             resolve(true);
-    
+
                         }
                     }
                 }

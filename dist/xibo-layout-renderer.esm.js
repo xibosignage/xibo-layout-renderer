@@ -1,3 +1,24 @@
+let createNanoEvents = () => ({
+  emit(event, ...args) {
+    for (
+      let i = 0,
+        callbacks = this.events[event] || [],
+        length = callbacks.length;
+      i < length;
+      i++
+    ) {
+      callbacks[i](...args);
+    }
+  },
+  events: {},
+  on(event, cb) {
+(this.events[event] ||= []).push(cb);
+    return () => {
+      this.events[event] = this.events[event]?.filter(i => cb !== i);
+    }
+  }
+});
+
 /*
  * Copyright (C) 2024 Xibo Signage Ltd
  *
@@ -85,27 +106,6 @@ const initialLayout = {
     },
 };
 
-let createNanoEvents = () => ({
-  emit(event, ...args) {
-    for (
-      let i = 0,
-        callbacks = this.events[event] || [],
-        length = callbacks.length;
-      i < length;
-      i++
-    ) {
-      callbacks[i](...args);
-    }
-  },
-  events: {},
-  on(event, cb) {
-(this.events[event] ||= []).push(cb);
-    return () => {
-      this.events[event] = this.events[event]?.filter(i => cb !== i);
-    }
-  }
-});
-
 function nextId(options) {
     if (options.idCounter > 500) {
         options.idCounter = 0;
@@ -141,7 +141,7 @@ async function preloadMediaBlob(src, type) {
     }
     return URL.createObjectURL(blob);
 }
-function fetchJSON(url) {
+async function fetchJSON(url) {
     return fetch(url)
         .then(res => res.json())
         .catch(err => {
@@ -1063,19 +1063,19 @@ function Region(layout, xml, regionId, options) {
                             $oldMedia.style.setProperty('display', 'none');
                             $oldMedia.remove();
                         };
-                        let oldMediaAnimate = null;
+                        let oldMediaAnimate;
                         if (Boolean(oldMedia.options['transout'])) {
                             oldMediaAnimate = $oldMedia.animate(transOut.keyframes, transOut.timing);
                         }
                         if (Boolean(oldMedia.options['transout']) && self.totalMediaObjects > 1) {
                             if (transOutName === 'flyOut') {
                                 // Reset last item to original position and state
-                                oldMediaAnimate?.finished
+                                oldMediaAnimate ? oldMediaAnimate.finished
                                     .then(() => {
                                     resolve(true);
                                     oldMediaAnimate?.effect?.updateTiming({ fill: 'none' });
                                     removeOldMedia();
-                                });
+                                }) : undefined;
                             }
                             else {
                                 setTimeout(removeOldMedia, transOutDuration / 2);
@@ -1622,4 +1622,4 @@ function XiboLayoutRenderer(inputLayouts, options) {
     return xlrObject;
 }
 
-export { XiboLayoutRenderer as default, platform };
+export { AudioMedia, ELayoutType, Layout, Media, Region, VideoMedia, audioFileType, capitalizeStr, XiboLayoutRenderer as default, defaultTrans, fadeInElem, fadeOutElem, fetchJSON, flyInElem, flyOutElem, flyTransitionKeyframes, getFileExt, getLayout, getMediaId, getXlf, initRenderingDOM, initialLayout, initialMedia, initialRegion, initialXlr, nextId, platform, preloadMediaBlob, transitionElement };
