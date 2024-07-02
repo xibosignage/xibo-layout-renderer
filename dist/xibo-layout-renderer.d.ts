@@ -190,16 +190,6 @@ type GetLayoutType = {
 
 declare function XiboLayoutRenderer(inputLayouts: InputLayoutType[], options?: OptionsType): IXlr;
 
-declare function Region(layout: ILayout, xml: Element, regionId: string, options: OptionsType): IRegion;
-
-declare function VideoMedia(media: IMedia): {
-    init(): void;
-};
-
-declare function AudioMedia(media: IMedia): {
-    init(): void;
-};
-
 declare const platform: {
     getResourceUrl: string;
     xlfUrl: string;
@@ -312,5 +302,15 @@ type flyTransitionParams = {
     width: string | number;
 };
 declare const flyTransitionKeyframes: (params: flyTransitionParams) => KeyframeOptionsType;
+
+declare function Region(layout: ILayout, xml: Element, regionId: string, options: OptionsType): IRegion;
+
+declare function VideoMedia(media: IMedia): {
+    init(): void;
+};
+
+declare function AudioMedia(media: IMedia): {
+    init(): void;
+};
 
 export { AudioMedia, ELayoutType, type GetLayoutParamType, type GetLayoutType, type ILayout, type ILayoutEvents, type IMedia, type IRegion, type IRegionEvents, type IXlr, type InputLayoutType, type KeyframeOptionsType, Layout, Media, type OptionsType, Region, type TransitionElementOptions, type TransitionNameType, VideoMedia, XiboLayoutRenderer, audioFileType, capitalizeStr, type compassPoints, defaultTrans, fadeInElem, fadeOutElem, fetchJSON, flyInElem, flyOutElem, flyTransitionKeyframes, type flyTransitionParams, getFileExt, getLayout, getMediaId, getXlf, initRenderingDOM, initialLayout, initialMedia, initialRegion, initialXlr, nextId, platform, preloadMediaBlob, transitionElement };
