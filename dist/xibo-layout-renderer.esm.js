@@ -19,26 +19,6 @@ let createNanoEvents = () => ({
   }
 });
 
-/*
- * Copyright (C) 2024 Xibo Signage Ltd
- *
- * Xibo - Digital Signage - https://www.xibosignage.com
- *
- * This file is part of Xibo.
- *
- * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * any later version.
- *
- * Xibo is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
- */
 const RESOURCE_URL = '/playlist/widget/resource/:regionId/:id';
 const XLF_URL = '/layout/xlf/:layoutId';
 const LAYOUT_BACKGROUND_DOWNLOAD_URL = '/layout/background/:id';
@@ -55,6 +35,7 @@ const platform = {
     idCounter: 0,
     inPreview: true,
     appHost: null,
+    platform: 'CMS',
 };
 
 const initialLayout = {
@@ -1236,10 +1217,17 @@ function initRenderingDOM(targetContainer) {
 }
 async function getXlf(layoutOptions) {
     let apiHost = window.location.origin;
-    if (!layoutOptions.inPreview && layoutOptions.appHost) {
-        apiHost = layoutOptions.appHost;
+    let xlfUrl = apiHost + layoutOptions.xlfUrl;
+    if (layoutOptions.platform === 'CMS') {
+        xlfUrl = apiHost + layoutOptions.xlfUrl;
     }
-    const res = await fetch(apiHost + layoutOptions.xlfUrl, { mode: 'no-cors' });
+    else if (layoutOptions.platform === 'chromeOS') {
+        xlfUrl = layoutOptions.xlfUrl;
+    }
+    else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
+        xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
+    }
+    const res = await fetch(xlfUrl, { mode: 'no-cors' });
     return await res.text();
 }
 function getLayout(params) {
@@ -1263,8 +1251,10 @@ function getLayout(params) {
             }
             _currentLayout.id = activeLayout.layoutId;
             _currentLayout.layoutId = activeLayout.layoutId;
+            _currentLayout.path = activeLayout?.path ?? '';
             _nextLayout.id = activeLayout.layoutId;
             _nextLayout.layoutId = activeLayout.layoutId;
+            _nextLayout.path = activeLayout?.path ?? '';
         }
     }
     else {
@@ -1311,7 +1301,7 @@ function Layout(data, options, xlr, layout) {
         if ($layout !== null) {
             $layout.remove();
         }
-        if (!xlr.config.inPreview) {
+        if (xlr.config.platform !== 'CMS') {
             // Transition next layout to current layout and prepare next layout if exist
             xlr.prepareLayouts().then((parent) => {
                 xlr.playSchedules(parent);
@@ -1446,7 +1436,7 @@ function Layout(data, options, xlr, layout) {
         if (self.allEnded) {
             self.stopAllMedia().then(() => {
                 console.log('starting to end layout . . .');
-                if (xlr.config.inPreview) {
+                if (xlr.config.platform === 'CMS') {
                     const $end = document.getElementById('play_ended');
                     const $preview = document.getElementById('screen_container');
                     if ($preview) {
@@ -1623,4 +1613,4 @@ function XiboLayoutRenderer(inputLayouts, options) {
     return xlrObject;
 }
 
-export { AudioMedia, ELayoutType, Layout, Media, Region, VideoMedia, XiboLayoutRenderer, audioFileType, capitalizeStr, defaultTrans, fadeInElem, fadeOutElem, fetchJSON, flyInElem, flyOutElem, flyTransitionKeyframes, getFileExt, getLayout, getMediaId, getXlf, initRenderingDOM, initialLayout, initialMedia, initialRegion, initialXlr, nextId, platform, preloadMediaBlob, transitionElement };
+export { XiboLayoutRenderer as default };

@@ -18,6 +18,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
+import {OptionsType} from "../../Types/Layout";
+
 const RESOURCE_URL = '/playlist/widget/resource/:regionId/:id';
 const XLF_URL = '/layout/xlf/:layoutId';
 const LAYOUT_BACKGROUND_DOWNLOAD_URL = '/layout/background/:id';
@@ -25,7 +27,7 @@ const LAYOUT_PREVIEW_URL = '/layout/preview/[layoutCode]';
 const LIBRARY_DOWNLOAD_URL = '/library/download/:id';
 const LOADER_URL = '/theme/default/img/loader.gif';
 
-export const platform = {
+export const platform: OptionsType = {
     getResourceUrl: RESOURCE_URL,
     xlfUrl: XLF_URL,
     layoutBackgroundDownloadUrl: LAYOUT_BACKGROUND_DOWNLOAD_URL,
@@ -35,4 +37,5 @@ export const platform = {
     idCounter: 0,
     inPreview: true,
     appHost: null,
+    platform: 'CMS',
 };

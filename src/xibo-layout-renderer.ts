@@ -27,7 +27,7 @@ import {
 } from "./Types/Layout";
 import { ELayoutType, initialXlr, IXlr } from './Types/XLR';
 
-export function XiboLayoutRenderer(
+export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
     options?: OptionsType,
 ) {

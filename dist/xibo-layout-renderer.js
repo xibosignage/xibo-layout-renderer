@@ -1,4 +1,4 @@
-var XiboLayoutRenderer = (function (exports) {
+var XiboLayoutRenderer = (function () {
   'use strict';
 
   let createNanoEvents = () => ({
@@ -22,26 +22,6 @@ var XiboLayoutRenderer = (function (exports) {
     }
   });
 
-  /*
-   * Copyright (C) 2024 Xibo Signage Ltd
-   *
-   * Xibo - Digital Signage - https://www.xibosignage.com
-   *
-   * This file is part of Xibo.
-   *
-   * Xibo is free software: you can redistribute it and/or modify
-   * it under the terms of the GNU Lesser General Public License as published by
-   * the Free Software Foundation, either version 3 of the License, or
-   * any later version.
-   *
-   * Xibo is distributed in the hope that it will be useful,
-   * but WITHOUT ANY WARRANTY; without even the implied warranty of
-   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   * GNU Lesser General Public License for more details.
-   *
-   * You should have received a copy of the GNU Lesser General Public License
-   * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
-   */
   const RESOURCE_URL = '/playlist/widget/resource/:regionId/:id';
   const XLF_URL = '/layout/xlf/:layoutId';
   const LAYOUT_BACKGROUND_DOWNLOAD_URL = '/layout/background/:id';
@@ -58,6 +38,7 @@ var XiboLayoutRenderer = (function (exports) {
       idCounter: 0,
       inPreview: true,
       appHost: null,
+      platform: 'CMS',
   };
 
   const initialLayout = {
@@ -1239,10 +1220,17 @@ var XiboLayoutRenderer = (function (exports) {
   }
   async function getXlf(layoutOptions) {
       let apiHost = window.location.origin;
-      if (!layoutOptions.inPreview && layoutOptions.appHost) {
-          apiHost = layoutOptions.appHost;
+      let xlfUrl = apiHost + layoutOptions.xlfUrl;
+      if (layoutOptions.platform === 'CMS') {
+          xlfUrl = apiHost + layoutOptions.xlfUrl;
       }
-      const res = await fetch(apiHost + layoutOptions.xlfUrl, { mode: 'no-cors' });
+      else if (layoutOptions.platform === 'chromeOS') {
+          xlfUrl = layoutOptions.xlfUrl;
+      }
+      else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
+          xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
+      }
+      const res = await fetch(xlfUrl, { mode: 'no-cors' });
       return await res.text();
   }
   function getLayout(params) {
@@ -1266,8 +1254,10 @@ var XiboLayoutRenderer = (function (exports) {
               }
               _currentLayout.id = activeLayout.layoutId;
               _currentLayout.layoutId = activeLayout.layoutId;
+              _currentLayout.path = activeLayout?.path ?? '';
               _nextLayout.id = activeLayout.layoutId;
               _nextLayout.layoutId = activeLayout.layoutId;
+              _nextLayout.path = activeLayout?.path ?? '';
           }
       }
       else {
@@ -1314,7 +1304,7 @@ var XiboLayoutRenderer = (function (exports) {
           if ($layout !== null) {
               $layout.remove();
           }
-          if (!xlr.config.inPreview) {
+          if (xlr.config.platform !== 'CMS') {
               // Transition next layout to current layout and prepare next layout if exist
               xlr.prepareLayouts().then((parent) => {
                   xlr.playSchedules(parent);
@@ -1449,7 +1439,7 @@ var XiboLayoutRenderer = (function (exports) {
           if (self.allEnded) {
               self.stopAllMedia().then(() => {
                   console.log('starting to end layout . . .');
-                  if (xlr.config.inPreview) {
+                  if (xlr.config.platform === 'CMS') {
                       const $end = document.getElementById('play_ended');
                       const $preview = document.getElementById('screen_container');
                       if ($preview) {
@@ -1490,11 +1480,11 @@ var XiboLayoutRenderer = (function (exports) {
       return layoutObject;
   }
 
-  exports.ELayoutType = void 0;
+  var ELayoutType;
   (function (ELayoutType) {
       ELayoutType[ELayoutType["CURRENT"] = 0] = "CURRENT";
       ELayoutType[ELayoutType["NEXT"] = 1] = "NEXT";
-  })(exports.ELayoutType || (exports.ELayoutType = {}));
+  })(ELayoutType || (ELayoutType = {}));
   const initialXlr = {
       inputLayouts: [],
       config: platform,
@@ -1610,8 +1600,8 @@ var XiboLayoutRenderer = (function (exports) {
               const xlrLayouts = getLayout({ xlr: self });
               self.currentLayoutId = xlrLayouts.current?.layoutId;
               const layouts = await Promise.all([
-                  self.prepareLayoutXlf(xlrLayouts.current, exports.ELayoutType.CURRENT),
-                  self.prepareLayoutXlf(xlrLayouts.next, exports.ELayoutType.NEXT)
+                  self.prepareLayoutXlf(xlrLayouts.current, ELayoutType.CURRENT),
+                  self.prepareLayoutXlf(xlrLayouts.next, ELayoutType.NEXT)
               ]);
               return new Promise((resolve) => {
                   self.currentLayout = layouts[0];
@@ -1626,36 +1616,6 @@ var XiboLayoutRenderer = (function (exports) {
       return xlrObject;
   }
 
-  exports.AudioMedia = AudioMedia;
-  exports.Layout = Layout;
-  exports.Media = Media;
-  exports.Region = Region;
-  exports.VideoMedia = VideoMedia;
-  exports.XiboLayoutRenderer = XiboLayoutRenderer;
-  exports.audioFileType = audioFileType;
-  exports.capitalizeStr = capitalizeStr;
-  exports.defaultTrans = defaultTrans;
-  exports.fadeInElem = fadeInElem;
-  exports.fadeOutElem = fadeOutElem;
-  exports.fetchJSON = fetchJSON;
-  exports.flyInElem = flyInElem;
-  exports.flyOutElem = flyOutElem;
-  exports.flyTransitionKeyframes = flyTransitionKeyframes;
-  exports.getFileExt = getFileExt;
-  exports.getLayout = getLayout;
-  exports.getMediaId = getMediaId;
-  exports.getXlf = getXlf;
-  exports.initRenderingDOM = initRenderingDOM;
-  exports.initialLayout = initialLayout;
-  exports.initialMedia = initialMedia;
-  exports.initialRegion = initialRegion;
-  exports.initialXlr = initialXlr;
-  exports.nextId = nextId;
-  exports.platform = platform;
-  exports.preloadMediaBlob = preloadMediaBlob;
-  exports.transitionElement = transitionElement;
+  return XiboLayoutRenderer;
 
-  return exports;
-
-})({});
-//# sourceMappingURL=xibo-layout-renderer.js.map
+})();

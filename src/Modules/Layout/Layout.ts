@@ -91,11 +91,17 @@ export function initRenderingDOM(targetContainer: Element | null) {
 export async function getXlf(layoutOptions: OptionsType) {
     let apiHost = window.location.origin;
 
-    if (!layoutOptions.inPreview && layoutOptions.appHost) {
-        apiHost = layoutOptions.appHost;
+    let xlfUrl = apiHost + layoutOptions.xlfUrl;
+
+    if (layoutOptions.platform === 'CMS') {
+        xlfUrl = apiHost + layoutOptions.xlfUrl;
+    } else if (layoutOptions.platform === 'chromeOS') {
+        xlfUrl = layoutOptions.xlfUrl;
+    } else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
+        xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
 
-    const res = await fetch(apiHost + layoutOptions.xlfUrl, {mode: 'no-cors'});
+    const res = await fetch(xlfUrl, {mode: 'no-cors'});
     return await res.text();
 }
 
@@ -127,9 +133,11 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
 
             _currentLayout.id = activeLayout.layoutId;
             _currentLayout.layoutId = activeLayout.layoutId;
+            _currentLayout.path = activeLayout?.path ?? '';
 
             _nextLayout.id = activeLayout.layoutId;
             _nextLayout.layoutId = activeLayout.layoutId;
+            _nextLayout.path = activeLayout?.path ?? '';
         }
     } else {
         if (hasLayout) {
@@ -193,7 +201,7 @@ export default function Layout(
             $layout.remove();
         }
 
-        if (!xlr.config.inPreview) {
+        if (xlr.config.platform !== 'CMS') {
             // Transition next layout to current layout and prepare next layout if exist
             xlr.prepareLayouts().then((parent) => {
                 xlr.playSchedules(parent);
@@ -365,7 +373,7 @@ export default function Layout(
         if (self.allEnded) {
             self.stopAllMedia().then(() => {
                 console.log('starting to end layout . . .');
-                if (xlr.config.inPreview) {
+                if (xlr.config.platform === 'CMS') {
                     const $end = document.getElementById('play_ended');
                     const $preview = document.getElementById('screen_container');
         

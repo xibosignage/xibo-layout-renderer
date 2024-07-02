@@ -16,7 +16,7 @@ export type OptionsType = {
     idCounter: number;
     inPreview: boolean;
     appHost?: string | null;
-    platform?: 'CMS' | 'chromeOS';
+    platform: 'CMS' | 'chromeOS';
 };
 export interface ILayout {
     id: string;
