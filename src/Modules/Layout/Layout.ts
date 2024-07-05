@@ -92,16 +92,19 @@ export async function getXlf(layoutOptions: OptionsType) {
     let apiHost = window.location.origin;
 
     let xlfUrl = apiHost + layoutOptions.xlfUrl;
+    let fetchOptions: RequestInit = {};
 
     if (layoutOptions.platform === 'CMS') {
         xlfUrl = apiHost + layoutOptions.xlfUrl;
+        fetchOptions.mode = 'no-cors';
     } else if (layoutOptions.platform === 'chromeOS') {
         xlfUrl = layoutOptions.xlfUrl;
     } else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
 
-    const res = await fetch(xlfUrl, {mode: 'no-cors'});
+    const res = await fetch(xlfUrl, fetchOptions);
+
     return await res.text();
 }
 
