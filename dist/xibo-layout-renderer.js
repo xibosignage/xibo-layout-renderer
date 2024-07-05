@@ -1236,11 +1236,17 @@ var XiboLayoutRenderer = (function () {
       else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
           xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
       }
-      const res = await fetch(xlfUrl, fetchOptions);
       console.log({
           fetchOptions,
       });
-      return await res.text();
+      try {
+          const res = await fetch(xlfUrl, fetchOptions);
+          return await res.text();
+      }
+      catch (e) {
+          console.error(e);
+          return e;
+      }
   }
   function getLayout(params) {
       let _currentLayout = undefined;

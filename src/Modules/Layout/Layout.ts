@@ -107,13 +107,18 @@ export async function getXlf(layoutOptions: OptionsType) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
 
-    const res = await fetch(xlfUrl, fetchOptions);
-
     console.log({
         fetchOptions,
     });
 
-    return await res.text();
+    try {
+        const res = await fetch(xlfUrl, fetchOptions);
+
+        return await res.text();
+    } catch (e) {
+        console.error(e);
+        return e as string;
+    }
 }
 
 export function getLayout(params: GetLayoutParamType): GetLayoutType {
