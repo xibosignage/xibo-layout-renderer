@@ -19,6 +19,7 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {createNanoEvents} from "nanoevents";
+import axios from "axios";
 import {
     GetLayoutParamType,
     GetLayoutType,
@@ -111,13 +112,21 @@ export async function getXlf(layoutOptions: OptionsType) {
         fetchOptions,
     });
 
-    try {
-        const res = await fetch(xlfUrl, fetchOptions);
+    return await axios.get(xlfUrl)
+        .then((res) => {
+            return res?.data;
+        })
+        .catch((error) => handleAxiosError(error));
+}
 
-        return await res.text();
-    } catch (e) {
-        console.error(e);
-        return e as string;
+export function handleAxiosError(error: any, message?: string) {
+    console.error(error);
+    if (error.response.status == 500) {
+        // SOAP responses are always 500's
+        // Return the body
+        throw new Error(error.response.data);
+    } else {
+        throw new Error(message || 'Unknown Error');
     }
 }
 

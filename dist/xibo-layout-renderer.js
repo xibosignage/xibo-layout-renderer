@@ -1,4 +1,4 @@
-var XiboLayoutRenderer = (function () {
+var XiboLayoutRenderer = (function (axios) {
   'use strict';
 
   let createNanoEvents = () => ({
@@ -1239,13 +1239,21 @@ var XiboLayoutRenderer = (function () {
       console.log({
           fetchOptions,
       });
-      try {
-          const res = await fetch(xlfUrl, fetchOptions);
-          return await res.text();
+      return await axios.get(xlfUrl)
+          .then((res) => {
+          return res?.data;
+      })
+          .catch((error) => handleAxiosError(error));
+  }
+  function handleAxiosError(error, message) {
+      console.error(error);
+      if (error.response.status == 500) {
+          // SOAP responses are always 500's
+          // Return the body
+          throw new Error(error.response.data);
       }
-      catch (e) {
-          console.error(e);
-          return e;
+      else {
+          throw new Error('Unknown Error');
       }
   }
   function getLayout(params) {
@@ -1633,4 +1641,4 @@ var XiboLayoutRenderer = (function () {
 
   return XiboLayoutRenderer;
 
-})();
+})(axios);
