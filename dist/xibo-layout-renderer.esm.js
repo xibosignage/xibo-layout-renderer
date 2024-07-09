@@ -713,7 +713,7 @@ function Media(region, mediaId, xml, options, xlr) {
         `;
         document.getElementById(`${self.region.containerName}`);
         const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, {
-            ...xlr.config,
+            ...xlr.config.config,
             regionOptions: self.region.options,
             layoutId: self.region.layout.layoutId,
             regionId: self.region.id,
