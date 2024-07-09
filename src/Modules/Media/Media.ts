@@ -130,6 +130,7 @@ export default function Media(
         $mediaIframe.width = `${self.divWidth}px`;
         $mediaIframe.height = `${self.divHeight}px`;
         $mediaIframe.style.cssText = `border: 0; visibility: hidden;`;
+        $mediaIframe.setAttribute('allow', 'http://localhost:5173');
 
         const $mediaId = getMediaId(self);
         let $media = document.getElementById($mediaId);
