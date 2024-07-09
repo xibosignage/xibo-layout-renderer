@@ -19,6 +19,7 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { IMedia } from '../../Types/Media';
+import {OptionsType} from "../../Types/Layout";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -89,4 +90,27 @@ export function audioFileType(str: string) {
     }
 
     return undefined;
+}
+
+export function composeResourceUrlByPlatform(platform: OptionsType['platform'], params: any) {
+    let resourceUrl = '';
+    switch (platform) {
+        case 'CMS':
+            resourceUrl = params.regionOptions.getResourceUrl
+                .replace(":regionId", params.regionId)
+                .replace(":id", params.mediaId) +
+                '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+            break;
+        case 'chromeOS':
+            resourceUrl = params.cmsUrl + '/chromeOS/getResource' +
+            '?v=' + params.schemaVersion +
+            '&serverKey=' + params.cmsKey +
+            '&hardwareKey=' + params.hardwareKey +
+            '&layoutId=' + params.layoutId +
+            '&regionId=' + params.regionId +
+            '&mediaId=' + params.mediaId;
+            break;
+    }
+
+    return resourceUrl;
 }

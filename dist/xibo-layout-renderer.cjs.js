@@ -1,5 +1,24 @@
 import { Emitter, DefaultEvents, Unsubscribe } from 'nanoevents';
 
+declare enum ELayoutType {
+    CURRENT = 0,
+    NEXT = 1
+}
+interface IXlr {
+    inputLayouts: InputLayoutType[];
+    config: OptionsType;
+    layouts: ILayout[];
+    currentLayoutIndex: number;
+    currentLayoutId: string | undefined;
+    currentLayout: ILayout | undefined;
+    nextLayout: ILayout | undefined;
+    bootstrap(): void;
+    init(): Promise<IXlr>;
+    playSchedules(xlr: IXlr): void;
+    prepareLayoutXlf(inputLayout: ILayout | undefined, type: ELayoutType): Promise<ILayout>;
+    prepareLayouts(): Promise<IXlr>;
+}
+
 interface IMediaEvents {
     start: (media: IMedia) => void;
     end: (media: IMedia) => void;
@@ -89,25 +108,6 @@ interface IRegion {
     prepareMediaObjects(): void;
 }
 
-declare enum ELayoutType {
-    CURRENT = 0,
-    NEXT = 1
-}
-interface IXlr {
-    inputLayouts: InputLayoutType[];
-    config: OptionsType;
-    layouts: ILayout[];
-    currentLayoutIndex: number;
-    currentLayoutId: string | undefined;
-    currentLayout: ILayout | undefined;
-    nextLayout: ILayout | undefined;
-    bootstrap(): void;
-    init(): Promise<IXlr>;
-    playSchedules(xlr: IXlr): void;
-    prepareLayoutXlf(inputLayout: ILayout | undefined, type: ELayoutType): Promise<ILayout>;
-    prepareLayouts(): Promise<IXlr>;
-}
-
 interface ILayoutEvents {
     start: (layout: ILayout) => void;
     end: (layout: ILayout) => void;
@@ -128,6 +128,12 @@ type OptionsType = {
     inPreview: boolean;
     appHost?: string | null;
     platform: 'CMS' | 'chromeOS';
+    config?: {
+        cmsUrl: string | null;
+        schemaVersion: number;
+        cmsKey: string | null;
+        hardwareKey: string | null;
+    };
 };
 interface ILayout {
     id: string;

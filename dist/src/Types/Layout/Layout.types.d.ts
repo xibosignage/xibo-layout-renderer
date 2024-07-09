@@ -17,6 +17,12 @@ export type OptionsType = {
     inPreview: boolean;
     appHost?: string | null;
     platform: 'CMS' | 'chromeOS';
+    config?: {
+        cmsUrl: string | null;
+        schemaVersion: number;
+        cmsKey: string | null;
+        hardwareKey: string | null;
+    };
 };
 export interface ILayout {
     id: string;

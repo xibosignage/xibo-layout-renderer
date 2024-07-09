@@ -32,12 +32,14 @@ import {
     flyTransitionKeyframes,
     transitionElement,
 } from '../Transitions';
+import {IXlr} from "../../Types/XLR";
 
 export default function Region(
     layout: ILayout,
     xml: Element,
     regionId: string,
     options: OptionsType,
+    xlr: IXlr,
 ) {
     const props = {
         layout: layout,
@@ -110,6 +112,7 @@ export default function Region(
                 mediaXml?.getAttribute('id') || '',
                 mediaXml,
                 options as OptionsType & IRegion["options"],
+                xlr,
             );
 
             mediaObj.index = indx;

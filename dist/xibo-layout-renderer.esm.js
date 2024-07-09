@@ -146,6 +146,27 @@ function audioFileType(str) {
     }
     return undefined;
 }
+function composeResourceUrlByPlatform(platform, params) {
+    let resourceUrl = '';
+    switch (platform) {
+        case 'CMS':
+            resourceUrl = params.regionOptions.getResourceUrl
+                .replace(":regionId", params.regionId)
+                .replace(":id", params.mediaId) +
+                '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+            break;
+        case 'chromeOS':
+            resourceUrl = params.cmsUrl + '/chromeOS/getResource' +
+                '?v=' + params.schemaVersion +
+                '&serverKey=' + params.cmsKey +
+                '&hardwareKey=' + params.hardwareKey +
+                '&layoutId=' + params.layoutId +
+                '&regionId=' + params.regionId +
+                '&mediaId=' + params.mediaId;
+            break;
+    }
+    return resourceUrl;
+}
 
 const initialRegion = {
     layout: initialLayout,
@@ -581,7 +602,7 @@ function AudioMedia(media) {
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-function Media(region, mediaId, xml, options) {
+function Media(region, mediaId, xml, options, xlr) {
     const props = {
         region: region,
         mediaId: mediaId,
@@ -691,7 +712,14 @@ function Media(region, mediaId, xml, options) {
             background-position: center;
         `;
         document.getElementById(`${self.region.containerName}`);
-        const tmpUrl = self.region.options.getResourceUrl.replace(":regionId", self.region.id).replace(":id", self.id) + '?preview=1&layoutPreview=1&scale_override=' + self.region.layout.scaleFactor;
+        const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, {
+            regionOptions: self.region.options,
+            layoutId: self.region.layout.layoutId,
+            regionId: self.region.id,
+            mediaId: self.id,
+            scaleFactor: self.region.layout.scaleFactor,
+        });
+        console.log({ tmpUrl });
         self.url = tmpUrl;
         // Loop if media has loop, or if region has loop and a single media
         self.loop =
@@ -901,7 +929,7 @@ function Media(region, mediaId, xml, options) {
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-function Region(layout, xml, regionId, options) {
+function Region(layout, xml, regionId, options, xlr) {
     const props = {
         layout: layout,
         xml: xml,
@@ -957,7 +985,7 @@ function Region(layout, xml, regionId, options) {
         const regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));
         self.totalMediaObjects = regionMediaItems.length;
         Array.from(regionMediaItems).forEach((mediaXml, indx) => {
-            const mediaObj = Media(self, mediaXml?.getAttribute('id') || '', mediaXml, options);
+            const mediaObj = Media(self, mediaXml?.getAttribute('id') || '', mediaXml, options, xlr);
             mediaObj.index = indx;
             self.mediaObjects.push(mediaObj);
         });
@@ -1430,7 +1458,7 @@ function Layout(data, options, xlr, layout) {
         // Create regions
         const layoutRegions = Array.from(layout?.layoutNode?.getElementsByTagName('region') || []);
         Array.from(layoutRegions).forEach((regionXml, indx) => {
-            const regionObj = Region(layout, regionXml, regionXml?.getAttribute('id') || '', options);
+            const regionObj = Region(layout, regionXml, regionXml?.getAttribute('id') || '', options, xlr);
             regionObj.index = indx;
             layout.regions.push(regionObj);
         });

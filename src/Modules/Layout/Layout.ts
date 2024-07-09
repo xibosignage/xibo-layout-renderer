@@ -359,6 +359,7 @@ export default function Layout(
                 regionXml,
                 regionXml?.getAttribute('id') || '',
                 options,
+                xlr,
             );
 
             regionObj.index = indx;

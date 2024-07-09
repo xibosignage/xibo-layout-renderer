@@ -26,6 +26,8 @@ import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
 import VideoMedia from './VideoMedia';
 import AudioMedia from './AudioMedia';
+import {composeResourceUrlByPlatform} from "../Generators/Generators";
+import {IXlr} from "../../Types/XLR";
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -37,6 +39,7 @@ export default function Media(
     mediaId: string,
     xml: Element,
     options: OptionsType,
+    xlr: IXlr,
 ) {
     const props = {
         region: region,
@@ -158,7 +161,15 @@ export default function Media(
 
         const $region = document.getElementById(`${self.region.containerName}`);
 
-        const tmpUrl = self.region.options.getResourceUrl.replace(":regionId", self.region.id).replace(":id", self.id) + '?preview=1&layoutPreview=1&scale_override=' + self.region.layout.scaleFactor;
+        const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, {
+            regionOptions: self.region.options,
+            layoutId: self.region.layout.layoutId,
+            regionId: self.region.id,
+            mediaId: self.id,
+            scaleFactor: self.region.layout.scaleFactor,
+        });
+
+        console.log({tmpUrl});
 
         self.url = tmpUrl;
 
