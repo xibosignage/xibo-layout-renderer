@@ -714,6 +714,7 @@ var XiboLayoutRenderer = (function (axios) {
         `;
           document.getElementById(`${self.region.containerName}`);
           const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, {
+              ...xlr.config,
               regionOptions: self.region.options,
               layoutId: self.region.layout.layoutId,
               regionId: self.region.id,
