@@ -155,7 +155,7 @@ function composeResourceUrlByPlatform(platform, params) {
             '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
     }
     else if (platform === 'chromeOS' && params.mediaType && params.mediaType === 'image') {
-        resourceUrl = params.regionOptions.getResourceUrl
+        resourceUrl = params.cmsUrl + params.regionOptions.getResourceUrl
             .replace(":regionId", params.regionId)
             .replace(":id", params.mediaId) +
             '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
