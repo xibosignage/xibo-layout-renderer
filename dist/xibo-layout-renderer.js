@@ -113,16 +113,6 @@ var XiboLayoutRenderer = (function (axios) {
       }
       return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
   };
-  async function getDataBlob(src) {
-      return fetch(src, { mode: 'no-cors' })
-          .then((res) => res.blob())
-          .then((blob) => new Promise((res, rej) => {
-          const reader = new FileReader();
-          reader.onloadend = () => res(reader.result);
-          reader.onerror = rej;
-          reader.readAsDataURL(blob);
-      }));
-  }
   async function preloadMediaBlob(src, type) {
       const res = await fetch(src, { mode: 'no-cors' });
       let blob = new Blob();
@@ -747,7 +737,6 @@ var XiboLayoutRenderer = (function (axios) {
               resourceUrlParams.mediaType = self.mediaType;
           }
           const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, resourceUrlParams);
-          console.log({ tmpUrl });
           self.url = tmpUrl;
           // Loop if media has loop, or if region has loop and a single media
           self.loop =
@@ -900,7 +889,7 @@ var XiboLayoutRenderer = (function (axios) {
                   }
                   if (self.mediaType === 'image' && self.url !== null) {
                       $media.style
-                          .setProperty('background-image', `url(${await getDataBlob(self.url)}`);
+                          .setProperty('background-image', `url(${self.url}`);
                   }
                   else if (self.mediaType === 'video' && self.url !== null) {
                       $media.src = await preloadMediaBlob(self.url, self.mediaType);

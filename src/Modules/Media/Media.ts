@@ -176,8 +176,6 @@ export default function Media(
 
         const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, resourceUrlParams);
 
-        console.log({tmpUrl});
-
         self.url = tmpUrl;
 
         // Loop if media has loop, or if region has loop and a single media
@@ -361,7 +359,7 @@ export default function Media(
 
                 if (self.mediaType === 'image' && self.url !== null) {
                     ($media as HTMLImageElement).style
-                        .setProperty('background-image', `url(${await getDataBlob(self.url)}`);
+                        .setProperty('background-image', `url(${self.url}`);
                 } else if (self.mediaType === 'video' && self.url !== null) {
                     ($media as HTMLVideoElement).src = await preloadMediaBlob(self.url, self.mediaType);
                 } else if (self.mediaType === 'audio' && self.url !== null) {
