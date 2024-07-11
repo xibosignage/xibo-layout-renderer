@@ -94,7 +94,12 @@ export function audioFileType(str: string) {
 
 export function composeResourceUrlByPlatform(platform: OptionsType['platform'], params: any) {
     let resourceUrl = '';
-    if (platform === 'CMS' && params.mediaType && params.mediaType === 'image') {
+    if (platform === 'CMS') {
+        resourceUrl = params.regionOptions.getResourceUrl
+                .replace(":regionId", params.regionId)
+                .replace(":id", params.mediaId) +
+            '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+    } else if (platform === 'chromeOS' && params.mediaType && params.mediaType === 'image') {
         resourceUrl = params.regionOptions.getResourceUrl
             .replace(":regionId", params.regionId)
             .replace(":id", params.mediaId) +
