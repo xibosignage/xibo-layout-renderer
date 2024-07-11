@@ -130,7 +130,6 @@ export default function Media(
         $mediaIframe.width = `${self.divWidth}px`;
         $mediaIframe.height = `${self.divHeight}px`;
         $mediaIframe.style.cssText = `border: 0; visibility: hidden;`;
-        $mediaIframe.setAttribute('allow', 'http://localhost:5173');
 
         const $mediaId = getMediaId(self);
         let $media = document.getElementById($mediaId);
@@ -162,14 +161,20 @@ export default function Media(
 
         const $region = document.getElementById(`${self.region.containerName}`);
 
-        const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, {
+        const resourceUrlParams: any = {
             ...xlr.config.config,
             regionOptions: self.region.options,
             layoutId: self.region.layout.layoutId,
             regionId: self.region.id,
             mediaId: self.id,
             scaleFactor: self.region.layout.scaleFactor,
-        });
+        };
+
+        if (self.mediaType === 'image') {
+            resourceUrlParams.mediaType = self.mediaType;
+        }
+
+        const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, resourceUrlParams);
 
         console.log({tmpUrl});
 

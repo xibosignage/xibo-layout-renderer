@@ -149,22 +149,20 @@ var XiboLayoutRenderer = (function (axios) {
   }
   function composeResourceUrlByPlatform(platform, params) {
       let resourceUrl = '';
-      switch (platform) {
-          case 'CMS':
-              resourceUrl = params.regionOptions.getResourceUrl
-                  .replace(":regionId", params.regionId)
-                  .replace(":id", params.mediaId) +
-                  '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
-              break;
-          case 'chromeOS':
-              resourceUrl = params.cmsUrl + '/chromeOS/getResource' +
-                  '?v=' + params.schemaVersion +
-                  '&serverKey=' + params.cmsKey +
-                  '&hardwareKey=' + params.hardwareKey +
-                  '&layoutId=' + params.layoutId +
-                  '&regionId=' + params.regionId +
-                  '&mediaId=' + params.mediaId;
-              break;
+      if (platform === 'CMS' && params.mediaType && params.mediaType === 'image') {
+          resourceUrl = params.regionOptions.getResourceUrl
+              .replace(":regionId", params.regionId)
+              .replace(":id", params.mediaId) +
+              '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+      }
+      else if (platform === 'chromeOS') {
+          resourceUrl = params.cmsUrl + '/chromeOS/getResource' +
+              '?v=' + params.schemaVersion +
+              '&serverKey=' + params.cmsKey +
+              '&hardwareKey=' + params.hardwareKey +
+              '&layoutId=' + params.layoutId +
+              '&regionId=' + params.regionId +
+              '&mediaId=' + params.mediaId;
       }
       return resourceUrl;
   }
@@ -687,7 +685,6 @@ var XiboLayoutRenderer = (function (axios) {
           $mediaIframe.width = `${self.divWidth}px`;
           $mediaIframe.height = `${self.divHeight}px`;
           $mediaIframe.style.cssText = `border: 0; visibility: hidden;`;
-          $mediaIframe.setAttribute('allow', 'http://localhost:5173');
           const $mediaId = getMediaId(self);
           let $media = document.getElementById($mediaId);
           if ($media === null) {
@@ -714,14 +711,18 @@ var XiboLayoutRenderer = (function (axios) {
             background-position: center;
         `;
           document.getElementById(`${self.region.containerName}`);
-          const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, {
+          const resourceUrlParams = {
               ...xlr.config.config,
               regionOptions: self.region.options,
               layoutId: self.region.layout.layoutId,
               regionId: self.region.id,
               mediaId: self.id,
               scaleFactor: self.region.layout.scaleFactor,
-          });
+          };
+          if (self.mediaType === 'image') {
+              resourceUrlParams.mediaType = self.mediaType;
+          }
+          const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, resourceUrlParams);
           console.log({ tmpUrl });
           self.url = tmpUrl;
           // Loop if media has loop, or if region has loop and a single media

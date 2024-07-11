@@ -94,22 +94,19 @@ export function audioFileType(str: string) {
 
 export function composeResourceUrlByPlatform(platform: OptionsType['platform'], params: any) {
     let resourceUrl = '';
-    switch (platform) {
-        case 'CMS':
-            resourceUrl = params.regionOptions.getResourceUrl
-                .replace(":regionId", params.regionId)
-                .replace(":id", params.mediaId) +
-                '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
-            break;
-        case 'chromeOS':
-            resourceUrl = params.cmsUrl + '/chromeOS/getResource' +
+    if (platform === 'CMS' && params.mediaType && params.mediaType === 'image') {
+        resourceUrl = params.regionOptions.getResourceUrl
+            .replace(":regionId", params.regionId)
+            .replace(":id", params.mediaId) +
+            '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+    } else if (platform === 'chromeOS') {
+        resourceUrl = params.cmsUrl + '/chromeOS/getResource' +
             '?v=' + params.schemaVersion +
             '&serverKey=' + params.cmsKey +
             '&hardwareKey=' + params.hardwareKey +
             '&layoutId=' + params.layoutId +
             '&regionId=' + params.regionId +
             '&mediaId=' + params.mediaId;
-            break;
     }
 
     return resourceUrl;
