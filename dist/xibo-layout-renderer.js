@@ -148,28 +148,32 @@ var XiboLayoutRenderer = (function (axios) {
       return undefined;
   }
   function composeResourceUrlByPlatform(platform, params) {
-      let resourceUrl = '';
-      if (platform === 'CMS') {
-          resourceUrl = params.regionOptions.getResourceUrl
-              .replace(":regionId", params.regionId)
-              .replace(":id", params.mediaId) +
-              '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+      let resourceUrl = params.regionOptions.getResourceUrl
+          .replace(":regionId", params.regionId)
+          .replace(":id", params.mediaId) +
+          '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+      if (platform === 'chromeOS') {
+          resourceUrl = params.cmsUrl + resourceUrl;
       }
-      else if (platform === 'chromeOS' && params.mediaType && params.mediaType === 'image') {
-          resourceUrl = params.cmsUrl + params.regionOptions.getResourceUrl
-              .replace(":regionId", params.regionId)
-              .replace(":id", params.mediaId) +
-              '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
-      }
-      else if (platform === 'chromeOS') {
-          resourceUrl = params.cmsUrl + '/chromeOS/getResource' +
-              '?v=' + params.schemaVersion +
-              '&serverKey=' + params.cmsKey +
-              '&hardwareKey=' + params.hardwareKey +
-              '&layoutId=' + params.layoutId +
-              '&regionId=' + params.regionId +
-              '&mediaId=' + params.mediaId;
-      }
+      // if (platform === 'CMS') {
+      //     resourceUrl = params.regionOptions.getResourceUrl
+      //             .replace(":regionId", params.regionId)
+      //             .replace(":id", params.mediaId) +
+      //         '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+      // } else if (platform === 'chromeOS' && params.mediaType && params.mediaType === 'image') {
+      //     resourceUrl = params.cmsUrl + params.regionOptions.getResourceUrl
+      //         .replace(":regionId", params.regionId)
+      //         .replace(":id", params.mediaId) +
+      //         '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+      // } else if (platform === 'chromeOS') {
+      //     resourceUrl = params.cmsUrl + '/chromeOS/getResource' +
+      //         '?v=' + params.schemaVersion +
+      //         '&serverKey=' + params.cmsKey +
+      //         '&hardwareKey=' + params.hardwareKey +
+      //         '&layoutId=' + params.layoutId +
+      //         '&regionId=' + params.regionId +
+      //         '&mediaId=' + params.mediaId;
+      // }
       return resourceUrl;
   }
 
