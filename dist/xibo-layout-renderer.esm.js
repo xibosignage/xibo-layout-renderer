@@ -115,7 +115,7 @@ const capitalizeStr = (inputStr) => {
 async function preloadMediaBlob(src, type) {
     const res = await fetch(src);
     let blob = new Blob();
-    if (type === 'video') {
+    if (type === 'video' || type === 'image') {
         blob = await res.blob();
     }
     else if (type === 'audio') {
@@ -883,7 +883,11 @@ function Media(region, mediaId, xml, options, xlr) {
                 if (Boolean(self.options['transin'])) {
                     $media.animate(transIn.keyframes, transIn.timing);
                 }
-                if (self.mediaType === 'video' && self.url !== null) {
+                if (self.mediaType === 'image' && self.url !== null) {
+                    $media.style
+                        .setProperty('background-image', `url(${await preloadMediaBlob(self.url, self.mediaType)}`);
+                }
+                else if (self.mediaType === 'video' && self.url !== null) {
                     $media.src = await preloadMediaBlob(self.url, self.mediaType);
                 }
                 else if (self.mediaType === 'audio' && self.url !== null) {

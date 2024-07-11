@@ -50,11 +50,11 @@ export const capitalizeStr = (inputStr: string) => {
     return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
 };
 
-export async function preloadMediaBlob(src: string, type: 'video' | 'audio') {
+export async function preloadMediaBlob(src: string, type: 'video' | 'audio' | 'image') {
     const res = await fetch(src);
     let blob: Blob | MediaSource = new Blob();
 
-    if (type === 'video') {
+    if (type === 'video' || type === 'image') {
         blob = await res.blob();
     } else if (type === 'audio') {
         const data = await res.arrayBuffer();

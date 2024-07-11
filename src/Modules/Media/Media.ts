@@ -359,7 +359,10 @@ export default function Media(
                     $media.animate(transIn.keyframes, transIn.timing);
                 }
 
-                if (self.mediaType === 'video' && self.url !== null) {
+                if (self.mediaType === 'image' && self.url !== null) {
+                    ($media as HTMLImageElement).style
+                        .setProperty('background-image', `url(${await preloadMediaBlob(self.url, self.mediaType)}`);
+                } else if (self.mediaType === 'video' && self.url !== null) {
                     ($media as HTMLVideoElement).src = await preloadMediaBlob(self.url, self.mediaType);
                 } else if (self.mediaType === 'audio' && self.url !== null) {
                     ($media as HTMLAudioElement).src = await preloadMediaBlob(self.url, self.mediaType);
