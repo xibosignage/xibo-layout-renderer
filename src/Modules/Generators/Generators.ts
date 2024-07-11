@@ -51,7 +51,7 @@ export const capitalizeStr = (inputStr: string) => {
 };
 
 export async function preloadMediaBlob(src: string, type: 'video' | 'audio' | 'image') {
-    const res = await fetch(src);
+    const res = await fetch(src, {mode: 'no-cors'});
     let blob: Blob | MediaSource = new Blob();
 
     if (type === 'video' || type === 'image') {

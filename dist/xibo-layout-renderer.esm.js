@@ -113,7 +113,7 @@ const capitalizeStr = (inputStr) => {
     return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
 };
 async function preloadMediaBlob(src, type) {
-    const res = await fetch(src);
+    const res = await fetch(src, { mode: 'no-cors' });
     let blob = new Blob();
     if (type === 'video' || type === 'image') {
         blob = await res.blob();
