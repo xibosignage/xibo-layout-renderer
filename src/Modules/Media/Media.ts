@@ -26,7 +26,7 @@ import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
 import VideoMedia from './VideoMedia';
 import AudioMedia from './AudioMedia';
-import {composeResourceUrlByPlatform} from "../Generators/Generators";
+import {composeResourceUrlByPlatform, getDataBlob} from "../Generators/Generators";
 import {IXlr} from "../../Types/XLR";
 
 export interface IMediaEvents {
@@ -361,7 +361,7 @@ export default function Media(
 
                 if (self.mediaType === 'image' && self.url !== null) {
                     ($media as HTMLImageElement).style
-                        .setProperty('background-image', `url(${await preloadMediaBlob(self.url, self.mediaType)}`);
+                        .setProperty('background-image', `url(${await getDataBlob(self.url)}`);
                 } else if (self.mediaType === 'video' && self.url !== null) {
                     ($media as HTMLVideoElement).src = await preloadMediaBlob(self.url, self.mediaType);
                 } else if (self.mediaType === 'audio' && self.url !== null) {

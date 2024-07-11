@@ -50,11 +50,32 @@ export const capitalizeStr = (inputStr: string) => {
     return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
 };
 
+export async function getDataBlob(src: string) {
+    const res = await fetch(src, {mode: 'no-cors'});
+    const blob = await res.blob();
+
+    return await parseURI(blob);
+}
+
+export async function parseURI(uri: Blob) {
+    const reader = new FileReader();
+
+    reader.readAsDataURL(uri);
+
+    return new Promise((res, rej) => {
+        reader.onload = (e) => {
+            res(e.target?.result);
+        };
+    });
+}
+
 export async function preloadMediaBlob(src: string, type: 'video' | 'audio' | 'image') {
     const res = await fetch(src, {mode: 'no-cors'});
     let blob: Blob | MediaSource = new Blob();
 
-    if (type === 'video' || type === 'image') {
+    if (type === 'image') {
+        blob = new Blob()
+    } else if (type === 'video') {
         blob = await res.blob();
     } else if (type === 'audio') {
         const data = await res.arrayBuffer();

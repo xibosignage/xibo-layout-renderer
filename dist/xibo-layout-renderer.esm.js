@@ -112,10 +112,27 @@ const capitalizeStr = (inputStr) => {
     }
     return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
 };
+async function getDataBlob(src) {
+    const res = await fetch(src, { mode: 'no-cors' });
+    const blob = await res.blob();
+    return await parseURI(blob);
+}
+async function parseURI(uri) {
+    const reader = new FileReader();
+    reader.readAsDataURL(uri);
+    return new Promise((res, rej) => {
+        reader.onload = (e) => {
+            res(e.target?.result);
+        };
+    });
+}
 async function preloadMediaBlob(src, type) {
     const res = await fetch(src, { mode: 'no-cors' });
     let blob = new Blob();
-    if (type === 'video' || type === 'image') {
+    if (type === 'image') {
+        blob = new Blob();
+    }
+    else if (type === 'video') {
         blob = await res.blob();
     }
     else if (type === 'audio') {
@@ -886,7 +903,7 @@ function Media(region, mediaId, xml, options, xlr) {
                 }
                 if (self.mediaType === 'image' && self.url !== null) {
                     $media.style
-                        .setProperty('background-image', `url(${await preloadMediaBlob(self.url, self.mediaType)}`);
+                        .setProperty('background-image', `url(${await getDataBlob(self.url)}`);
                 }
                 else if (self.mediaType === 'video' && self.url !== null) {
                     $media.src = await preloadMediaBlob(self.url, self.mediaType);
