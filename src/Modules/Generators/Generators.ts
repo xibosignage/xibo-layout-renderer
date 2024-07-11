@@ -20,6 +20,7 @@
  */
 import { IMedia } from '../../Types/Media';
 import {OptionsType} from "../../Types/Layout";
+import axios from "axios";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -51,8 +52,8 @@ export const capitalizeStr = (inputStr: string) => {
 };
 
 export async function getDataBlob(src: string) {
-    return fetch(src)
-        .then((res) => res.blob())
+    return axios.get(src, {responseType: 'blob'})
+        .then((res) => res.data)
         .then((blob) => new Promise((res, rej) => {
             const reader = new FileReader();
 

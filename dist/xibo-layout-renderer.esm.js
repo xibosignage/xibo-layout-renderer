@@ -113,8 +113,8 @@ const capitalizeStr = (inputStr) => {
     return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
 };
 async function getDataBlob(src) {
-    return fetch(src)
-        .then((res) => res.blob())
+    return axios.get(src, { responseType: 'blob' })
+        .then((res) => res.data)
         .then((blob) => new Promise((res, rej) => {
         const reader = new FileReader();
         reader.onloadend = () => res(reader.result);
