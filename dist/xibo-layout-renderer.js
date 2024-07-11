@@ -114,8 +114,8 @@ var XiboLayoutRenderer = (function (axios) {
       return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
   };
   async function getDataBlob(src) {
-      return axios.get(src, { responseType: 'blob' })
-          .then((res) => res.data)
+      return fetch(src, { mode: 'no-cors' })
+          .then((res) => res.blob())
           .then((blob) => new Promise((res, rej) => {
           const reader = new FileReader();
           reader.onloadend = () => res(reader.result);
