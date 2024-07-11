@@ -114,18 +114,14 @@ var XiboLayoutRenderer = (function (axios) {
       return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
   };
   async function getDataBlob(src) {
-      const res = await fetch(src, { mode: 'no-cors' });
-      const blob = await res.blob();
-      return await parseURI(blob);
-  }
-  async function parseURI(uri) {
-      const reader = new FileReader();
-      reader.readAsDataURL(uri);
-      return new Promise((res, rej) => {
-          reader.onload = (e) => {
-              res(e.target?.result);
-          };
-      });
+      return fetch(src)
+          .then((res) => res.blob())
+          .then((blob) => new Promise((res, rej) => {
+          const reader = new FileReader();
+          reader.onloadend = () => res(reader.result);
+          reader.onerror = rej;
+          reader.readAsDataURL(blob);
+      }));
   }
   async function preloadMediaBlob(src, type) {
       const res = await fetch(src, { mode: 'no-cors' });
@@ -764,7 +760,7 @@ var XiboLayoutRenderer = (function (axios) {
           }
           else if (self.mediaType === "image") {
               // preload.addFiles(tmpUrl);
-              $media.style.cssText = $media.style.cssText.concat(`background-image: url('${tmpUrl}');`);
+              // $media.style.cssText = $media.style.cssText.concat(`background-image: url('${tmpUrl}');`);
               if (self.options['scaletype'] === 'stretch') {
                   $media.style.cssText = $media.style.cssText.concat(`background-size: 100% 100%;`);
               }

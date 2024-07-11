@@ -51,22 +51,15 @@ export const capitalizeStr = (inputStr: string) => {
 };
 
 export async function getDataBlob(src: string) {
-    const res = await fetch(src, {mode: 'no-cors'});
-    const blob = await res.blob();
+    return fetch(src)
+        .then((res) => res.blob())
+        .then((blob) => new Promise((res, rej) => {
+            const reader = new FileReader();
 
-    return await parseURI(blob);
-}
-
-export async function parseURI(uri: Blob) {
-    const reader = new FileReader();
-
-    reader.readAsDataURL(uri);
-
-    return new Promise((res, rej) => {
-        reader.onload = (e) => {
-            res(e.target?.result);
-        };
-    });
+            reader.onloadend = () => res(reader.result);
+            reader.onerror = rej;
+            reader.readAsDataURL(blob);
+        }));
 }
 
 export async function preloadMediaBlob(src: string, type: 'video' | 'audio' | 'image') {

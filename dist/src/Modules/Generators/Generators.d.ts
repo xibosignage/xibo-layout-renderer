@@ -6,7 +6,6 @@ export declare function nextId(options: {
 export declare const getMediaId: ({ mediaType, containerName }: IMedia) => string;
 export declare const capitalizeStr: (inputStr: string) => string;
 export declare function getDataBlob(src: string): Promise<unknown>;
-export declare function parseURI(uri: Blob): Promise<unknown>;
 export declare function preloadMediaBlob(src: string, type: 'video' | 'audio' | 'image'): Promise<string>;
 export declare function fetchJSON(url: string): Promise<any>;
 export declare function getFileExt(filename: string): string;

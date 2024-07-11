@@ -192,7 +192,7 @@ export default function Media(
             self.iframe = $mediaIframe;
         }  else if (self.mediaType === "image") {
             // preload.addFiles(tmpUrl);
-            $media.style.cssText = $media.style.cssText.concat(`background-image: url('${tmpUrl}');`);
+            // $media.style.cssText = $media.style.cssText.concat(`background-image: url('${tmpUrl}');`);
             if (self.options['scaletype'] === 'stretch') {
                 $media.style.cssText = $media.style.cssText.concat(`background-size: 100% 100%;`);
             } else if (self.options['scaletype'] === 'fit') {
