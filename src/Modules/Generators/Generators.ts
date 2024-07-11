@@ -61,6 +61,7 @@ export async function preloadMediaBlob(src: string, type: 'video' | 'audio' | 'i
         blob = new Blob([data], { type: audioFileType(getFileExt(src)) })
     }
 
+    console.log({blob})
     return URL.createObjectURL(blob);
 }
 

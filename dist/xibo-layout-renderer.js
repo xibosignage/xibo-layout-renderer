@@ -123,6 +123,7 @@ var XiboLayoutRenderer = (function (axios) {
           const data = await res.arrayBuffer();
           blob = new Blob([data], { type: audioFileType(getFileExt(src)) });
       }
+      console.log({ blob });
       return URL.createObjectURL(blob);
   }
   async function fetchJSON(url) {
