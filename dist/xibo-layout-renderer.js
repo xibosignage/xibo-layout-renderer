@@ -1337,6 +1337,7 @@ var XiboLayoutRenderer = (function (axios) {
                   _nextLayout = _currentLayout;
               }
               console.log({
+                  xlr: params.xlr,
                   isElse: false,
                   activeLayout,
                   _currentLayout,

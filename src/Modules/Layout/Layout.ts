@@ -157,6 +157,7 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
             }
 
             console.log({
+                xlr: params.xlr,
                 isElse: false,
                 activeLayout,
                 _currentLayout,
