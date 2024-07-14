@@ -176,6 +176,12 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
                 }
             }
 
+            console.log({
+                isElse: true,
+                _currentLayout,
+                _nextLayout,
+            });
+
             // If _nextLayout is undefined, then we go back to first layout
             if (_nextLayout === undefined) {
                 _nextLayout = params.xlr.layouts[0];

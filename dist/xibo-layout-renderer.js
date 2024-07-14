@@ -1355,6 +1355,11 @@ var XiboLayoutRenderer = (function (axios) {
                       _nextLayout = { ...initialLayout, ...inputLayouts[nextLayoutIndex] };
                   }
               }
+              console.log({
+                  isElse: true,
+                  _currentLayout,
+                  _nextLayout,
+              });
               // If _nextLayout is undefined, then we go back to first layout
               if (_nextLayout === undefined) {
                   _nextLayout = params.xlr.layouts[0];
