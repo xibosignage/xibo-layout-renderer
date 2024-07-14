@@ -345,6 +345,7 @@ export default function Media(
         const showCurrentMedia = async () => {
             let $mediaId = getMediaId(self);
             let $media = document.getElementById($mediaId);
+            const isCMS = xlr.config.platform === 'CMS';
 
             if ($media === null) {
                 $media = getNewMedia();
@@ -359,11 +360,16 @@ export default function Media(
 
                 if (self.mediaType === 'image' && self.url !== null) {
                     ($media as HTMLImageElement).style
-                        .setProperty('background-image', `url(${self.url}`);
+                        .setProperty(
+                            'background-image',
+                            `url(${!isCMS ? self.url : await getDataBlob(self.url)}`
+                        );
                 } else if (self.mediaType === 'video' && self.url !== null) {
-                    ($media as HTMLVideoElement).src = await preloadMediaBlob(self.url, self.mediaType);
+                    ($media as HTMLVideoElement).src =
+                        isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
                 } else if (self.mediaType === 'audio' && self.url !== null) {
-                    ($media as HTMLAudioElement).src = await preloadMediaBlob(self.url, self.mediaType);
+                    ($media as HTMLAudioElement).src =
+                        isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
                 }
 
                 self.emitter?.emit('start', self);

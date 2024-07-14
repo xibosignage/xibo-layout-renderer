@@ -112,6 +112,16 @@ const capitalizeStr = (inputStr) => {
     }
     return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
 };
+async function getDataBlob(src) {
+    return fetch(src, { mode: 'no-cors' })
+        .then((res) => res.blob())
+        .then((blob) => new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onloadend = () => res(reader.result);
+        reader.onerror = rej;
+        reader.readAsDataURL(blob);
+    }));
+}
 async function preloadMediaBlob(src, type) {
     const res = await fetch(src, { mode: 'no-cors' });
     let blob = new Blob();
@@ -878,6 +888,7 @@ function Media(region, mediaId, xml, options, xlr) {
         const showCurrentMedia = async () => {
             let $mediaId = getMediaId(self);
             let $media = document.getElementById($mediaId);
+            const isCMS = xlr.config.platform === 'CMS';
             if ($media === null) {
                 $media = getNewMedia();
             }
@@ -888,13 +899,15 @@ function Media(region, mediaId, xml, options, xlr) {
                 }
                 if (self.mediaType === 'image' && self.url !== null) {
                     $media.style
-                        .setProperty('background-image', `url(${self.url}`);
+                        .setProperty('background-image', `url(${!isCMS ? self.url : await getDataBlob(self.url)}`);
                 }
                 else if (self.mediaType === 'video' && self.url !== null) {
-                    $media.src = await preloadMediaBlob(self.url, self.mediaType);
+                    $media.src =
+                        isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
                 }
                 else if (self.mediaType === 'audio' && self.url !== null) {
-                    $media.src = await preloadMediaBlob(self.url, self.mediaType);
+                    $media.src =
+                        isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
                 }
                 self.emitter?.emit('start', self);
             }
