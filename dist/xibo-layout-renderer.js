@@ -1336,6 +1336,12 @@ var XiboLayoutRenderer = (function (axios) {
               else {
                   _nextLayout = _currentLayout;
               }
+              console.log({
+                  isElse: false,
+                  activeLayout,
+                  _currentLayout,
+                  _nextLayout,
+              });
               _currentLayout.id = activeLayout.layoutId;
               _currentLayout.layoutId = activeLayout.layoutId;
               _currentLayout.path = activeLayout?.path ?? '';
