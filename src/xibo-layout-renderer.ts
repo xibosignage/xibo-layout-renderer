@@ -61,6 +61,7 @@ export default function XiboLayoutRenderer(
         },
 
         playSchedules(xlr: IXlr) {
+            console.log({xlr});
             // Check if there's a current layout
             if (xlr.currentLayout !== undefined) {
                 xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
@@ -68,7 +69,7 @@ export default function XiboLayoutRenderer(
             }
         },
 
-        async prepareLayoutXlf(inputLayout: ILayout, type: ELayoutType) {
+        async prepareLayoutXlf(inputLayout: ILayout) {
             const self = this;
             // Compose layout props first
             let newOptions: OptionsType = Object.assign({}, platform);
@@ -122,8 +123,9 @@ export default function XiboLayoutRenderer(
             ]);
 
             return new Promise<IXlr>((resolve) => {
-                self.currentLayout = layouts[0];
-                self.nextLayout = layouts[1];
+                self.layouts = layouts;
+                self.currentLayout = self.layouts[0];
+                self.nextLayout = self.layouts[1];
                 self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
                 self.layouts[self.currentLayoutIndex] = self.currentLayout;
 

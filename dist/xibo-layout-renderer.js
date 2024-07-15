@@ -1367,8 +1367,12 @@ var XiboLayoutRenderer = (function (axios) {
               }
               console.log({
                   isElse: true,
+                  currentLayoutIndex,
+                  nextLayoutIndex,
                   _currentLayout,
                   _nextLayout,
+                  currentLayout,
+                  nextLayout,
               });
               // If _nextLayout is undefined, then we go back to first layout
               if (_nextLayout === undefined) {
@@ -1653,13 +1657,14 @@ var XiboLayoutRenderer = (function (axios) {
               });
           },
           playSchedules(xlr) {
+              console.log({ xlr });
               // Check if there's a current layout
               if (xlr.currentLayout !== undefined) {
                   xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
                   xlr.currentLayout.run();
               }
           },
-          async prepareLayoutXlf(inputLayout, type) {
+          async prepareLayoutXlf(inputLayout) {
               const self = this;
               // Compose layout props first
               let newOptions = Object.assign({}, platform);
@@ -1703,8 +1708,9 @@ var XiboLayoutRenderer = (function (axios) {
                   self.prepareLayoutXlf(xlrLayouts.next, ELayoutType.NEXT)
               ]);
               return new Promise((resolve) => {
-                  self.currentLayout = layouts[0];
-                  self.nextLayout = layouts[1];
+                  self.layouts = layouts;
+                  self.currentLayout = self.layouts[0];
+                  self.nextLayout = self.layouts[1];
                   self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
                   self.layouts[self.currentLayoutIndex] = self.currentLayout;
                   resolve(self);

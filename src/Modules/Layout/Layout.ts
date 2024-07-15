@@ -189,8 +189,12 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
 
             console.log({
                 isElse: true,
+                currentLayoutIndex,
+                nextLayoutIndex,
                 _currentLayout,
                 _nextLayout,
+                currentLayout,
+                nextLayout,
             });
 
             // If _nextLayout is undefined, then we go back to first layout
