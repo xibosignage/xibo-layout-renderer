@@ -109,10 +109,6 @@ export async function getXlf(layoutOptions: OptionsType) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
 
-    console.log({
-        fetchOptions,
-    });
-
     return await axios.get(xlfUrl)
         .then((res) => {
             return res?.data;

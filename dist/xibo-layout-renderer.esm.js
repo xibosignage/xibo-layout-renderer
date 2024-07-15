@@ -1294,24 +1294,15 @@ function initRenderingDOM(targetContainer) {
 async function getXlf(layoutOptions) {
     let apiHost = window.location.origin;
     let xlfUrl = apiHost + layoutOptions.xlfUrl;
-    let fetchOptions = {};
     if (layoutOptions.platform === 'CMS') {
         xlfUrl = apiHost + layoutOptions.xlfUrl;
-        fetchOptions.mode = 'no-cors';
     }
     else if (layoutOptions.platform === 'chromeOS') {
         xlfUrl = layoutOptions.xlfUrl;
-        fetchOptions.mode = 'cors';
-        fetchOptions.headers = {
-            'Content-Type': 'text/xml',
-        };
     }
     else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
-    console.log({
-        fetchOptions,
-    });
     return await axios.get(xlfUrl)
         .then((res) => {
         return res?.data;
