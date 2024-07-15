@@ -149,20 +149,22 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
             activeLayout = inputLayouts[currentLayoutIndex];
             _currentLayout = {...initialLayout};
 
-            if (inputLayouts.length > 1) {
-                activeLayout = inputLayouts[nextLayoutIndex];
-                _nextLayout = {...initialLayout};
-            } else {
-                _nextLayout = _currentLayout;
-            }
-
             console.log({
                 xlr: params.xlr,
                 isElse: false,
                 activeLayout,
                 _currentLayout,
                 _nextLayout,
+                currentLayoutIndex,
+                nextLayoutIndex
             });
+
+            if (inputLayouts.length > 1) {
+                activeLayout = inputLayouts[nextLayoutIndex];
+                _nextLayout = {...initialLayout};
+            } else {
+                _nextLayout = _currentLayout;
+            }
 
             _currentLayout.id = activeLayout.layoutId;
             _currentLayout.layoutId = activeLayout.layoutId;

@@ -1328,6 +1328,15 @@ function getLayout(params) {
         if (hasLayout) {
             activeLayout = inputLayouts[currentLayoutIndex];
             _currentLayout = { ...initialLayout };
+            console.log({
+                xlr: params.xlr,
+                isElse: false,
+                activeLayout,
+                _currentLayout,
+                _nextLayout,
+                currentLayoutIndex,
+                nextLayoutIndex
+            });
             if (inputLayouts.length > 1) {
                 activeLayout = inputLayouts[nextLayoutIndex];
                 _nextLayout = { ...initialLayout };
@@ -1335,13 +1344,6 @@ function getLayout(params) {
             else {
                 _nextLayout = _currentLayout;
             }
-            console.log({
-                xlr: params.xlr,
-                isElse: false,
-                activeLayout,
-                _currentLayout,
-                _nextLayout,
-            });
             _currentLayout.id = activeLayout.layoutId;
             _currentLayout.layoutId = activeLayout.layoutId;
             _currentLayout.path = activeLayout?.path ?? '';

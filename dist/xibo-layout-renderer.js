@@ -1329,6 +1329,15 @@ var XiboLayoutRenderer = (function (axios) {
           if (hasLayout) {
               activeLayout = inputLayouts[currentLayoutIndex];
               _currentLayout = { ...initialLayout };
+              console.log({
+                  xlr: params.xlr,
+                  isElse: false,
+                  activeLayout,
+                  _currentLayout,
+                  _nextLayout,
+                  currentLayoutIndex,
+                  nextLayoutIndex
+              });
               if (inputLayouts.length > 1) {
                   activeLayout = inputLayouts[nextLayoutIndex];
                   _nextLayout = { ...initialLayout };
@@ -1336,13 +1345,6 @@ var XiboLayoutRenderer = (function (axios) {
               else {
                   _nextLayout = _currentLayout;
               }
-              console.log({
-                  xlr: params.xlr,
-                  isElse: false,
-                  activeLayout,
-                  _currentLayout,
-                  _nextLayout,
-              });
               _currentLayout.id = activeLayout.layoutId;
               _currentLayout.layoutId = activeLayout.layoutId;
               _currentLayout.path = activeLayout?.path ?? '';
