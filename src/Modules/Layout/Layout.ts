@@ -32,6 +32,7 @@ import { nextId } from '../Generators';
 import { Region } from '../Region';
 
 import './layout.css';
+import {getIndexByLayoutId} from "../Generators/Generators";
 
 const playAgainClickHandle = function(ev: { preventDefault: () => void; }) {
     ev.preventDefault();
@@ -137,10 +138,11 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
         inputLayouts,
         currentLayout,
         nextLayout,
-        currentLayoutIndex
+        currentLayoutIndex: currLayoutIndx
     } = params.xlr;
     const hasLayout = inputLayouts.length > 0;
-    const nextLayoutIndex = currentLayoutIndex + 1;
+    let currentLayoutIndex = currLayoutIndx;
+    let nextLayoutIndex = currentLayoutIndex + 1;
 
     if (currentLayout === undefined && nextLayout === undefined) {
         let activeLayout;
@@ -179,6 +181,9 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
         if (hasLayout) {
             _currentLayout = nextLayout;
 
+            currentLayoutIndex = getIndexByLayoutId(inputLayouts, _currentLayout?.layoutId).index as number;
+            nextLayoutIndex = currentLayoutIndex + 1;
+
             if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
                 if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
                     _nextLayout = params.xlr.layouts[nextLayoutIndex];
@@ -186,16 +191,6 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
                     _nextLayout = {...initialLayout, ...inputLayouts[nextLayoutIndex]};
                 }
             }
-
-            console.log({
-                isElse: true,
-                currentLayoutIndex,
-                nextLayoutIndex,
-                _currentLayout,
-                _nextLayout,
-                currentLayout,
-                nextLayout,
-            });
 
             // If _nextLayout is undefined, then we go back to first layout
             if (_nextLayout === undefined) {

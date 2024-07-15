@@ -19,7 +19,7 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { IMedia } from '../../Types/Media';
-import {OptionsType} from "../../Types/Layout";
+import {InputLayoutType, OptionsType} from "../../Types/Layout";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -138,4 +138,27 @@ export function composeResourceUrlByPlatform(platform: OptionsType['platform'], 
     // }
 
     return resourceUrl;
+}
+
+type LayoutIndexType = {
+    [k: string]: InputLayoutType & {
+        index: number;
+    }
+}
+
+export function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: string | null) {
+    let layoutIndexes = layoutsInput.reduce((a: LayoutIndexType, b, indx) => {
+        a[b.layoutId] = {
+            ...b,
+            index: indx
+        };
+
+        return a;
+    }, {});
+
+    if (layoutId === null || !layoutId) {
+        return layoutIndexes;
+    }
+
+    return layoutIndexes[layoutId];
 }

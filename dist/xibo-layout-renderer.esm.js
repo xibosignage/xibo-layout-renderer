@@ -189,6 +189,19 @@ function composeResourceUrlByPlatform(platform, params) {
     // }
     return resourceUrl;
 }
+function getIndexByLayoutId(layoutsInput, layoutId) {
+    let layoutIndexes = layoutsInput.reduce((a, b, indx) => {
+        a[b.layoutId] = {
+            ...b,
+            index: indx
+        };
+        return a;
+    }, {});
+    if (layoutId === null || !layoutId) {
+        return layoutIndexes;
+    }
+    return layoutIndexes[layoutId];
+}
 
 const initialRegion = {
     layout: initialLayout,
@@ -1319,9 +1332,10 @@ function handleAxiosError(error, message) {
 function getLayout(params) {
     let _currentLayout = undefined;
     let _nextLayout = undefined;
-    let { inputLayouts, currentLayout, nextLayout, currentLayoutIndex } = params.xlr;
+    let { inputLayouts, currentLayout, nextLayout, currentLayoutIndex: currLayoutIndx } = params.xlr;
     const hasLayout = inputLayouts.length > 0;
-    const nextLayoutIndex = currentLayoutIndex + 1;
+    let currentLayoutIndex = currLayoutIndx;
+    let nextLayoutIndex = currentLayoutIndex + 1;
     if (currentLayout === undefined && nextLayout === undefined) {
         let activeLayout;
         // Preview just got started
@@ -1356,6 +1370,8 @@ function getLayout(params) {
     else {
         if (hasLayout) {
             _currentLayout = nextLayout;
+            currentLayoutIndex = getIndexByLayoutId(inputLayouts, _currentLayout?.layoutId).index;
+            nextLayoutIndex = currentLayoutIndex + 1;
             if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
                 if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
                     _nextLayout = params.xlr.layouts[nextLayoutIndex];
@@ -1364,15 +1380,6 @@ function getLayout(params) {
                     _nextLayout = { ...initialLayout, ...inputLayouts[nextLayoutIndex] };
                 }
             }
-            console.log({
-                isElse: true,
-                currentLayoutIndex,
-                nextLayoutIndex,
-                _currentLayout,
-                _nextLayout,
-                currentLayout,
-                nextLayout,
-            });
             // If _nextLayout is undefined, then we go back to first layout
             if (_nextLayout === undefined) {
                 _nextLayout = params.xlr.layouts[0];
