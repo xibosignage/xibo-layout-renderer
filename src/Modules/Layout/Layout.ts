@@ -146,33 +146,34 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
         let activeLayout;
         // Preview just got started
         if (hasLayout) {
+            let nextLayoutTemp = {...initialLayout};
             activeLayout = inputLayouts[currentLayoutIndex];
-            _currentLayout = {...initialLayout};
+            _currentLayout = {...initialLayout, ...activeLayout};
+
+            if (inputLayouts.length > 1) {
+                nextLayoutTemp = {...nextLayoutTemp, ...inputLayouts[nextLayoutIndex]};
+                _nextLayout = nextLayoutTemp;
+            } else {
+                _nextLayout = _currentLayout;
+            }
 
             console.log({
+                initialLayout,
                 xlr: params.xlr,
                 isElse: false,
                 activeLayout,
                 _currentLayout,
                 _nextLayout,
+                nextLayoutTemp,
                 currentLayoutIndex,
                 nextLayoutIndex
             });
 
-            if (inputLayouts.length > 1) {
-                activeLayout = inputLayouts[nextLayoutIndex];
-                _nextLayout = {...initialLayout};
-            } else {
-                _nextLayout = _currentLayout;
-            }
-
             _currentLayout.id = activeLayout.layoutId;
-            _currentLayout.layoutId = activeLayout.layoutId;
-            _currentLayout.path = activeLayout?.path ?? '';
 
-            _nextLayout.id = activeLayout.layoutId;
-            _nextLayout.layoutId = activeLayout.layoutId;
-            _nextLayout.path = activeLayout?.path ?? '';
+            if (nextLayoutTemp) {
+                _nextLayout.id = nextLayoutTemp.layoutId;
+            }
         }
     } else {
         if (hasLayout) {
