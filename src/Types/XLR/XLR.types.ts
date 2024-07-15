@@ -35,7 +35,7 @@ export interface IXlr {
     config: OptionsType,
     layouts: ILayout[],
     currentLayoutIndex: number;
-    currentLayoutId: string | undefined;
+    currentLayoutId: number | null;
     currentLayout: ILayout | undefined;
     nextLayout: ILayout | undefined;
     bootstrap(): void;
@@ -50,7 +50,7 @@ export const initialXlr: IXlr = {
     config: platform,
     layouts: [],
     currentLayoutIndex: 0,
-    currentLayoutId: undefined,
+    currentLayoutId: null,
     currentLayout: undefined,
     nextLayout: undefined,
     bootstrap() {

@@ -159,18 +159,6 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
                 _nextLayout = _currentLayout;
             }
 
-            console.log({
-                initialLayout,
-                xlr: params.xlr,
-                isElse: false,
-                activeLayout,
-                _currentLayout,
-                _nextLayout,
-                nextLayoutTemp,
-                currentLayoutIndex,
-                nextLayoutIndex
-            });
-
             _currentLayout.id = activeLayout.layoutId;
 
             if (nextLayoutTemp) {

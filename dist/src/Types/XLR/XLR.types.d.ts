@@ -11,7 +11,7 @@ export interface IXlr {
     config: OptionsType;
     layouts: ILayout[];
     currentLayoutIndex: number;
-    currentLayoutId: string | undefined;
+    currentLayoutId: number | null;
     currentLayout: ILayout | undefined;
     nextLayout: ILayout | undefined;
     bootstrap(): void;

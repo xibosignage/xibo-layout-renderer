@@ -9,7 +9,7 @@ interface IXlr {
     config: OptionsType;
     layouts: ILayout[];
     currentLayoutIndex: number;
-    currentLayoutId: string | undefined;
+    currentLayoutId: number | null;
     currentLayout: ILayout | undefined;
     nextLayout: ILayout | undefined;
     bootstrap(): void;
@@ -114,7 +114,7 @@ interface ILayoutEvents {
 }
 
 type InputLayoutType = {
-    layoutId: string;
+    layoutId: number | null;
     path?: string;
 };
 type OptionsType = {
@@ -136,8 +136,8 @@ type OptionsType = {
     };
 };
 interface ILayout {
-    id: string;
-    layoutId: string;
+    id: number | null;
+    layoutId: number | null;
     sw: number | null;
     sh: number | null;
     xw: number | null;

@@ -16,7 +16,7 @@ type LayoutIndexType = {
         index: number;
     };
 };
-export declare function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: string | null): (InputLayoutType & {
+export declare function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: number | null): (InputLayoutType & {
     index: number;
 }) | LayoutIndexType;
 export {};

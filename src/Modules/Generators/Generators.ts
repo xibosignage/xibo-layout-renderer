@@ -146,9 +146,9 @@ type LayoutIndexType = {
     }
 }
 
-export function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: string | null) {
+export function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: number | null) {
     let layoutIndexes = layoutsInput.reduce((a: LayoutIndexType, b, indx) => {
-        a[b.layoutId] = {
+        a[Number(b.layoutId)] = {
             ...b,
             index: indx
         };

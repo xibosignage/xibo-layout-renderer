@@ -61,7 +61,6 @@ export default function XiboLayoutRenderer(
         },
 
         playSchedules(xlr: IXlr) {
-            console.log({xlr});
             // Check if there's a current layout
             if (xlr.currentLayout !== undefined) {
                 xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
@@ -83,7 +82,7 @@ export default function XiboLayoutRenderer(
                 inputLayout && Boolean(inputLayout.layoutId)
             ) {
                 newOptions.xlfUrl =
-                    newOptions.xlfUrl.replace(':layoutId', inputLayout.layoutId);
+                    newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
             } else if (self.config.platform === 'chromeOS') {
                 newOptions.xlfUrl = inputLayout.path as string;
             }
@@ -102,8 +101,8 @@ export default function XiboLayoutRenderer(
             return new Promise<ILayout>((resolve) => {
                 const xlrLayoutObj = initialLayout;
                 
-                xlrLayoutObj.id = inputLayout.layoutId;
-                xlrLayoutObj.layoutId = inputLayout.layoutId;
+                xlrLayoutObj.id = Number(inputLayout.layoutId);
+                xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
                 xlrLayoutObj.options = newOptions;
 
                 resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
@@ -115,7 +114,7 @@ export default function XiboLayoutRenderer(
             // Get layouts
             const xlrLayouts = getLayout({xlr: self});
 
-            self.currentLayoutId = xlrLayouts.current?.layoutId;
+            self.currentLayoutId = xlrLayouts.current?.layoutId as ILayout['layoutId'];
 
             const layouts = await Promise.all<Array<Promise<ILayout>>>([
                 self.prepareLayoutXlf(xlrLayouts.current, ELayoutType.CURRENT),

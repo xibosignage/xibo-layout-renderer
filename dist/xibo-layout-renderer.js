@@ -42,8 +42,8 @@ var XiboLayoutRenderer = (function (axios) {
   };
 
   const initialLayout = {
-      id: '',
-      layoutId: '',
+      id: null,
+      layoutId: null,
       sw: 0,
       sh: 0,
       xw: 0,
@@ -192,7 +192,7 @@ var XiboLayoutRenderer = (function (axios) {
   }
   function getIndexByLayoutId(layoutsInput, layoutId) {
       let layoutIndexes = layoutsInput.reduce((a, b, indx) => {
-          a[b.layoutId] = {
+          a[Number(b.layoutId)] = {
               ...b,
               index: indx
           };
@@ -1351,17 +1351,6 @@ var XiboLayoutRenderer = (function (axios) {
               else {
                   _nextLayout = _currentLayout;
               }
-              console.log({
-                  initialLayout,
-                  xlr: params.xlr,
-                  isElse: false,
-                  activeLayout,
-                  _currentLayout,
-                  _nextLayout,
-                  nextLayoutTemp,
-                  currentLayoutIndex,
-                  nextLayoutIndex
-              });
               _currentLayout.id = activeLayout.layoutId;
               if (nextLayoutTemp) {
                   _nextLayout.id = nextLayoutTemp.layoutId;
@@ -1600,7 +1589,7 @@ var XiboLayoutRenderer = (function (axios) {
       config: platform,
       layouts: [],
       currentLayoutIndex: 0,
-      currentLayoutId: undefined,
+      currentLayoutId: null,
       currentLayout: undefined,
       nextLayout: undefined,
       bootstrap() {
@@ -1664,7 +1653,6 @@ var XiboLayoutRenderer = (function (axios) {
               });
           },
           playSchedules(xlr) {
-              console.log({ xlr });
               // Check if there's a current layout
               if (xlr.currentLayout !== undefined) {
                   xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
@@ -1682,7 +1670,7 @@ var XiboLayoutRenderer = (function (axios) {
               if (self.config.platform === 'CMS' &&
                   inputLayout && Boolean(inputLayout.layoutId)) {
                   newOptions.xlfUrl =
-                      newOptions.xlfUrl.replace(':layoutId', inputLayout.layoutId);
+                      newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
               }
               else if (self.config.platform === 'chromeOS') {
                   newOptions.xlfUrl = inputLayout.path;
@@ -1699,8 +1687,8 @@ var XiboLayoutRenderer = (function (axios) {
               }
               return new Promise((resolve) => {
                   const xlrLayoutObj = initialLayout;
-                  xlrLayoutObj.id = inputLayout.layoutId;
-                  xlrLayoutObj.layoutId = inputLayout.layoutId;
+                  xlrLayoutObj.id = Number(inputLayout.layoutId);
+                  xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
                   xlrLayoutObj.options = newOptions;
                   resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
               });

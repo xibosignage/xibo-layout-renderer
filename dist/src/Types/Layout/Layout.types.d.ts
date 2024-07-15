@@ -3,7 +3,7 @@ import { IRegion } from "../Region";
 import { ILayoutEvents } from "../../Modules/Layout";
 import { IXlr } from "../XLR";
 export type InputLayoutType = {
-    layoutId: string;
+    layoutId: number | null;
     path?: string;
 };
 export type OptionsType = {
@@ -25,8 +25,8 @@ export type OptionsType = {
     };
 };
 export interface ILayout {
-    id: string;
-    layoutId: string;
+    id: number | null;
+    layoutId: number | null;
     sw: number | null;
     sh: number | null;
     xw: number | null;
