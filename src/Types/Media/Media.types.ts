@@ -47,6 +47,7 @@ export interface IMedia {
     duration: number;
     useDuration: boolean;
     fileId: string;
+    uri: string;
     options: {
         [k: string]: any;
     };
@@ -86,6 +87,7 @@ export const initialMedia: IMedia = {
     duration: 0,
     useDuration: Boolean(0),
     fileId: '',
+    uri: '',
     options: {},
     divWidth: 0,
     divHeight: 0,

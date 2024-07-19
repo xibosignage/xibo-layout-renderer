@@ -26,6 +26,7 @@ export interface IMedia {
     duration: number;
     useDuration: boolean;
     fileId: string;
+    uri: string;
     options: {
         [k: string]: any;
     };

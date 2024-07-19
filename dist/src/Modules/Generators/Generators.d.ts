@@ -19,4 +19,5 @@ type LayoutIndexType = {
 export declare function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: number | null): (InputLayoutType & {
     index: number;
 }) | LayoutIndexType;
+export declare function isEmpty(input: any): boolean;
 export {};

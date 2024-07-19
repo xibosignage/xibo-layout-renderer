@@ -111,31 +111,16 @@ export function composeResourceUrlByPlatform(platform: OptionsType['platform'], 
     let resourceUrl = params.regionOptions.getResourceUrl
         .replace(":regionId", params.regionId)
         .replace(":id", params.mediaId) +
-        '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+        '?preview=1&layoutPreview=1';
 
     if (platform === 'chromeOS') {
-        resourceUrl = params.cmsUrl + resourceUrl;
+        resourceUrl = params.cmsUrl +
+            '/chromeOS/resource/' +
+            params.fileId +
+            '?saveAs=' + params.uri;
+    } else if (!Boolean(params['mediaType'])) {
+        resourceUrl += '&scale_override=' + params.scaleFactor;
     }
-
-    // if (platform === 'CMS') {
-    //     resourceUrl = params.regionOptions.getResourceUrl
-    //             .replace(":regionId", params.regionId)
-    //             .replace(":id", params.mediaId) +
-    //         '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
-    // } else if (platform === 'chromeOS' && params.mediaType && params.mediaType === 'image') {
-    //     resourceUrl = params.cmsUrl + params.regionOptions.getResourceUrl
-    //         .replace(":regionId", params.regionId)
-    //         .replace(":id", params.mediaId) +
-    //         '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
-    // } else if (platform === 'chromeOS') {
-    //     resourceUrl = params.cmsUrl + '/chromeOS/getResource' +
-    //         '?v=' + params.schemaVersion +
-    //         '&serverKey=' + params.cmsKey +
-    //         '&hardwareKey=' + params.hardwareKey +
-    //         '&layoutId=' + params.layoutId +
-    //         '&regionId=' + params.regionId +
-    //         '&mediaId=' + params.mediaId;
-    // }
 
     return resourceUrl;
 }
@@ -161,4 +146,8 @@ export function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: n
     }
 
     return layoutIndexes[layoutId];
+}
+
+export function isEmpty(input: any) {
+    return !Boolean(input) || String(input).length === 0;
 }

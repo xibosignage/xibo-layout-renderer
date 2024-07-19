@@ -93,6 +93,7 @@ export default function Media(
     mediaObject.init = function() {
         const self = mediaObject;
         self.id = props.mediaId;
+        self.fileId = self.xml?.getAttribute('fileId') || '';
         self.idCounter = nextId(props.options);
         self.containerName = `M-${self.id}-${self.idCounter}`;
         self.iframeName = `${self.containerName}-iframe`;
@@ -112,6 +113,11 @@ export default function Media(
                     self.options[mediaOption.nodeName.toLowerCase()] = mediaOption.textContent;
                 }
             }
+        }
+
+        // Check for options.uri and add it to media
+        if (Boolean(self.options['uri'])) {
+            self.uri = self.options['uri'];
         }
 
         // Show in fullscreen?
@@ -167,10 +173,12 @@ export default function Media(
             layoutId: self.region.layout.layoutId,
             regionId: self.region.id,
             mediaId: self.id,
+            fileId: self.fileId,
             scaleFactor: self.region.layout.scaleFactor,
+            uri: self.uri,
         };
 
-        if (self.mediaType === 'image') {
+        if (self.mediaType === 'image' || self.mediaType === 'video') {
             resourceUrlParams.mediaType = self.mediaType;
         }
 

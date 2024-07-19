@@ -165,29 +165,16 @@ var XiboLayoutRenderer = (function (axios) {
       let resourceUrl = params.regionOptions.getResourceUrl
           .replace(":regionId", params.regionId)
           .replace(":id", params.mediaId) +
-          '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
+          '?preview=1&layoutPreview=1';
       if (platform === 'chromeOS') {
-          resourceUrl = params.cmsUrl + resourceUrl;
+          resourceUrl = params.cmsUrl +
+              '/chromeOS/resource/' +
+              params.fileId +
+              '?saveAs=' + params.uri;
       }
-      // if (platform === 'CMS') {
-      //     resourceUrl = params.regionOptions.getResourceUrl
-      //             .replace(":regionId", params.regionId)
-      //             .replace(":id", params.mediaId) +
-      //         '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
-      // } else if (platform === 'chromeOS' && params.mediaType && params.mediaType === 'image') {
-      //     resourceUrl = params.cmsUrl + params.regionOptions.getResourceUrl
-      //         .replace(":regionId", params.regionId)
-      //         .replace(":id", params.mediaId) +
-      //         '?preview=1&layoutPreview=1&scale_override=' + params.scaleFactor;
-      // } else if (platform === 'chromeOS') {
-      //     resourceUrl = params.cmsUrl + '/chromeOS/getResource' +
-      //         '?v=' + params.schemaVersion +
-      //         '&serverKey=' + params.cmsKey +
-      //         '&hardwareKey=' + params.hardwareKey +
-      //         '&layoutId=' + params.layoutId +
-      //         '&regionId=' + params.regionId +
-      //         '&mediaId=' + params.mediaId;
-      // }
+      else if (!Boolean(params['mediaType'])) {
+          resourceUrl += '&scale_override=' + params.scaleFactor;
+      }
       return resourceUrl;
   }
   function getIndexByLayoutId(layoutsInput, layoutId) {
@@ -276,6 +263,7 @@ var XiboLayoutRenderer = (function (axios) {
       duration: 0,
       useDuration: Boolean(0),
       fileId: '',
+      uri: '',
       options: {},
       divWidth: 0,
       divHeight: 0,
@@ -688,6 +676,7 @@ var XiboLayoutRenderer = (function (axios) {
       mediaObject.init = function () {
           const self = mediaObject;
           self.id = props.mediaId;
+          self.fileId = self.xml?.getAttribute('fileId') || '';
           self.idCounter = nextId(props.options);
           self.containerName = `M-${self.id}-${self.idCounter}`;
           self.iframeName = `${self.containerName}-iframe`;
@@ -705,6 +694,10 @@ var XiboLayoutRenderer = (function (axios) {
                       self.options[mediaOption.nodeName.toLowerCase()] = mediaOption.textContent;
                   }
               }
+          }
+          // Check for options.uri and add it to media
+          if (Boolean(self.options['uri'])) {
+              self.uri = self.options['uri'];
           }
           // Show in fullscreen?
           if (self.options.showfullscreen === "1") {
@@ -754,9 +747,11 @@ var XiboLayoutRenderer = (function (axios) {
               layoutId: self.region.layout.layoutId,
               regionId: self.region.id,
               mediaId: self.id,
+              fileId: self.fileId,
               scaleFactor: self.region.layout.scaleFactor,
+              uri: self.uri,
           };
-          if (self.mediaType === 'image') {
+          if (self.mediaType === 'image' || self.mediaType === 'video') {
               resourceUrlParams.mediaType = self.mediaType;
           }
           const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, resourceUrlParams);
