@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 let createNanoEvents = () => ({
   emit(event, ...args) {
     for (
@@ -1298,22 +1296,8 @@ async function getXlf(layoutOptions) {
     else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
-    return await axios.get(xlfUrl)
-        .then((res) => {
-        return res?.data;
-    })
-        .catch((error) => handleAxiosError(error));
-}
-function handleAxiosError(error, message) {
-    console.error(error);
-    if (error.response.status == 500) {
-        // SOAP responses are always 500's
-        // Return the body
-        throw new Error(error.response.data);
-    }
-    else {
-        throw new Error('Unknown Error');
-    }
+    const res = await fetch(xlfUrl);
+    return await res.text();
 }
 function getLayout(params) {
     let _currentLayout = undefined;

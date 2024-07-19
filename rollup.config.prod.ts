@@ -15,7 +15,6 @@ const libName = 'xibo-layout-renderer';
 const outputPath = 'dist/';
 const commonInputOptions: InputOptions = {
     input: 'src/index.ts',
-    external: ['axios'],
     plugins: [
         nodeResolvePlugin({
             preferBuiltins: true,
@@ -63,9 +62,6 @@ const config: RollupOptions[] = [
                 ...iifeCommonOutputOptions,
                 file: `${outputPath}${libName}.js`,
                 format: 'iife',
-                globals: {
-                    axios: 'axios',
-                }
             },
             {
                 ...iifeCommonOutputOptions,
@@ -73,9 +69,6 @@ const config: RollupOptions[] = [
                 format: 'iife',
                 sourcemap: true,
                 plugins: [terserPlugin()],
-                globals: {
-                    axios: 'axios',
-                }
             }
         ],
     },

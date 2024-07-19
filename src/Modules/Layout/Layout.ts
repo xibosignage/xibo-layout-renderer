@@ -19,7 +19,6 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {createNanoEvents} from 'nanoevents';
-import axios from 'axios';
 import {
     GetLayoutParamType,
     GetLayoutType,
@@ -109,11 +108,9 @@ export async function getXlf(layoutOptions: OptionsType) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
 
-    return await axios.get(xlfUrl)
-        .then((res) => {
-            return res?.data;
-        })
-        .catch((error) => handleAxiosError(error));
+    const res = await fetch(xlfUrl);
+
+    return await res.text();
 }
 
 export function handleAxiosError(error: any, message?: string) {
