@@ -853,21 +853,23 @@ var XiboLayoutRenderer = (function () {
           // Add html node to media for 
           self.html = $media;
           // Check/set iframe based widgets play status
-          if (self.iframe && self.checkIframeStatus) {
-              // Set state as false ( for now )
-              self.ready = false;
-              // Append iframe
-              $media.innerHTML = '';
-              $media.appendChild(self.iframe);
-              // On iframe load, set state as ready to play full preview
-              (self.iframe) && self.iframe.addEventListener('load', function () {
-                  self.ready = true;
-                  if (self.iframe) {
-                      const iframeStyles = self.iframe.style.cssText;
-                      self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
-                  }
-              });
-          }
+          // if(self.iframe && self.checkIframeStatus) {
+          //     // Set state as false ( for now )
+          //     self.ready = false;
+          //
+          //     // Append iframe
+          //     $media.innerHTML = '';
+          //     $media.appendChild(self.iframe as Node);
+          //
+          //     // On iframe load, set state as ready to play full preview
+          //     (self.iframe) && self.iframe.addEventListener('load', function(){
+          //         self.ready = true;
+          //         if (self.iframe) {
+          //             const iframeStyles = self.iframe.style.cssText;
+          //             self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
+          //         }
+          //     });
+          // }
       };
       mediaObject.run = function () {
           const self = mediaObject;
@@ -917,6 +919,21 @@ var XiboLayoutRenderer = (function () {
                   else if (self.mediaType === 'audio' && self.url !== null) {
                       $media.src =
                           isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
+                  }
+                  else if (self.render === 'html' && self.iframe && self.checkIframeStatus) {
+                      // Set state as false ( for now )
+                      self.ready = false;
+                      // Append iframe
+                      $media.innerHTML = '';
+                      $media.appendChild(self.iframe);
+                      // On iframe load, set state as ready to play full preview
+                      (self.iframe) && self.iframe.addEventListener('load', function () {
+                          self.ready = true;
+                          if (self.iframe) {
+                              const iframeStyles = self.iframe.style.cssText;
+                              self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
+                          }
+                      });
                   }
                   self.emitter?.emit('start', self);
               }
