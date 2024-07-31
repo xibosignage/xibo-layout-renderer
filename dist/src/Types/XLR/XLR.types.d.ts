@@ -17,7 +17,7 @@ export interface IXlr {
     bootstrap(): void;
     init(): Promise<IXlr>;
     playSchedules(xlr: IXlr): void;
-    prepareLayoutXlf(inputLayout: ILayout | undefined, type: ELayoutType): Promise<ILayout>;
+    prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(): Promise<IXlr>;
 }
 export declare const initialXlr: IXlr;

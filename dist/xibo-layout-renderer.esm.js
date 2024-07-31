@@ -1585,7 +1585,7 @@ const initialXlr = {
     },
     playSchedules() {
     },
-    prepareLayoutXlf(inputLayout, type) {
+    prepareLayoutXlf(inputLayout) {
         return Promise.resolve({});
     },
     prepareLayouts() {
@@ -1684,14 +1684,30 @@ function XiboLayoutRenderer(inputLayouts, options) {
             // Get layouts
             const xlrLayouts = getLayout({ xlr: self });
             self.currentLayoutId = xlrLayouts.current?.layoutId;
-            const layouts = await Promise.all([
-                self.prepareLayoutXlf(xlrLayouts.current, ELayoutType.CURRENT),
-                self.prepareLayoutXlf(xlrLayouts.next, ELayoutType.NEXT)
-            ]);
+            const layoutsXlf = () => {
+                let xlf = [];
+                xlf.push(xlrLayouts.current);
+                if (xlrLayouts.current?.layoutId !== xlrLayouts.next?.layoutId) {
+                    xlf.push(xlrLayouts.next);
+                }
+                return xlf.reduce((coll, item) => {
+                    return [
+                        ...coll,
+                        self.prepareLayoutXlf(item),
+                    ];
+                }, []);
+            };
+            const layouts = await Promise.all(layoutsXlf());
             return new Promise((resolve) => {
                 self.layouts = layouts;
                 self.currentLayout = self.layouts[0];
-                self.nextLayout = self.layouts[1];
+                if (Boolean(self.layouts[1])) {
+                    self.nextLayout = self.layouts[1];
+                }
+                else {
+                    // Use current layout as next layout if only one layout is available
+                    self.nextLayout = self.layouts[0];
+                }
                 self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
                 self.layouts[self.currentLayoutIndex] = self.currentLayout;
                 resolve(self);

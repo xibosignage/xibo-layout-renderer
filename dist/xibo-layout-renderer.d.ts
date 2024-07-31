@@ -1,9 +1,5 @@
 import { Emitter, DefaultEvents, Unsubscribe } from 'nanoevents';
 
-declare enum ELayoutType {
-    CURRENT = 0,
-    NEXT = 1
-}
 interface IXlr {
     inputLayouts: InputLayoutType[];
     config: OptionsType;
@@ -15,7 +11,7 @@ interface IXlr {
     bootstrap(): void;
     init(): Promise<IXlr>;
     playSchedules(xlr: IXlr): void;
-    prepareLayoutXlf(inputLayout: ILayout | undefined, type: ELayoutType): Promise<ILayout>;
+    prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(): Promise<IXlr>;
 }
 
