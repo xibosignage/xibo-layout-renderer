@@ -193,7 +193,7 @@ export default function Media(
 
         $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
 
-        if (self.render === 'html' || self.mediaType === 'ticker') {
+        if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
             self.checkIframeStatus = true;
             self.iframe = $mediaIframe;
         }  else if (self.mediaType === "image") {

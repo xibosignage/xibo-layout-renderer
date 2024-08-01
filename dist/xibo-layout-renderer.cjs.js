@@ -762,7 +762,7 @@ function Media(region, mediaId, xml, options, xlr) {
             self.options['loop'] == '1' ||
                 (self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1);
         $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
-        if (self.render === 'html' || self.mediaType === 'ticker') {
+        if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
             self.checkIframeStatus = true;
             self.iframe = $mediaIframe;
         }
