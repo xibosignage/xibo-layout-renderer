@@ -378,7 +378,9 @@ export default function Media(
                 } else if (self.mediaType === 'audio' && self.url !== null) {
                     ($media as HTMLAudioElement).src =
                         isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
-                } else if (self.render === 'html' && self.iframe && self.checkIframeStatus) {
+                } else if ((self.render === 'html' || self.mediaType === 'webpage') &&
+                    self.iframe && self.checkIframeStatus
+                ) {
                     // Set state as false ( for now )
                     self.ready = false;
 

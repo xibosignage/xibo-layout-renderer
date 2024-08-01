@@ -921,7 +921,8 @@ function Media(region, mediaId, xml, options, xlr) {
                     $media.src =
                         isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
                 }
-                else if (self.render === 'html' && self.iframe && self.checkIframeStatus) {
+                else if ((self.render === 'html' || self.mediaType === 'webpage') &&
+                    self.iframe && self.checkIframeStatus) {
                     // Set state as false ( for now )
                     self.ready = false;
                     // Append iframe
