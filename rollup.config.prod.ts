@@ -74,7 +74,7 @@ const config: RollupOptions[] = [
     },
     {
         ...commonInputOptions,
-        plugins: [commonInputOptions.plugins, dtsPlugin()],
+        plugins: [commonInputOptions.plugins],
         output: [
             {
                 file: `${outputPath}${libName}.cjs.js`,
