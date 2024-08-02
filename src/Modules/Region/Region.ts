@@ -99,6 +99,7 @@ export default function Region(
             position: absolute;
             left: ${self.offsetX}px;
             top: ${self.offsetY}px;
+            z-index: ${Math.round(self.zIndex)};
         `;
         $region.className = 'region--item';
 

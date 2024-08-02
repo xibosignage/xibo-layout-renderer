@@ -1036,6 +1036,7 @@ function Region(layout, xml, regionId, options, xlr) {
             position: absolute;
             left: ${self.offsetX}px;
             top: ${self.offsetY}px;
+            z-index: ${Math.round(self.zIndex)};
         `;
         $region.className = 'region--item';
         /* Parse region media objects */
