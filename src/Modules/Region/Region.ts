@@ -66,7 +66,7 @@ export default function Region(
         self.sHeight = (self.xml) && Number(self.xml?.getAttribute('height')) * layout.scaleFactor;
         self.offsetX = (self.xml) && Number(self.xml?.getAttribute('left')) * layout.scaleFactor;
         self.offsetY = (self.xml) && Number(self.xml?.getAttribute('top')) * layout.scaleFactor;
-        self.zIndex = (self.xml) && Number(self.xml?.getAttribute('zindex')) * layout.scaleFactor;
+        self.zIndex = (self.xml) && Number(self.xml?.getAttribute('zindex'));
         
         const regionOptions = self.xml?.getElementsByTagName('options');
 
