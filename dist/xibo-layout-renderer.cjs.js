@@ -2,6 +2,7 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
 let createNanoEvents = () => ({
   emit(event, ...args) {
     for (
@@ -190,6 +191,9 @@ function getIndexByLayoutId(layoutsInput, layoutId) {
         return layoutIndexes;
     }
     return layoutIndexes[layoutId];
+}
+function splashScreenDOM() {
+    return new URL((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__dirname + '/assets/logo-BLa_l1uk.png').href : new URL('assets/logo-BLa_l1uk.png', document.currentScript && document.currentScript.src || document.baseURI).href), (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.cjs.js', document.baseURI).href))).href;
 }
 
 const initialRegion = {
@@ -1634,6 +1638,9 @@ function XiboLayoutRenderer(inputLayouts, options) {
             self.config = JSON.parse(JSON.stringify({ ...platform, ...props.options }));
         },
         init() {
+            console.log({
+                splashScreen: splashScreenDOM(),
+            });
             return new Promise((resolve) => {
                 const self = this;
                 // Prepare rendering DOM

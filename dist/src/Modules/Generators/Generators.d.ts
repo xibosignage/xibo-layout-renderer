@@ -20,4 +20,6 @@ export declare function getIndexByLayoutId(layoutsInput: InputLayoutType[], layo
     index: number;
 }) | LayoutIndexType;
 export declare function isEmpty(input: any): boolean;
+export declare const splashScreenLayoutObj: InputLayoutType;
+export declare function splashScreenDOM(): string;
 export {};

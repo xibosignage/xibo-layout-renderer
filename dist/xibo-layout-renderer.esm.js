@@ -187,6 +187,9 @@ function getIndexByLayoutId(layoutsInput, layoutId) {
     }
     return layoutIndexes[layoutId];
 }
+function splashScreenDOM() {
+    return new URL(new URL('assets/logo-BLa_l1uk.png', import.meta.url).href, import.meta.url).href;
+}
 
 const initialRegion = {
     layout: initialLayout,
@@ -1630,6 +1633,9 @@ function XiboLayoutRenderer(inputLayouts, options) {
             self.config = JSON.parse(JSON.stringify({ ...platform, ...props.options }));
         },
         init() {
+            console.log({
+                splashScreen: splashScreenDOM(),
+            });
             return new Promise((resolve) => {
                 const self = this;
                 // Prepare rendering DOM

@@ -26,6 +26,7 @@ import {
     ILayout, initialLayout, InputLayoutType, OptionsType,
 } from "./Types/Layout";
 import { ELayoutType, initialXlr, IXlr } from './Types/XLR';
+import {splashScreenDOM} from "./Modules/Generators/Generators";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -46,6 +47,9 @@ export default function XiboLayoutRenderer(
             self.config = JSON.parse(JSON.stringify({...platform, ...props.options}));
         },
         init() {
+            console.log({
+                splashScreen: splashScreenDOM(),
+            });
             return new Promise<IXlr>((resolve) => {
                 const self = this;
 

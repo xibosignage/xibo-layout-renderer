@@ -1,6 +1,7 @@
 // rollup.config.prod.ts
 import type { InputOptions, OutputOptions, RollupOptions } from 'rollup';
 
+import {importMetaAssets} from "@web/rollup-plugin-import-meta-assets";
 import { nodeResolve as nodeResolvePlugin } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescriptPlugin from '@rollup/plugin-typescript';
@@ -30,6 +31,7 @@ const commonInputOptions: InputOptions = {
           // all `*.css` files in src directory
           extract: path.resolve('dist/styles.css'),
         }),
+        importMetaAssets(),
         babelPlugin({
           exclude: 'node_modules/**',
           passPerPreset: true,

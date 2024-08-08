@@ -151,3 +151,12 @@ export function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: n
 export function isEmpty(input: any) {
     return !Boolean(input) || String(input).length === 0;
 }
+
+export const splashScreenLayoutObj: InputLayoutType = {
+    layoutId: 0,
+    path: '',
+};
+
+export function splashScreenDOM() {
+    return new URL('./logo.png', import.meta.url).href;
+}
