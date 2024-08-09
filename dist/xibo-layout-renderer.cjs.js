@@ -193,7 +193,13 @@ function getIndexByLayoutId(layoutsInput, layoutId) {
     return layoutIndexes[layoutId];
 }
 function splashScreenDOM() {
-    return new URL((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__dirname + '/assets/logo-BLa_l1uk.png').href : new URL('assets/logo-BLa_l1uk.png', document.currentScript && document.currentScript.src || document.baseURI).href), (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.cjs.js', document.baseURI).href))).href;
+    const mediaItem = document.querySelector('.media--item');
+    const newImg = document.createElement('img');
+    newImg.src = new URL((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__dirname + '/assets/logo-BLa_l1uk.png').href : new URL('assets/logo-BLa_l1uk.png', document.currentScript && document.currentScript.src || document.baseURI).href), (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.cjs.js', document.baseURI).href))).href;
+    if (mediaItem !== null) {
+        mediaItem.insertBefore(newImg, mediaItem.lastElementChild);
+    }
+    return newImg;
 }
 
 const initialRegion = {

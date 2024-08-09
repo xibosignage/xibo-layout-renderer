@@ -21,5 +21,5 @@ export declare function getIndexByLayoutId(layoutsInput: InputLayoutType[], layo
 }) | LayoutIndexType;
 export declare function isEmpty(input: any): boolean;
 export declare const splashScreenLayoutObj: InputLayoutType;
-export declare function splashScreenDOM(): string;
+export declare function splashScreenDOM(): HTMLImageElement;
 export {};

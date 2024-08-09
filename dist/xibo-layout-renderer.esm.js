@@ -188,7 +188,13 @@ function getIndexByLayoutId(layoutsInput, layoutId) {
     return layoutIndexes[layoutId];
 }
 function splashScreenDOM() {
-    return new URL(new URL('assets/logo-BLa_l1uk.png', import.meta.url).href, import.meta.url).href;
+    const mediaItem = document.querySelector('.media--item');
+    const newImg = document.createElement('img');
+    newImg.src = new URL(new URL('assets/logo-BLa_l1uk.png', import.meta.url).href, import.meta.url).href;
+    if (mediaItem !== null) {
+        mediaItem.insertBefore(newImg, mediaItem.lastElementChild);
+    }
+    return newImg;
 }
 
 const initialRegion = {

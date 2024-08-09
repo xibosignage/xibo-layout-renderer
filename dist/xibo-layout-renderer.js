@@ -192,7 +192,13 @@ var XiboLayoutRenderer = (function () {
       return layoutIndexes[layoutId];
   }
   function splashScreenDOM() {
-      return new URL(new URL('assets/logo-BLa_l1uk.png', document.currentScript && document.currentScript.src || document.baseURI).href, (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.js', document.baseURI).href)).href;
+      const mediaItem = document.querySelector('.media--item');
+      const newImg = document.createElement('img');
+      newImg.src = new URL(new URL('assets/logo-BLa_l1uk.png', document.currentScript && document.currentScript.src || document.baseURI).href, (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.js', document.baseURI).href)).href;
+      if (mediaItem !== null) {
+          mediaItem.insertBefore(newImg, mediaItem.lastElementChild);
+      }
+      return newImg;
   }
 
   const initialRegion = {

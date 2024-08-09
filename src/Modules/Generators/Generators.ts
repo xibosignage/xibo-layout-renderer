@@ -158,5 +158,14 @@ export const splashScreenLayoutObj: InputLayoutType = {
 };
 
 export function splashScreenDOM() {
-    return new URL('./logo.png', import.meta.url).href;
+    const mediaItem = document.querySelector('.media--item');
+    const newImg = document.createElement('img');
+
+    newImg.src = new URL('./logo.png', import.meta.url).href;
+
+    if (mediaItem !== null) {
+        mediaItem.insertBefore(newImg, mediaItem.lastElementChild);
+    }
+
+    return newImg;
 }
