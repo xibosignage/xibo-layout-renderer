@@ -1474,19 +1474,22 @@ function Layout(data, options, xlr, layout) {
             /* Extract the image ID from the filename */
             layout.bgId = layout.bgImage.substring(0, layout.bgImage.indexOf('.'));
             let tmpUrl = options.layoutBackgroundDownloadUrl.replace(":id", layout.id) + '?preview=1';
+            console.log({
+                layoutDOM: $layout,
+            });
             // preload.addFiles(tmpUrl + "&width=" + self.sWidth + "&height=" + self.sHeight + "&dynamic&proportional=0");
             if ($layout) {
                 $layout.style.cssText = layoutStyles.concat(`
-                    background: url('${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0');
-                    backgroundRepeat: "no-repeat";
-                    backgroundSize: ${layout.sWidth}px ${layout.sHeight}px;
-                    backgroundPosition: "0px 0px";
+                    background: url(${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0);
+                    background-repeat: no-repeat;
+                    background-size: ${layout.sWidth}px ${layout.sHeight}px;
+                    background-position: 0px 0px;
                 `);
             }
         }
         // Set the background color
         if ($layout) {
-            $layout.style.cssText = layoutStyles.concat(`background-color: layout.bgColor;`);
+            $layout.style.cssText = layoutStyles.concat(`background-color: ${layout.bgColor};`);
         }
         // Hide if layout is not the currentLayout
         if ($layout && xlr.currentLayoutId !== undefined && xlr.currentLayoutId !== layout.id) {
