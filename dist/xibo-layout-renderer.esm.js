@@ -1465,7 +1465,7 @@ function Layout(data, options, xlr, layout) {
         layout.sHeight = Math.round(layout.xh * layout.scaleFactor);
         layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
         layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
-        const layoutStyles = `
+        let layoutStyles = `
             width: ${layout.sWidth}px;
             height: ${layout.sHeight}px;
             position: absolute;
@@ -1490,13 +1490,10 @@ function Layout(data, options, xlr, layout) {
                 layout,
             });
             if ($layout) {
-                layoutStyles.concat(`
-                    background-image: url('${bgImageUrl}');
-                    background-repeat: no-repeat;
-                    background-size: ${layout.sWidth}px ${layout.sHeight}px;
-                    background-position: 0px 0px;
-                `);
-                $layout.style.cssText = layoutStyles;
+                $layout.style.backgroundImage = `url('${bgImageUrl}')`;
+                $layout.style.backgroundRepeat = 'no-repeat';
+                $layout.style.backgroundSize = `${layout.sWidth}px ${layout.sHeight}px`;
+                $layout.style.backgroundPosition = '0px 0px';
                 console.log({
                     layoutDOM: $layout,
                     layoutStyles,
