@@ -300,20 +300,17 @@ export default function Layout(
         layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
         layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
 
-        let layoutStyles = `
-            width: ${layout.sWidth}px;
-            height: ${layout.sHeight}px;
-            position: absolute;
-            left: ${layout.offsetX}px;
-            top: ${layout.offsetY}px;
-        `;
         /* Scale the Layout Container */
         if ($layout) {
-            $layout.style.cssText = layoutStyles;
+            $layout.style.width = `${layout.sWidth}px`;
+            $layout.style.height = `${layout.sHeight}px`;
+            $layout.style.position = 'absolute';
+            $layout.style.left = `${layout.offsetX}px`;
+            $layout.style.top = `${layout.offsetY}px`;
         }
 
         if ($layout && layout.zIndex !== null) {
-            $layout.style.cssText = layoutStyles.concat(`z-index: ${layout.zIndex};`);
+            $layout.style.zIndex = `${layout.zIndex}`;
         }
 
         /* Set the layout background */
@@ -339,20 +336,19 @@ export default function Layout(
                 $layout.style.backgroundPosition = '0px 0px';
                 console.log({
                     layoutDOM: $layout,
-                    layoutStyles,
                     bgImageUrl,
                 });
             }
         }
 
         // Set the background color
-        if ($layout) {
-            $layout.style.cssText = layoutStyles.concat(`background-color: ${layout.bgColor};`);
+        if ($layout && layout.bgColor) {
+            $layout.style.backgroundColor = `${layout.bgColor}`;
         }
 
         // Hide if layout is not the currentLayout
         if ($layout && xlr.currentLayoutId !== undefined && xlr.currentLayoutId !== layout.id) {
-            $layout.style.cssText = $layout.style.cssText.concat('display: none;');
+            $layout.style.display = 'none';
         }
 
         // Create regions
