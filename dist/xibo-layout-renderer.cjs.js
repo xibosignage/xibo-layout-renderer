@@ -178,6 +178,18 @@ function composeResourceUrlByPlatform(platform, params) {
     }
     return resourceUrl;
 }
+function composeBgUrlByPlatform(platform, params) {
+    let bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", params.layout.id) +
+        '?preview=1&width=' + params.layout.sWidth +
+        '&height=' + params.layout.sHeight +
+        '&dynamic&proportional=0';
+    if (platform === 'chromeOS') {
+        bgImageUrl = params.cmsUrl +
+            '/chromeOS/resource/' + params.layout.id +
+            '?saveAs=' + params.layout.bgImage;
+    }
+    return bgImageUrl;
+}
 function getIndexByLayoutId(layoutsInput, layoutId) {
     let layoutIndexes = layoutsInput.reduce((a, b, indx) => {
         a[Number(b.layoutId)] = {
@@ -1457,19 +1469,16 @@ function Layout(data, options, xlr, layout) {
         layout.sHeight = Math.round(layout.xh * layout.scaleFactor);
         layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
         layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
-        const layoutStyles = `
-            width: ${layout.sWidth}px;
-            height: ${layout.sHeight}px;
-            position: absolute;
-            left: ${layout.offsetX}px;
-            top: ${layout.offsetY}px;
-        `;
         /* Scale the Layout Container */
         if ($layout) {
-            $layout.style.cssText = layoutStyles;
+            $layout.style.width = `${layout.sWidth}px`;
+            $layout.style.height = `${layout.sHeight}px`;
+            $layout.style.position = 'absolute';
+            $layout.style.left = `${layout.offsetX}px`;
+            $layout.style.top = `${layout.offsetY}px`;
         }
         if ($layout && layout.zIndex !== null) {
-            $layout.style.cssText = layoutStyles.concat(`z-index: ${layout.zIndex};`);
+            $layout.style.zIndex = `${layout.zIndex}`;
         }
         /* Set the layout background */
         layout.bgColor = layout.layoutNode?.firstElementChild?.getAttribute('bgcolor') || '';
@@ -1477,24 +1486,24 @@ function Layout(data, options, xlr, layout) {
         if (!(layout.bgImage === "" || typeof layout.bgImage === 'undefined')) {
             /* Extract the image ID from the filename */
             layout.bgId = layout.bgImage.substring(0, layout.bgImage.indexOf('.'));
-            let tmpUrl = options.layoutBackgroundDownloadUrl.replace(":id", layout.id) + '?preview=1';
-            // preload.addFiles(tmpUrl + "&width=" + self.sWidth + "&height=" + self.sHeight + "&dynamic&proportional=0");
+            const bgImageUrl = composeBgUrlByPlatform(xlr.config.platform, {
+                ...options,
+                layout,
+            });
             if ($layout) {
-                $layout.style.cssText = layoutStyles.concat(`
-                    background: url('${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0');
-                    backgroundRepeat: "no-repeat";
-                    backgroundSize: ${layout.sWidth}px ${layout.sHeight}px;
-                    backgroundPosition: "0px 0px";
-                `);
+                $layout.style.backgroundImage = `url("${bgImageUrl}")`;
+                $layout.style.backgroundRepeat = 'no-repeat';
+                $layout.style.backgroundSize = `${layout.sWidth}px ${layout.sHeight}px`;
+                $layout.style.backgroundPosition = '0px 0px';
             }
         }
         // Set the background color
-        if ($layout) {
-            $layout.style.cssText = layoutStyles.concat(`background-color: layout.bgColor;`);
+        if ($layout && layout.bgColor) {
+            $layout.style.backgroundColor = `${layout.bgColor}`;
         }
         // Hide if layout is not the currentLayout
         if ($layout && xlr.currentLayoutId !== undefined && xlr.currentLayoutId !== layout.id) {
-            $layout.style.cssText = $layout.style.cssText.concat('display: none;');
+            $layout.style.display = 'none';
         }
         // Create regions
         const layoutRegions = Array.from(layout?.layoutNode?.getElementsByTagName('region') || []);
