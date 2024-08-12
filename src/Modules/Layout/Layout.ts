@@ -31,7 +31,7 @@ import { nextId } from '../Generators';
 import { Region } from '../Region';
 
 import './layout.css';
-import {getIndexByLayoutId} from '../Generators/Generators';
+import {composeBgUrlByPlatform, getIndexByLayoutId} from '../Generators/Generators';
 
 const playAgainClickHandle = function(ev: { preventDefault: () => void; }) {
     ev.preventDefault();
@@ -324,20 +324,26 @@ export default function Layout(
             /* Extract the image ID from the filename */
             layout.bgId = layout.bgImage.substring(0, layout.bgImage.indexOf('.'));
 
-            let tmpUrl = options.layoutBackgroundDownloadUrl.replace(":id", (layout.id as unknown) as string) + '?preview=1';
+            const bgImageUrl = composeBgUrlByPlatform(
+                xlr.config.platform,
+                {
+                    ...options,
+                    layout,
+                }
+            );
 
-            // preload.addFiles(tmpUrl + "&width=" + self.sWidth + "&height=" + self.sHeight + "&dynamic&proportional=0");
             if ($layout) {
-                $layout.style.cssText = layoutStyles.concat(`
-                    background: url('${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0');
+                layoutStyles.concat(`
+                    background-image: url('${bgImageUrl}');
                     background-repeat: no-repeat;
                     background-size: ${layout.sWidth}px ${layout.sHeight}px;
                     background-position: 0px 0px;
                 `);
+                $layout.style.cssText = layoutStyles;
                 console.log({
                     layoutDOM: $layout,
                     layoutStyles,
-                    tmpUrl,
+                    bgImageUrl,
                 });
             }
         }

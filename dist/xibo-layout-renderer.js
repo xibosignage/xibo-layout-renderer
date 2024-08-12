@@ -177,6 +177,18 @@ var XiboLayoutRenderer = (function () {
       }
       return resourceUrl;
   }
+  function composeBgUrlByPlatform(platform, params) {
+      let bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", params.layout.id) +
+          '?preview=1&width=' + params.layout.sWidth +
+          '&height=' + params.layout.sHeight +
+          '&dynamic&proportional=0';
+      if (platform === 'chromeOS') {
+          bgImageUrl = params.cmsUrl +
+              '/chromeOS/resource/' + params.layout.id +
+              '?saveAs=' + params.layout.bgImage;
+      }
+      return bgImageUrl;
+  }
   function getIndexByLayoutId(layoutsInput, layoutId) {
       let layoutIndexes = layoutsInput.reduce((a, b, indx) => {
           a[Number(b.layoutId)] = {
@@ -1476,19 +1488,22 @@ var XiboLayoutRenderer = (function () {
           if (!(layout.bgImage === "" || typeof layout.bgImage === 'undefined')) {
               /* Extract the image ID from the filename */
               layout.bgId = layout.bgImage.substring(0, layout.bgImage.indexOf('.'));
-              let tmpUrl = options.layoutBackgroundDownloadUrl.replace(":id", layout.id) + '?preview=1';
-              // preload.addFiles(tmpUrl + "&width=" + self.sWidth + "&height=" + self.sHeight + "&dynamic&proportional=0");
+              const bgImageUrl = composeBgUrlByPlatform(xlr.config.platform, {
+                  ...options,
+                  layout,
+              });
               if ($layout) {
-                  $layout.style.cssText = layoutStyles.concat(`
-                    background: url('${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0');
+                  layoutStyles.concat(`
+                    background-image: url('${bgImageUrl}');
                     background-repeat: no-repeat;
                     background-size: ${layout.sWidth}px ${layout.sHeight}px;
                     background-position: 0px 0px;
                 `);
+                  $layout.style.cssText = layoutStyles;
                   console.log({
                       layoutDOM: $layout,
                       layoutStyles,
-                      tmpUrl,
+                      bgImageUrl,
                   });
               }
           }
