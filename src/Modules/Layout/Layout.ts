@@ -329,7 +329,7 @@ export default function Layout(
             // preload.addFiles(tmpUrl + "&width=" + self.sWidth + "&height=" + self.sHeight + "&dynamic&proportional=0");
             if ($layout) {
                 $layout.style.cssText = layoutStyles.concat(`
-                    background: url("${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0");
+                    background: url('${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0');
                     background-repeat: no-repeat;
                     background-size: ${layout.sWidth}px ${layout.sHeight}px;
                     background-position: 0px 0px;
