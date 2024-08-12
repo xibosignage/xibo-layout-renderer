@@ -22,12 +22,13 @@ import { createNanoEvents } from "nanoevents";
 import { OptionsType } from '../../Types/Layout';
 import { IRegion } from '../../Types/Region';
 import { IMedia, initialMedia } from '../../Types/Media';
-import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
+import {fetchJSON, getFileExt, getMediaId, nextId, preloadMediaBlob} from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
 import VideoMedia from './VideoMedia';
 import AudioMedia from './AudioMedia';
 import {composeResourceUrlByPlatform, getDataBlob} from "../Generators/Generators";
 import {IXlr} from "../../Types/XLR";
+import ObjectMedia from "./ObjectMedia";
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -66,7 +67,12 @@ export default function Media(
 
     emitter.on('start', function(media) {
         if (media.mediaType === 'video') {
-            VideoMedia(media).init();
+
+            if (getFileExt(media.uri) === 'wmv') {
+                ObjectMedia(media).init();
+            } else {
+                VideoMedia(media).init();
+            }
 
             if (media.duration > 0) {
                 startMediaTimer(media);
@@ -143,6 +149,10 @@ export default function Media(
         if ($media === null) {
             if (self.mediaType === 'video') {
                 $media = document.createElement('video');
+
+                if (getFileExt(self.uri) === 'wmv') {
+                    $media = document.createElement('object');
+                }
             } else if (self.mediaType === 'audio') {
                 $media = new Audio();
             } else {
@@ -210,24 +220,11 @@ export default function Media(
                 $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
             }
         } else if (self.mediaType === 'video') {
-            const $videoMedia = $media as HTMLVideoElement;
-
-            $videoMedia.preload = 'auto';
-            $videoMedia.textContent = 'Unsupported Video';
-
-            if (Boolean(self.options['mute'])) {
-                $videoMedia.muted = self.options.mute === '1';
-            }
-
-            if (Boolean(self.options['scaletype'])) {
-                if (self.options.scaletype === 'stretch') {
-                    $videoMedia.style.objectFit = 'fill';
-                }
-            }
-            $videoMedia.playsInline = true;
-
-            if (self.loop) {
-                $videoMedia.loop = true;
+            let $videoMedia;
+            if (getFileExt(self.uri) === 'wmv') {
+                $videoMedia = ObjectMedia(self).prepare($media as HTMLObjectElement);
+            } else {
+                $videoMedia = VideoMedia(self).prepare($media as HTMLVideoElement);
             }
 
             $media = $videoMedia;
@@ -293,29 +290,8 @@ export default function Media(
          * to complete the 100s set duration
          */
 
-        // Add html node to media for 
-
+        // Add html node to media for
         self.html = $media;
-
-        // Check/set iframe based widgets play status
-        // if(self.iframe && self.checkIframeStatus) {
-        //     // Set state as false ( for now )
-        //     self.ready = false;
-        //
-        //     // Append iframe
-        //     $media.innerHTML = '';
-        //     $media.appendChild(self.iframe as Node);
-        //
-        //     // On iframe load, set state as ready to play full preview
-        //     (self.iframe) && self.iframe.addEventListener('load', function(){
-        //         self.ready = true;
-        //         if (self.iframe) {
-        //             const iframeStyles = self.iframe.style.cssText;
-        //             self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
-        //         }
-        //     });
-        // }
-
     };
 
     mediaObject.run = function() {
@@ -373,8 +349,13 @@ export default function Media(
                             `url(${!isCMS ? self.url : await getDataBlob(self.url)}`
                         );
                 } else if (self.mediaType === 'video' && self.url !== null) {
-                    ($media as HTMLVideoElement).src =
-                        isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
+                    if (getFileExt(self.uri) === 'wmv') {
+                        ($media as HTMLObjectElement)
+                            .setAttribute('data', await preloadMediaBlob(self.url, self.mediaType));
+                    } else {
+                        ($media as HTMLVideoElement).src =
+                            isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
+                    }
                 } else if (self.mediaType === 'audio' && self.url !== null) {
                     ($media as HTMLAudioElement).src =
                         isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;

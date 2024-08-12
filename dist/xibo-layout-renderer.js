@@ -136,7 +136,6 @@ var XiboLayoutRenderer = (function () {
           const data = await res.arrayBuffer();
           blob = new Blob([data], { type: audioFileType(getFileExt(src)) });
       }
-      console.log({ blob });
       return URL.createObjectURL(blob);
   }
   async function fetchJSON(url) {
@@ -519,6 +518,23 @@ var XiboLayoutRenderer = (function () {
 
   function VideoMedia(media) {
       const videoMediaObject = {
+          prepare($videoMedia) {
+              $videoMedia.preload = 'auto';
+              $videoMedia.textContent = 'Unsupported Video';
+              if (Boolean(media.options['mute'])) {
+                  $videoMedia.muted = media.options.mute === '1';
+              }
+              if (Boolean(media.options['scaletype'])) {
+                  if (media.options.scaletype === 'stretch') {
+                      $videoMedia.style.objectFit = 'fill';
+                  }
+              }
+              $videoMedia.playsInline = true;
+              if (media.loop) {
+                  $videoMedia.loop = true;
+              }
+              return $videoMedia;
+          },
           init() {
               const $videoMedia = document.getElementById(getMediaId(media));
               if ($videoMedia) {
@@ -618,6 +634,26 @@ var XiboLayoutRenderer = (function () {
       return audioMediaObject;
   }
 
+  function ObjectMedia(media) {
+      const objMediaObject = {
+          prepare($objectMedia) {
+              $objectMedia.setAttribute('width', `${media.divWidth}`);
+              $objectMedia.setAttribute('height', `${media.divHeight}`);
+              $objectMedia.setAttribute('type', `video/wmv`);
+              return $objectMedia;
+          },
+          init() {
+              const $objMedia = document.getElementById(getMediaId(media));
+              if ($objMedia) {
+                  console.log({
+                      $objMedia,
+                  });
+              }
+          },
+      };
+      return objMediaObject;
+  }
+
   /*
    * Copyright (C) 2024 Xibo Signage Ltd
    *
@@ -663,7 +699,12 @@ var XiboLayoutRenderer = (function () {
       };
       emitter.on('start', function (media) {
           if (media.mediaType === 'video') {
-              VideoMedia(media).init();
+              if (getFileExt(media.uri) === 'wmv') {
+                  ObjectMedia(media).init();
+              }
+              else {
+                  VideoMedia(media).init();
+              }
               if (media.duration > 0) {
                   startMediaTimer(media);
               }
@@ -732,6 +773,9 @@ var XiboLayoutRenderer = (function () {
           if ($media === null) {
               if (self.mediaType === 'video') {
                   $media = document.createElement('video');
+                  if (getFileExt(self.uri) === 'wmv') {
+                      $media = document.createElement('object');
+                  }
               }
               else if (self.mediaType === 'audio') {
                   $media = new Audio();
@@ -794,20 +838,12 @@ var XiboLayoutRenderer = (function () {
               }
           }
           else if (self.mediaType === 'video') {
-              const $videoMedia = $media;
-              $videoMedia.preload = 'auto';
-              $videoMedia.textContent = 'Unsupported Video';
-              if (Boolean(self.options['mute'])) {
-                  $videoMedia.muted = self.options.mute === '1';
+              let $videoMedia;
+              if (getFileExt(self.uri) === 'wmv') {
+                  $videoMedia = ObjectMedia(self).prepare($media);
               }
-              if (Boolean(self.options['scaletype'])) {
-                  if (self.options.scaletype === 'stretch') {
-                      $videoMedia.style.objectFit = 'fill';
-                  }
-              }
-              $videoMedia.playsInline = true;
-              if (self.loop) {
-                  $videoMedia.loop = true;
+              else {
+                  $videoMedia = VideoMedia(self).prepare($media);
               }
               $media = $videoMedia;
           }
@@ -862,26 +898,8 @@ var XiboLayoutRenderer = (function () {
            * the video will play until 62s and will loop through until the remaining 38s
            * to complete the 100s set duration
            */
-          // Add html node to media for 
+          // Add html node to media for
           self.html = $media;
-          // Check/set iframe based widgets play status
-          // if(self.iframe && self.checkIframeStatus) {
-          //     // Set state as false ( for now )
-          //     self.ready = false;
-          //
-          //     // Append iframe
-          //     $media.innerHTML = '';
-          //     $media.appendChild(self.iframe as Node);
-          //
-          //     // On iframe load, set state as ready to play full preview
-          //     (self.iframe) && self.iframe.addEventListener('load', function(){
-          //         self.ready = true;
-          //         if (self.iframe) {
-          //             const iframeStyles = self.iframe.style.cssText;
-          //             self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
-          //         }
-          //     });
-          // }
       };
       mediaObject.run = function () {
           const self = mediaObject;
@@ -925,8 +943,14 @@ var XiboLayoutRenderer = (function () {
                           .setProperty('background-image', `url(${!isCMS ? self.url : await getDataBlob(self.url)}`);
                   }
                   else if (self.mediaType === 'video' && self.url !== null) {
-                      $media.src =
-                          isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
+                      if (getFileExt(self.uri) === 'wmv') {
+                          $media
+                              .setAttribute('data', await preloadMediaBlob(self.url, self.mediaType));
+                      }
+                      else {
+                          $media.src =
+                              isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
+                      }
                   }
                   else if (self.mediaType === 'audio' && self.url !== null) {
                       $media.src =

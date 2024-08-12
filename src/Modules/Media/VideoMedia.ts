@@ -23,6 +23,27 @@ import { capitalizeStr, getMediaId } from '../Generators';
 
 export default function VideoMedia(media: IMedia) {
     const videoMediaObject = {
+        prepare($videoMedia: HTMLVideoElement) {
+            $videoMedia.preload = 'auto';
+            $videoMedia.textContent = 'Unsupported Video';
+
+            if (Boolean(media.options['mute'])) {
+                $videoMedia.muted = media.options.mute === '1';
+            }
+
+            if (Boolean(media.options['scaletype'])) {
+                if (media.options.scaletype === 'stretch') {
+                    $videoMedia.style.objectFit = 'fill';
+                }
+            }
+            $videoMedia.playsInline = true;
+
+            if (media.loop) {
+                $videoMedia.loop = true;
+            }
+
+            return $videoMedia;
+        },
         init() {
             const $videoMedia = document.getElementById(getMediaId(media)) as HTMLVideoElement;
 
