@@ -1494,10 +1494,6 @@ var XiboLayoutRenderer = (function () {
                   $layout.style.backgroundRepeat = 'no-repeat';
                   $layout.style.backgroundSize = `${layout.sWidth}px ${layout.sHeight}px`;
                   $layout.style.backgroundPosition = '0px 0px';
-                  console.log({
-                      layoutDOM: $layout,
-                      bgImageUrl,
-                  });
               }
           }
           // Set the background color
