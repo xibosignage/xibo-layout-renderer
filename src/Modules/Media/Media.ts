@@ -351,7 +351,7 @@ export default function Media(
                 } else if (self.mediaType === 'video' && self.url !== null) {
                     if (getFileExt(self.uri) === 'wmv') {
                         ($media as HTMLObjectElement)
-                            .setAttribute('data', await preloadMediaBlob(self.url, self.mediaType));
+                            .setAttribute('data', self.url);
                     } else {
                         ($media as HTMLVideoElement).src =
                             isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
