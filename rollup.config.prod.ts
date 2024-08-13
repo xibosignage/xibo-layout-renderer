@@ -8,6 +8,7 @@ import postCssPlugin from 'rollup-plugin-postcss';
 import babelPlugin from '@rollup/plugin-babel';
 import analyzerPlugin from 'rollup-plugin-analyzer';
 import terserPlugin from '@rollup/plugin-terser';
+import nodePolyfillsPlugin from 'rollup-plugin-polyfill-node';
 import dtsPlugin from 'rollup-plugin-dts';
 import path from 'path';
 
@@ -35,6 +36,7 @@ const commonInputOptions: InputOptions = {
           passPerPreset: true,
           babelHelpers: 'bundled',
         }),
+        nodePolyfillsPlugin(),
         analyzerPlugin({
           summaryOnly: true,
         }),
