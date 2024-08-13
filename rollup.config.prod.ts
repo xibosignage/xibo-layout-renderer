@@ -5,7 +5,7 @@ import { nodeResolve as nodeResolvePlugin } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescriptPlugin from '@rollup/plugin-typescript';
 import postCssPlugin from 'rollup-plugin-postcss';
-import babelPlugin from '@rollup/plugin-babel';
+import babelPlugin, {getBabelOutputPlugin} from '@rollup/plugin-babel';
 import analyzerPlugin from 'rollup-plugin-analyzer';
 import terserPlugin from '@rollup/plugin-terser';
 import nodePolyfillsPlugin from 'rollup-plugin-polyfill-node';
@@ -32,9 +32,10 @@ const commonInputOptions: InputOptions = {
           extract: path.resolve('dist/styles.css'),
         }),
         babelPlugin({
-          exclude: 'node_modules/**',
-          passPerPreset: true,
-          babelHelpers: 'bundled',
+            exclude: 'node_modules/**',
+            passPerPreset: true,
+            babelHelpers: 'bundled',
+            presets: ['@babel/preset-env'],
         }),
         nodePolyfillsPlugin(),
         analyzerPlugin({
@@ -70,7 +71,13 @@ const config: RollupOptions[] = [
                 file: `${outputPath}${libName}.min.js`,
                 format: 'iife',
                 sourcemap: true,
-                plugins: [terserPlugin()],
+                plugins: [
+                    terserPlugin(),
+                    getBabelOutputPlugin({
+                        presets: ['@babel/preset-env'],
+                        allowAllFormats: true,
+                    }),
+                ],
             }
         ],
     },
