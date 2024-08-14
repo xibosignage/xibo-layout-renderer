@@ -33,6 +33,7 @@ const commonInputOptions: InputOptions = {
         }),
         babelPlugin({
             exclude: 'node_modules/**',
+            include: ['src/**.ts', 'node_modules/nanoevents/**'],
             passPerPreset: true,
             babelHelpers: 'bundled',
             presets: ['@babel/preset-env'],
@@ -55,12 +56,6 @@ const config: RollupOptions[] = [
             {
                 file: `${outputPath}${libName}.esm.js`,
                 format: 'esm',
-                plugins: [
-                    getBabelOutputPlugin({
-                        presets: ['@babel/preset-env'],
-                        allowAllFormats: true,
-                    }),
-                ]
             }
         ],
     },
