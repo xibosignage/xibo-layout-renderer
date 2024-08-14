@@ -8,7 +8,6 @@ import postCssPlugin from 'rollup-plugin-postcss';
 import babelPlugin, {getBabelOutputPlugin} from '@rollup/plugin-babel';
 import analyzerPlugin from 'rollup-plugin-analyzer';
 import terserPlugin from '@rollup/plugin-terser';
-import nodePolyfillsPlugin from 'rollup-plugin-polyfill-node';
 import dtsPlugin from 'rollup-plugin-dts';
 import path from 'path';
 
@@ -26,18 +25,19 @@ const commonInputOptions: InputOptions = {
           include: ['node_modules/**'],
           extensions: ['.js', '.ts'],
         }),
+        babelPlugin({
+            include: ['src/**', 'node_modules/nanoevents/**'],
+            // extensions: ['.js', '.jsx', '.es6', '.es', '.mjs', '.ts'],
+            extensions: ['.js', '.ts'],
+            passPerPreset: true,
+            babelHelpers: 'bundled',
+            presets: ['@babel/preset-env'],
+        }),
         typescriptPlugin(),
         postCssPlugin({
           // all `*.css` files in src directory
           extract: path.resolve('dist/styles.css'),
         }),
-        babelPlugin({
-            include: ['src/**', 'node_modules/nanoevents/**'],
-            passPerPreset: true,
-            babelHelpers: 'bundled',
-            presets: ['@babel/preset-env'],
-        }),
-        nodePolyfillsPlugin(),
         analyzerPlugin({
           summaryOnly: true,
         }),
