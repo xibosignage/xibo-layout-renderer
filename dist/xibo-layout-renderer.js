@@ -1,26 +1,30 @@
 var XiboLayoutRenderer = (function () {
   'use strict';
 
-  let createNanoEvents = () => ({
-    emit(event, ...args) {
-      for (
-        let i = 0,
-          callbacks = this.events[event] || [],
-          length = callbacks.length;
-        i < length;
-        i++
-      ) {
-        callbacks[i](...args);
+  var createNanoEvents = function createNanoEvents() {
+    return {
+      emit: function emit(event) {
+        for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+          args[_key - 1] = arguments[_key];
+        }
+        for (var i = 0, callbacks = this.events[event] || [], length = callbacks.length; i < length; i++) {
+          callbacks[i].apply(callbacks, args);
+        }
+      },
+      events: {},
+      on: function on(event, cb) {
+        var _this$events,
+          _this = this;
+        ((_this$events = this.events)[event] || (_this$events[event] = [])).push(cb);
+        return function () {
+          var _this$events$event;
+          _this.events[event] = (_this$events$event = _this.events[event]) === null || _this$events$event === void 0 ? void 0 : _this$events$event.filter(function (i) {
+            return cb !== i;
+          });
+        };
       }
-    },
-    events: {},
-    on(event, cb) {
-  (this.events[event] ||= []).push(cb);
-      return () => {
-        this.events[event] = this.events[event]?.filter(i => cb !== i);
-      }
-    }
-  });
+    };
+  };
 
   const RESOURCE_URL = '/playlist/widget/resource/:regionId/:id';
   const XLF_URL = '/layout/xlf/:layoutId';

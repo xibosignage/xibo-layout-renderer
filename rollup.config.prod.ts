@@ -32,8 +32,7 @@ const commonInputOptions: InputOptions = {
           extract: path.resolve('dist/styles.css'),
         }),
         babelPlugin({
-            exclude: 'node_modules/**',
-            include: ['src/**.ts', 'node_modules/nanoevents/**'],
+            include: ['src/**', 'node_modules/nanoevents/**'],
             passPerPreset: true,
             babelHelpers: 'bundled',
             presets: ['@babel/preset-env'],
