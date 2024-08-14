@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { createNanoEvents } from "nanoevents";
+import { createNanoEvents } from 'nanoevents';
 import { OptionsType } from '../../Types/Layout';
 import { IRegion } from '../../Types/Region';
 import { IMedia, initialMedia } from '../../Types/Media';
@@ -26,8 +26,8 @@ import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
 import VideoMedia from './VideoMedia';
 import AudioMedia from './AudioMedia';
-import {composeResourceUrlByPlatform, getDataBlob} from "../Generators/Generators";
-import {IXlr} from "../../Types/XLR";
+import {composeResourceUrlByPlatform, getDataBlob} from '../Generators/Generators';
+import {IXlr} from '../../Types/XLR';
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -61,7 +61,7 @@ export default function Media(
                 media.emitter?.emit('end', media);
             }
         }, 1000);
-        console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
+        console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
 
     emitter.on('start', function(media) {
@@ -253,7 +253,7 @@ export default function Media(
 
                 (async () => {
                     let html = await fetchJSON(`${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`);
-                    console.log({html});
+                    console.debug({html});
                     const res = regex.exec(html);
 
                     if (res !== null) {
@@ -293,29 +293,9 @@ export default function Media(
          * to complete the 100s set duration
          */
 
-        // Add html node to media for 
-
+        // Add html node to media for
         self.html = $media;
-
         // Check/set iframe based widgets play status
-        // if(self.iframe && self.checkIframeStatus) {
-        //     // Set state as false ( for now )
-        //     self.ready = false;
-        //
-        //     // Append iframe
-        //     $media.innerHTML = '';
-        //     $media.appendChild(self.iframe as Node);
-        //
-        //     // On iframe load, set state as ready to play full preview
-        //     (self.iframe) && self.iframe.addEventListener('load', function(){
-        //         self.ready = true;
-        //         if (self.iframe) {
-        //             const iframeStyles = self.iframe.style.cssText;
-        //             self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
-        //         }
-        //     });
-        // }
-
     };
 
     mediaObject.run = function() {

@@ -5,7 +5,7 @@ import { nodeResolve as nodeResolvePlugin } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescriptPlugin from '@rollup/plugin-typescript';
 import postCssPlugin from 'rollup-plugin-postcss';
-import babelPlugin, {getBabelOutputPlugin} from '@rollup/plugin-babel';
+import babelPlugin from '@rollup/plugin-babel';
 import analyzerPlugin from 'rollup-plugin-analyzer';
 import terserPlugin from '@rollup/plugin-terser';
 import dtsPlugin from 'rollup-plugin-dts';
@@ -73,10 +73,6 @@ const config: RollupOptions[] = [
                 sourcemap: true,
                 plugins: [
                     terserPlugin(),
-                    getBabelOutputPlugin({
-                        presets: ['@babel/preset-env'],
-                        allowAllFormats: true,
-                    }),
                 ],
             }
         ],
