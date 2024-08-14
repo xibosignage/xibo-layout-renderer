@@ -1,5 +1,5 @@
 import { IMedia } from '../../Types/Media';
-import { InputLayoutType, OptionsType } from "../../Types/Layout";
+import { InputLayoutType, OptionsType } from '../../Types/Layout';
 export declare function nextId(options: {
     idCounter: number;
 }): number;

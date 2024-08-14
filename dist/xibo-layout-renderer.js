@@ -646,11 +646,8 @@ var XiboLayoutRenderer = (function () {
               type: audioFileType(getFileExt(src))
             });
           case 19:
-            console.log({
-              blob: blob
-            });
             return _context2.abrupt("return", URL.createObjectURL(blob));
-          case 21:
+          case 20:
           case "end":
             return _context2.stop();
         }
@@ -669,7 +666,7 @@ var XiboLayoutRenderer = (function () {
             return _context3.abrupt("return", fetch(url).then(function (res) {
               return res.json();
             })["catch"](function (err) {
-              console.log(err);
+              console.debug(err);
             }));
           case 1:
           case "end":
@@ -1044,19 +1041,19 @@ var XiboLayoutRenderer = (function () {
         var $videoMedia = document.getElementById(getMediaId(media));
         if ($videoMedia) {
           $videoMedia.onloadstart = function () {
-            console.log("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " has started loading data . . ."));
+            console.debug("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " has started loading data . . ."));
           };
           $videoMedia.onloadeddata = function () {
             if ($videoMedia.readyState >= 2) {
-              console.log("".concat(capitalizeStr(media.mediaType), " data for media > ").concat(media.id, " has been fully loaded . . ."));
+              console.debug("".concat(capitalizeStr(media.mediaType), " data for media > ").concat(media.id, " has been fully loaded . . ."));
             }
           };
           $videoMedia.oncanplay = function () {
-            console.log("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " can be played . . ."));
+            console.debug("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " can be played . . ."));
             var videoPlayPromise = $videoMedia.play();
             if (videoPlayPromise !== undefined) {
               videoPlayPromise.then(function () {
-                console.log('autoplay started . . .');
+                console.debug('autoplay started . . .');
                 // Autoplay restarted
               })["catch"](function (error) {
                 $videoMedia.muted = true;
@@ -1065,15 +1062,15 @@ var XiboLayoutRenderer = (function () {
             }
           };
           $videoMedia.onplaying = function () {
-            console.log("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " is now playing . . ."));
+            console.debug("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " is now playing . . ."));
           };
           if (media.duration === 0) {
             $videoMedia.ondurationchange = function () {
-              console.log('Showing Media ' + media.id + ' for ' + $videoMedia.duration + 's of Region ' + media.region.regionId);
+              console.debug('Showing Media ' + media.id + ' for ' + $videoMedia.duration + 's of Region ' + media.region.regionId);
             };
             $videoMedia.onended = function () {
               var _media$emitter;
-              console.log("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " has ended playing . . ."));
+              console.debug("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " has ended playing . . ."));
               (_media$emitter = media.emitter) === null || _media$emitter === void 0 || _media$emitter.emit('end', media);
             };
           }
@@ -1090,18 +1087,18 @@ var XiboLayoutRenderer = (function () {
         var $playBtn = null;
         if ($audioMedia) {
           $audioMedia.onloadstart = function () {
-            console.log("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " has started loading data . . ."));
+            console.debug("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " has started loading data . . ."));
           };
           $audioMedia.onloadeddata = function () {
             if ($audioMedia.readyState >= 2) {
-              console.log("".concat(capitalizeStr(media.mediaType), " data for media > ").concat(media.id, " has been fully loaded . . ."));
+              console.debug("".concat(capitalizeStr(media.mediaType), " data for media > ").concat(media.id, " has been fully loaded . . ."));
             }
           };
           $audioMedia.oncanplay = function () {
-            console.log("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " can be played . . ."));
+            console.debug("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " can be played . . ."));
           };
           $audioMedia.onplaying = function () {
-            console.log("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " is now playing . . ."));
+            console.debug("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " is now playing . . ."));
             if ($playBtn !== null) {
               $playBtn.remove();
             }
@@ -1109,7 +1106,7 @@ var XiboLayoutRenderer = (function () {
           var audioPlayPromise = $audioMedia.play();
           if (audioPlayPromise !== undefined) {
             audioPlayPromise.then(function () {
-              console.log('autoplay started . . .');
+              console.debug('autoplay started . . .');
               // Autoplay restarted
             })["catch"](function (error) {
               if (error.name === 'NotAllowedError') {
@@ -1128,11 +1125,11 @@ var XiboLayoutRenderer = (function () {
           }
           if (media.duration === 0) {
             $audioMedia.ondurationchange = function () {
-              console.log('Showing Media ' + media.id + ' for ' + $audioMedia.duration + 's of Region ' + media.region.regionId);
+              console.debug('Showing Media ' + media.id + ' for ' + $audioMedia.duration + 's of Region ' + media.region.regionId);
             };
             $audioMedia.onended = function () {
               var _media$emitter;
-              console.log("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " has ended playing . . ."));
+              console.debug("".concat(capitalizeStr(media.mediaType), " for media > ").concat(media.id, " has ended playing . . ."));
               (_media$emitter = media.emitter) === null || _media$emitter === void 0 || _media$emitter.emit('end', media);
             };
           }
@@ -1161,7 +1158,7 @@ var XiboLayoutRenderer = (function () {
           (_media$emitter = media.emitter) === null || _media$emitter === void 0 || _media$emitter.emit('end', media);
         }
       }, 1000);
-      console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
+      console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
     emitter.on('start', function (media) {
       if (media.mediaType === 'video') {
@@ -1321,7 +1318,7 @@ var XiboLayoutRenderer = (function () {
                   return fetchJSON("".concat(tmpUrl, "&width=").concat(self.divWidth, "&height=").concat(self.divHeight));
                 case 2:
                   html = _context.sent;
-                  console.log({
+                  console.debug({
                     html: html
                   });
                   res = regex.exec(html);
@@ -1364,26 +1361,9 @@ var XiboLayoutRenderer = (function () {
        * the video will play until 62s and will loop through until the remaining 38s
        * to complete the 100s set duration
        */
-      // Add html node to media for 
+      // Add html node to media for
       self.html = $media;
       // Check/set iframe based widgets play status
-      // if(self.iframe && self.checkIframeStatus) {
-      //     // Set state as false ( for now )
-      //     self.ready = false;
-      //
-      //     // Append iframe
-      //     $media.innerHTML = '';
-      //     $media.appendChild(self.iframe as Node);
-      //
-      //     // On iframe load, set state as ready to play full preview
-      //     (self.iframe) && self.iframe.addEventListener('load', function(){
-      //         self.ready = true;
-      //         if (self.iframe) {
-      //             const iframeStyles = self.iframe.style.cssText;
-      //             self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
-      //         }
-      //     });
-      // }
     };
     mediaObject.run = function () {
       var self = mediaObject;
@@ -1626,7 +1606,7 @@ var XiboLayoutRenderer = (function () {
     };
     regionObject.finished = function () {
       var self = regionObject;
-      console.log('Region::finished called . . . ', self.id);
+      console.debug('Region::finished called . . . ', self.id);
       // Mark as complete
       self.complete = true;
       self.layout.regions[regionObject.index] = regionObject;
@@ -1663,7 +1643,7 @@ var XiboLayoutRenderer = (function () {
       }
     };
     regionObject.run = function () {
-      console.log('Called Region::run > ', regionObject.id);
+      console.debug('Called Region::run > ', regionObject.id);
       if (regionObject.curMedia) {
         regionObject.transitionNodes(regionObject.oldMedia, regionObject.curMedia);
       }
@@ -1782,7 +1762,7 @@ var XiboLayoutRenderer = (function () {
       /* The Layout has finished running */
       /* Do any region exit transition then clean up */
       self.layout.regions[self.index] = self;
-      console.log('Calling Region::end ', self);
+      console.debug('Calling Region::end ', self);
       self.exitTransition();
     };
     regionObject.exitTransition = function () {
@@ -1792,12 +1772,12 @@ var XiboLayoutRenderer = (function () {
       if ($region) {
         $region.style.display = 'none';
       }
-      console.log('Called Region::exitTransition ', self.id);
+      console.debug('Called Region::exitTransition ', self.id);
       self.exitTransitionComplete();
     };
     regionObject.exitTransitionComplete = function () {
       var self = regionObject;
-      console.log('Called Region::exitTransitionComplete ', self.id);
+      console.debug('Called Region::exitTransitionComplete ', self.id);
       self.ended = true;
       self.layout.regions[self.index] = self;
       self.layout.regionEnded();
@@ -1959,14 +1939,14 @@ var XiboLayoutRenderer = (function () {
     var emitter = createNanoEvents();
     emitter.on('start', function (layout) {
       layout.done = false;
-      console.log('Layout start emitted > Layout ID > ', layout.id);
+      console.debug('Layout start emitted > Layout ID > ', layout.id);
     });
     emitter.on('end', function (layout) {
-      console.log('Ending layout with ID of > ', layout.layoutId);
+      console.debug('Ending layout with ID of > ', layout.layoutId);
       layout.done = true;
       /* Remove layout that has ended */
       var $layout = document.getElementById(layout.containerName);
-      console.log({
+      console.debug({
         $layout: $layout
       });
       if ($layout !== null) {
@@ -1996,8 +1976,8 @@ var XiboLayoutRenderer = (function () {
       if ($splashScreen) {
         $splashScreen.style.display = 'none';
       }
-      console.log('Layout running > Layout ID > ', layout.id);
-      console.log('Layout Regions > ', layout.regions);
+      console.debug('Layout running > Layout ID > ', layout.id);
+      console.debug('Layout Regions > ', layout.regions);
       for (var i = 0; i < layout.regions.length; i++) {
         // playLog(4, "debug", "Running region " + self.regions[i].id, false);
         layout.regions[i].run();
@@ -2113,7 +2093,7 @@ var XiboLayoutRenderer = (function () {
       if (self.allEnded) {
         self.stopAllMedia().then(function () {
           var _self$emitter;
-          console.log('starting to end layout . . .');
+          console.debug('starting to end layout . . .');
           if (xlr.config.platform === 'CMS') {
             var $end = document.getElementById('play_ended');
             var $preview = document.getElementById('screen_container');
@@ -2132,7 +2112,7 @@ var XiboLayoutRenderer = (function () {
       }
     };
     layoutObject.end = function () {
-      console.log('Executing Layout::end and Calling Region::end ', layoutObject);
+      console.debug('Executing Layout::end and Calling Region::end ', layoutObject);
       /* Ask the layout to gracefully stop running now */
       var _iterator2 = _createForOfIteratorHelper(layoutObject.regions),
         _step2;
@@ -2148,7 +2128,7 @@ var XiboLayoutRenderer = (function () {
       }
     };
     layoutObject.stopAllMedia = function () {
-      console.log('Stopping all media . . .');
+      console.debug('Stopping all media . . .');
       return new Promise( /*#__PURE__*/function () {
         var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(resolve) {
           var i, region, j, media;
