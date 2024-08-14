@@ -55,6 +55,12 @@ const config: RollupOptions[] = [
             {
                 file: `${outputPath}${libName}.esm.js`,
                 format: 'esm',
+                plugins: [
+                    getBabelOutputPlugin({
+                        presets: ['@babel/preset-env'],
+                        allowAllFormats: true,
+                    }),
+                ]
             }
         ],
     },
