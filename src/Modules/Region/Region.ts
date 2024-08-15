@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { createNanoEvents } from "nanoevents";
+import { createNanoEvents } from 'nanoevents';
 import { ILayout, OptionsType } from '../../Types/Layout';
 import { initialRegion, IRegion, IRegionEvents } from '../../Types/Region';
 import { IMedia } from '../../Types/Media';
@@ -32,7 +32,7 @@ import {
     flyTransitionKeyframes,
     transitionElement,
 } from '../Transitions';
-import {IXlr} from "../../Types/XLR";
+import {IXlr} from '../../Types/XLR';
 
 export default function Region(
     layout: ILayout,
@@ -125,7 +125,7 @@ export default function Region(
 
     regionObject.finished = function() {
         const self = regionObject;
-        console.log('Region::finished called . . . ', self.id);
+        console.debug('Region::finished called . . . ', self.id);
         // Mark as complete
         self.complete = true;
         self.layout.regions[regionObject.index] = regionObject;
@@ -178,7 +178,7 @@ export default function Region(
     };
 
     regionObject.run = function() {
-        console.log('Called Region::run > ', regionObject.id);
+        console.debug('Called Region::run > ', regionObject.id);
 
         if (regionObject.curMedia) {
             regionObject.transitionNodes(regionObject.oldMedia, regionObject.curMedia);
@@ -319,7 +319,7 @@ export default function Region(
         /* Do any region exit transition then clean up */
         self.layout.regions[self.index] = self;
 
-        console.log('Calling Region::end ', self);
+        console.debug('Calling Region::end ', self);
         self.exitTransition();
     };
 
@@ -332,14 +332,14 @@ export default function Region(
             $region.style.display = 'none';
         }
 
-        console.log('Called Region::exitTransition ', self.id);
+        console.debug('Called Region::exitTransition ', self.id);
 
         self.exitTransitionComplete();
     };
 
     regionObject.exitTransitionComplete = function() {
         const self = regionObject;
-        console.log('Called Region::exitTransitionComplete ', self.id);
+        console.debug('Called Region::exitTransitionComplete ', self.id);
         self.ended = true;
         self.layout.regions[self.index] = self;
         self.layout.regionEnded();

@@ -31,18 +31,18 @@ export default function AudioMedia(media: IMedia) {
 
             if ($audioMedia) {
                 $audioMedia.onloadstart = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
+                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
                 };
                 $audioMedia.onloadeddata = () => {
                     if ($audioMedia.readyState >= 2) {
-                        console.log(`${capitalizeStr(media.mediaType)} data for media > ${media.id} has been fully loaded . . .`);
+                        console.debug(`${capitalizeStr(media.mediaType)} data for media > ${media.id} has been fully loaded . . .`);
                     }
                 };
                 $audioMedia.oncanplay = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
+                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
                 };
                 $audioMedia.onplaying = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
 
                     if ($playBtn !== null) {
                         $playBtn.remove();
@@ -53,7 +53,7 @@ export default function AudioMedia(media: IMedia) {
     
                 if (audioPlayPromise !== undefined) {
                     audioPlayPromise.then(() => {
-                        console.log('autoplay started . . .');
+                        console.debug('autoplay started . . .');
                         // Autoplay restarted
                     }).catch(error => {
                         if (error.name === 'NotAllowedError') {
@@ -72,10 +72,10 @@ export default function AudioMedia(media: IMedia) {
                 }
                 if (media.duration === 0) {
                     $audioMedia.ondurationchange = () => {
-                        console.log('Showing Media ' + media.id + ' for ' + $audioMedia.duration + 's of Region ' + media.region.regionId);
+                        console.debug('Showing Media ' + media.id + ' for ' + $audioMedia.duration + 's of Region ' + media.region.regionId);
                     };
                     $audioMedia.onended = () => {
-                        console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                        console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
                         media.emitter?.emit('end', media);
                     };
                 }

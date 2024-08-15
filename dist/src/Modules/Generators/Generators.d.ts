@@ -1,5 +1,5 @@
 import { IMedia } from '../../Types/Media';
-import { InputLayoutType, OptionsType } from "../../Types/Layout";
+import { InputLayoutType, OptionsType } from '../../Types/Layout';
 export declare function nextId(options: {
     idCounter: number;
 }): number;
@@ -11,6 +11,7 @@ export declare function fetchJSON(url: string): Promise<any>;
 export declare function getFileExt(filename: string): string;
 export declare function audioFileType(str: string): string | undefined;
 export declare function composeResourceUrlByPlatform(platform: OptionsType['platform'], params: any): string;
+export declare function composeBgUrlByPlatform(platform: OptionsType['platform'], params: any): string;
 type LayoutIndexType = {
     [k: string]: InputLayoutType & {
         index: number;

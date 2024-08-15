@@ -31,7 +31,7 @@ import { nextId } from '../Generators';
 import { Region } from '../Region';
 
 import './layout.css';
-import {getIndexByLayoutId} from '../Generators/Generators';
+import {composeBgUrlByPlatform, getIndexByLayoutId} from '../Generators/Generators';
 
 const playAgainClickHandle = function(ev: { preventDefault: () => void; }) {
     ev.preventDefault();
@@ -208,16 +208,16 @@ export default function Layout(
 
     emitter.on('start', (layout) => {
         layout.done = false;
-        console.log('Layout start emitted > Layout ID > ', layout.id);
+        console.debug('Layout start emitted > Layout ID > ', layout.id);
     });
 
     emitter.on('end', (layout) => {
-        console.log('Ending layout with ID of > ', layout.layoutId);
+        console.debug('Ending layout with ID of > ', layout.layoutId);
         layout.done = true;
         /* Remove layout that has ended */
         const $layout = document.getElementById(layout.containerName);
 
-        console.log({$layout});
+        console.debug({$layout});
 
         if ($layout !== null) {
             $layout.remove();
@@ -253,8 +253,8 @@ export default function Layout(
             $splashScreen.style.display = 'none';
         }
 
-        console.log('Layout running > Layout ID > ', layout.id);
-        console.log('Layout Regions > ', layout.regions);
+        console.debug('Layout running > Layout ID > ', layout.id);
+        console.debug('Layout Regions > ', layout.regions);
         for (let i = 0; i < layout.regions.length; i++) {
             // playLog(4, "debug", "Running region " + self.regions[i].id, false);
             layout.regions[i].run();
@@ -300,20 +300,17 @@ export default function Layout(
         layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
         layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
 
-        const layoutStyles = `
-            width: ${layout.sWidth}px;
-            height: ${layout.sHeight}px;
-            position: absolute;
-            left: ${layout.offsetX}px;
-            top: ${layout.offsetY}px;
-        `;
         /* Scale the Layout Container */
         if ($layout) {
-            $layout.style.cssText = layoutStyles;
+            $layout.style.width = `${layout.sWidth}px`;
+            $layout.style.height = `${layout.sHeight}px`;
+            $layout.style.position = 'absolute';
+            $layout.style.left = `${layout.offsetX}px`;
+            $layout.style.top = `${layout.offsetY}px`;
         }
 
         if ($layout && layout.zIndex !== null) {
-            $layout.style.cssText = layoutStyles.concat(`z-index: ${layout.zIndex};`);
+            $layout.style.zIndex = `${layout.zIndex}`;
         }
 
         /* Set the layout background */
@@ -324,27 +321,30 @@ export default function Layout(
             /* Extract the image ID from the filename */
             layout.bgId = layout.bgImage.substring(0, layout.bgImage.indexOf('.'));
 
-            let tmpUrl = options.layoutBackgroundDownloadUrl.replace(":id", (layout.id as unknown) as string) + '?preview=1';
+            const bgImageUrl = composeBgUrlByPlatform(
+                xlr.config.platform,
+                {
+                    ...options,
+                    layout,
+                }
+            );
 
-            // preload.addFiles(tmpUrl + "&width=" + self.sWidth + "&height=" + self.sHeight + "&dynamic&proportional=0");
             if ($layout) {
-                $layout.style.cssText = layoutStyles.concat(`
-                    background: url('${tmpUrl}&width=${layout.sWidth}&height=${layout.sHeight}&dynamic&proportional=0');
-                    backgroundRepeat: "no-repeat";
-                    backgroundSize: ${layout.sWidth}px ${layout.sHeight}px;
-                    backgroundPosition: "0px 0px";
-                `);
+                $layout.style.backgroundImage = `url("${bgImageUrl}")`;
+                $layout.style.backgroundRepeat = 'no-repeat';
+                $layout.style.backgroundSize = `${layout.sWidth}px ${layout.sHeight}px`;
+                $layout.style.backgroundPosition = '0px 0px';
             }
         }
 
         // Set the background color
-        if ($layout) {
-            $layout.style.cssText = layoutStyles.concat(`background-color: layout.bgColor;`);
+        if ($layout && layout.bgColor) {
+            $layout.style.backgroundColor = `${layout.bgColor}`;
         }
 
         // Hide if layout is not the currentLayout
         if ($layout && xlr.currentLayoutId !== undefined && xlr.currentLayoutId !== layout.id) {
-            $layout.style.cssText = $layout.style.cssText.concat('display: none;');
+            $layout.style.display = 'none';
         }
 
         // Create regions
@@ -395,7 +395,7 @@ export default function Layout(
         
         if (self.allEnded) {
             self.stopAllMedia().then(() => {
-                console.log('starting to end layout . . .');
+                console.debug('starting to end layout . . .');
                 if (xlr.config.platform === 'CMS') {
                     const $end = document.getElementById('play_ended');
                     const $preview = document.getElementById('screen_container');
@@ -420,7 +420,7 @@ export default function Layout(
     };
 
     layoutObject.end = function() {
-        console.log('Executing Layout::end and Calling Region::end ', layoutObject);
+        console.debug('Executing Layout::end and Calling Region::end ', layoutObject);
 
         /* Ask the layout to gracefully stop running now */
         for (let layoutRegion of layoutObject.regions) {
@@ -429,7 +429,7 @@ export default function Layout(
     };
 
     layoutObject.stopAllMedia = function() {
-        console.log('Stopping all media . . .');
+        console.debug('Stopping all media . . .');
         return new Promise(async (resolve) => {
             for(var i = 0;i < layoutObject.regions.length;i++) {
                 var region = layoutObject.regions[i];

@@ -28,21 +28,21 @@ export default function VideoMedia(media: IMedia) {
 
             if ($videoMedia) {
                 $videoMedia.onloadstart = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
+                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
                 };
                 $videoMedia.onloadeddata = () => {
                     if ($videoMedia.readyState >= 2) {
-                        console.log(`${capitalizeStr(media.mediaType)} data for media > ${media.id} has been fully loaded . . .`);
+                        console.debug(`${capitalizeStr(media.mediaType)} data for media > ${media.id} has been fully loaded . . .`);
                     }
                 };
                 $videoMedia.oncanplay = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
+                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
         
                     const videoPlayPromise = $videoMedia.play();
         
                     if (videoPlayPromise !== undefined) {
                         videoPlayPromise.then(() => {
-                            console.log('autoplay started . . .');
+                            console.debug('autoplay started . . .');
                             // Autoplay restarted
                         }).catch(error => {
                             $videoMedia.muted = true;
@@ -51,15 +51,15 @@ export default function VideoMedia(media: IMedia) {
                     }
                 };
                 $videoMedia.onplaying = () => {
-                    console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
                 };
 
                 if (media.duration === 0) {
                     $videoMedia.ondurationchange = () => {
-                        console.log('Showing Media ' + media.id + ' for ' + $videoMedia.duration + 's of Region ' + media.region.regionId);
+                        console.debug('Showing Media ' + media.id + ' for ' + $videoMedia.duration + 's of Region ' + media.region.regionId);
                     };
                     $videoMedia.onended = () => {
-                        console.log(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                        console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
                         media.emitter?.emit('end', media);
                     };
                 }

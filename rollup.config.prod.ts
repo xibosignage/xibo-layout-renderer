@@ -26,17 +26,20 @@ const commonInputOptions: InputOptions = {
           include: ['node_modules/**'],
           extensions: ['.js', '.ts'],
         }),
+        babelPlugin({
+            include: ['src/**', 'node_modules/nanoevents/**'],
+            // extensions: ['.js', '.jsx', '.es6', '.es', '.mjs', '.ts'],
+            extensions: ['.js', '.ts'],
+            passPerPreset: true,
+            babelHelpers: 'bundled',
+            presets: ['@babel/preset-env'],
+        }),
         typescriptPlugin(),
         postCssPlugin({
           // all `*.css` files in src directory
           extract: path.resolve('dist/styles.css'),
         }),
         importMetaAssets(),
-        babelPlugin({
-          exclude: 'node_modules/**',
-          passPerPreset: true,
-          babelHelpers: 'bundled',
-        }),
         analyzerPlugin({
           summaryOnly: true,
         }),
@@ -70,7 +73,9 @@ const config: RollupOptions[] = [
                 file: `${outputPath}${libName}.min.js`,
                 format: 'iife',
                 sourcemap: true,
-                plugins: [terserPlugin()],
+                plugins: [
+                    terserPlugin(),
+                ],
             }
         ],
     },

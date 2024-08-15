@@ -1,6 +1,6 @@
-import { DefaultEvents, Emitter, Unsubscribe } from "nanoevents";
-import { IMediaEvents } from "../../Modules/Media/Media";
-import { IRegion } from "../Region/Region.types";
+import { DefaultEvents, Emitter, Unsubscribe } from 'nanoevents';
+import { IMediaEvents } from '../../Modules/Media/Media';
+import { IRegion } from '../Region';
 export interface IMedia {
     region: IRegion;
     xml: null | Element;

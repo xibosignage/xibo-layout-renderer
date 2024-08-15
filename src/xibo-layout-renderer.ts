@@ -20,13 +20,13 @@
  */
 import {
     Layout, getLayout, getXlf, initRenderingDOM
-} from "./Modules/Layout";
+} from './Modules/Layout';
 import { platform } from './Modules/Platform';
 import {
     ILayout, initialLayout, InputLayoutType, OptionsType,
-} from "./Types/Layout";
-import { ELayoutType, initialXlr, IXlr } from './Types/XLR';
-import {splashScreenDOM} from "./Modules/Generators/Generators";
+} from './Types/Layout';
+import { initialXlr, IXlr } from './Types/XLR';
+import {splashScreenDOM} from './Modules/Generators/Generators';
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
