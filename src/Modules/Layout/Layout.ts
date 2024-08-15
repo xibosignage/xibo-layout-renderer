@@ -208,16 +208,16 @@ export default function Layout(
 
     emitter.on('start', (layout) => {
         layout.done = false;
-        console.log('Layout start emitted > Layout ID > ', layout.id);
+        console.debug('Layout start emitted > Layout ID > ', layout.id);
     });
 
     emitter.on('end', (layout) => {
-        console.log('Ending layout with ID of > ', layout.layoutId);
+        console.debug('Ending layout with ID of > ', layout.layoutId);
         layout.done = true;
         /* Remove layout that has ended */
         const $layout = document.getElementById(layout.containerName);
 
-        console.log({$layout});
+        console.debug({$layout});
 
         if ($layout !== null) {
             $layout.remove();
@@ -253,8 +253,8 @@ export default function Layout(
             $splashScreen.style.display = 'none';
         }
 
-        console.log('Layout running > Layout ID > ', layout.id);
-        console.log('Layout Regions > ', layout.regions);
+        console.debug('Layout running > Layout ID > ', layout.id);
+        console.debug('Layout Regions > ', layout.regions);
         for (let i = 0; i < layout.regions.length; i++) {
             // playLog(4, "debug", "Running region " + self.regions[i].id, false);
             layout.regions[i].run();
@@ -395,7 +395,7 @@ export default function Layout(
         
         if (self.allEnded) {
             self.stopAllMedia().then(() => {
-                console.log('starting to end layout . . .');
+                console.debug('starting to end layout . . .');
                 if (xlr.config.platform === 'CMS') {
                     const $end = document.getElementById('play_ended');
                     const $preview = document.getElementById('screen_container');
@@ -420,7 +420,7 @@ export default function Layout(
     };
 
     layoutObject.end = function() {
-        console.log('Executing Layout::end and Calling Region::end ', layoutObject);
+        console.debug('Executing Layout::end and Calling Region::end ', layoutObject);
 
         /* Ask the layout to gracefully stop running now */
         for (let layoutRegion of layoutObject.regions) {
@@ -429,7 +429,7 @@ export default function Layout(
     };
 
     layoutObject.stopAllMedia = function() {
-        console.log('Stopping all media . . .');
+        console.debug('Stopping all media . . .');
         return new Promise(async (resolve) => {
             for(var i = 0;i < layoutObject.regions.length;i++) {
                 var region = layoutObject.regions[i];

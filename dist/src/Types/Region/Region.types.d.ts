@@ -1,6 +1,6 @@
-import { DefaultEvents, Emitter, Unsubscribe } from "nanoevents";
-import { ILayout } from "../Layout/Layout.types";
-import { IMedia } from "../Media/Media.types";
+import { DefaultEvents, Emitter, Unsubscribe } from 'nanoevents';
+import { ILayout } from '../Layout';
+import { IMedia } from '../Media';
 export interface IRegionEvents {
     start: (layout: IRegion) => void;
     end: (layout: IRegion) => void;

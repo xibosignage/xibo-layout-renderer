@@ -19,7 +19,7 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { IMedia } from '../../Types/Media';
-import {InputLayoutType, OptionsType} from "../../Types/Layout";
+import {InputLayoutType, OptionsType} from '../../Types/Layout';
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -75,7 +75,6 @@ export async function preloadMediaBlob(src: string, type: 'video' | 'audio' | 'i
         blob = new Blob([data], { type: audioFileType(getFileExt(src)) })
     }
 
-    console.log({blob})
     return URL.createObjectURL(blob);
 }
 
@@ -83,7 +82,7 @@ export async function fetchJSON(url: string) {
     return fetch(url)
         .then(res => res.json())
         .catch(err => {
-            console.log(err);
+            console.debug(err);
         });
 }
 
