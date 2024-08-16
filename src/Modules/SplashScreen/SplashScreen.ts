@@ -18,8 +18,9 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 import './splash-screen.css';
+import xiboLogoImg from './img/xibologo.png';
+import loaderImg from './img/loader.gif';
 
 export interface ISplashScreen {
     init: () => void;
@@ -38,13 +39,13 @@ export default function SplashScreen($parent: Element | null): ISplashScreen {
              $previewSplash.classList.add('preview-splash');
              $previewSplash.style.setProperty(
                  'background-image',
-                 `url(${new URL('./img/xibologo.png', import.meta.url).href})`,
+                 `url(${xiboLogoImg})`,
              );
 
              $previewLoader.classList.add('preview-loader');
              $previewLoader.style.setProperty(
                  'background-image',
-                 `url(${new URL('./img/loader.gif', import.meta.url).href})`,
+                 `url(${loaderImg})`,
              );
 
              $previewLoaderCaption.classList.add('preview-loaderCaption');

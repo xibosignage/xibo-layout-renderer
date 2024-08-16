@@ -9,6 +9,7 @@ import postCssPlugin from 'rollup-plugin-postcss';
 import babelPlugin from '@rollup/plugin-babel';
 import analyzerPlugin from 'rollup-plugin-analyzer';
 import terserPlugin from '@rollup/plugin-terser';
+import imagePlugin from '@rollup/plugin-image';
 import dtsPlugin from 'rollup-plugin-dts';
 import path from 'path';
 
@@ -36,9 +37,10 @@ const commonInputOptions: InputOptions = {
         }),
         typescriptPlugin(),
         postCssPlugin({
-          // all `*.css` files in src directory
-          extract: path.resolve('dist/styles.css'),
+            // all `*.css` files in src directory
+            extract: path.resolve('dist/styles.css'),
         }),
+        imagePlugin(),
         importMetaAssets(),
         analyzerPlugin({
           summaryOnly: true,

@@ -5,6 +5,7 @@ div.preview-splash {
     background-repeat: no-repeat;
     background-position: center center;
     background-size: 45%;
+    background-image: url("./img/xibologo.png");
 }
 
 div.preview-loader {
@@ -17,6 +18,7 @@ div.preview-loader {
     background-repeat: no-repeat;
     background-position: center center;
     background-size: 100%;
+    background-image: url("./img/loader.gif");
 }
 
 div.preview-loaderCaption p {
