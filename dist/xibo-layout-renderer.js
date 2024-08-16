@@ -2231,9 +2231,9 @@ var XiboLayoutRenderer = (function () {
     var splashScreenObj = {
       init: function init() {
         $previewSplash.classList.add('preview-splash');
-        $previewSplash.style.setProperty('background-image', new URL(new URL('assets/xibologo-DuTyDLWy.png', document.currentScript && document.currentScript.src || document.baseURI).href, (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.js', document.baseURI).href)).href);
+        $previewSplash.style.setProperty('background-image', "url(".concat(new URL(new URL('assets/xibologo-DuTyDLWy.png', document.currentScript && document.currentScript.src || document.baseURI).href, (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.js', document.baseURI).href)).href, ")"));
         $previewLoader.classList.add('preview-loader');
-        $previewLoader.style.setProperty('background-image', new URL(new URL('assets/loader-BOF1C3SB.gif', document.currentScript && document.currentScript.src || document.baseURI).href, (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.js', document.baseURI).href)).href);
+        $previewLoader.style.setProperty('background-image', "url(".concat(new URL(new URL('assets/loader-BOF1C3SB.gif', document.currentScript && document.currentScript.src || document.baseURI).href, (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.js', document.baseURI).href)).href, ")"));
         $previewLoaderCaption.classList.add('preview-loaderCaption');
         $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
         $previewSplash.insertBefore($previewLoaderCaption, $previewSplash.lastElementChild);

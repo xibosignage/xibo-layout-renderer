@@ -2227,9 +2227,9 @@ function SplashScreen($parent) {
   var splashScreenObj = {
     init: function init() {
       $previewSplash.classList.add('preview-splash');
-      $previewSplash.style.setProperty('background-image', new URL(new URL('assets/xibologo-DuTyDLWy.png', import.meta.url).href, import.meta.url).href);
+      $previewSplash.style.setProperty('background-image', "url(".concat(new URL(new URL('assets/xibologo-DuTyDLWy.png', import.meta.url).href, import.meta.url).href, ")"));
       $previewLoader.classList.add('preview-loader');
-      $previewLoader.style.setProperty('background-image', new URL(new URL('assets/loader-BOF1C3SB.gif', import.meta.url).href, import.meta.url).href);
+      $previewLoader.style.setProperty('background-image', "url(".concat(new URL(new URL('assets/loader-BOF1C3SB.gif', import.meta.url).href, import.meta.url).href, ")"));
       $previewLoaderCaption.classList.add('preview-loaderCaption');
       $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
       $previewSplash.insertBefore($previewLoaderCaption, $previewSplash.lastElementChild);

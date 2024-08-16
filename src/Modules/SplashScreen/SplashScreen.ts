@@ -38,13 +38,13 @@ export default function SplashScreen($parent: Element | null): ISplashScreen {
              $previewSplash.classList.add('preview-splash');
              $previewSplash.style.setProperty(
                  'background-image',
-                 new URL('./img/xibologo.png', import.meta.url).href,
+                 `url(${new URL('./img/xibologo.png', import.meta.url).href})`,
              );
 
              $previewLoader.classList.add('preview-loader');
              $previewLoader.style.setProperty(
                  'background-image',
-                 new URL('./img/loader.gif', import.meta.url).href,
+                 `url(${new URL('./img/loader.gif', import.meta.url).href})`,
              );
 
              $previewLoaderCaption.classList.add('preview-loaderCaption');
