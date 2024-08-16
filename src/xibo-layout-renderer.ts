@@ -27,6 +27,7 @@ import {
 } from './Types/Layout';
 import { initialXlr, IXlr } from './Types/XLR';
 import {splashScreenDOM} from './Modules/Generators/Generators';
+import {SplashScreen} from "./Modules/SplashScreen";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -47,18 +48,21 @@ export default function XiboLayoutRenderer(
             self.config = JSON.parse(JSON.stringify({...platform, ...props.options}));
         },
         init() {
-            console.log({
-                splashScreen: splashScreenDOM(),
-            });
+            // Prepare rendering DOM
+            const previewCanvas = document.querySelector('.preview-canvas');
+
+            initRenderingDOM(previewCanvas);
+
+            // Prepare splash screen
+            const splashScreen = SplashScreen(document.querySelector('.player-preview'));
+
+            splashScreen.show();
+
             return new Promise<IXlr>((resolve) => {
                 const self = this;
 
-                // Prepare rendering DOM
-                const previewCanvas = document.querySelector('.preview-canvas');
-
-                initRenderingDOM(previewCanvas);
-
                 self.prepareLayouts().then((xlr) => {
+                    splashScreen.hide();
                     resolve(xlr);
                 });
             });

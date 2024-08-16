@@ -721,15 +721,6 @@ function getIndexByLayoutId(layoutsInput, layoutId) {
   }
   return layoutIndexes[layoutId];
 }
-function splashScreenDOM() {
-  var mediaItem = document.querySelector('.media--item');
-  var newImg = document.createElement('img');
-  newImg.src = new URL((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__dirname + '/assets/logo-BLa_l1uk.png').href : new URL('assets/logo-BLa_l1uk.png', document.currentScript && document.currentScript.src || document.baseURI).href), (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.cjs.js', document.baseURI).href))).href;
-  if (mediaItem !== null) {
-    mediaItem.insertBefore(newImg, mediaItem.lastElementChild);
-  }
-  return newImg;
-}
 
 var initialRegion = {
   layout: initialLayout,
@@ -2213,6 +2204,56 @@ var initialXlr = {
   }
 };
 
+/*
+ * Copyright (C) 2024 Xibo Signage Ltd
+ *
+ * Xibo - Digital Signage - https://www.xibosignage.com
+ *
+ * This file is part of Xibo.
+ *
+ * Xibo is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * Xibo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
+ */
+function SplashScreen($parent) {
+  var $previewSplash = document.createElement('div');
+  var $previewLoader = document.createElement('div');
+  var $previewLoaderCaption = document.createElement('div');
+  document.createElement('div');
+  var splashScreenObj = {
+    init: function init() {
+      $previewSplash.classList.add('preview-splash');
+      $previewSplash.style.setProperty('background-image', new URL((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__dirname + '/assets/xibologo-DuTyDLWy.png').href : new URL('assets/xibologo-DuTyDLWy.png', document.currentScript && document.currentScript.src || document.baseURI).href), (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.cjs.js', document.baseURI).href))).href);
+      $previewLoader.classList.add('preview-loader');
+      $previewLoader.style.setProperty('background-image', new URL((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__dirname + '/assets/loader-BOF1C3SB.gif').href : new URL('assets/loader-BOF1C3SB.gif', document.currentScript && document.currentScript.src || document.baseURI).href), (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.src || new URL('xibo-layout-renderer.cjs.js', document.baseURI).href))).href);
+      $previewLoaderCaption.classList.add('preview-loaderCaption');
+      $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
+      $previewSplash.insertBefore($previewLoaderCaption, $previewSplash.lastElementChild);
+      this.hide();
+    },
+    show: function show() {
+      if ($parent) {
+        $parent.insertBefore($previewSplash, $parent.firstElementChild);
+        $previewSplash.style.setProperty('display', 'block');
+      }
+    },
+    hide: function hide() {
+      $previewSplash.style.setProperty('display', 'none');
+    }
+  };
+  splashScreenObj.init();
+  return splashScreenObj;
+}
+
 function XiboLayoutRenderer(inputLayouts, options) {
   var props = {
     inputLayouts: inputLayouts,
@@ -2227,15 +2268,16 @@ function XiboLayoutRenderer(inputLayouts, options) {
     },
     init: function init() {
       var _this = this;
-      console.log({
-        splashScreen: splashScreenDOM()
-      });
+      // Prepare rendering DOM
+      var previewCanvas = document.querySelector('.preview-canvas');
+      initRenderingDOM(previewCanvas);
+      // Prepare splash screen
+      var splashScreen = SplashScreen(document.querySelector('.player-preview'));
+      splashScreen.show();
       return new Promise(function (resolve) {
         var self = _this;
-        // Prepare rendering DOM
-        var previewCanvas = document.querySelector('.preview-canvas');
-        initRenderingDOM(previewCanvas);
         self.prepareLayouts().then(function (xlr) {
+          splashScreen.hide();
           resolve(xlr);
         });
       });
