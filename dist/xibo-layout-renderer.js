@@ -2280,12 +2280,9 @@ var XiboLayoutRenderer = (function () {
         var _this = this;
         return new Promise(function (resolve) {
           var self = _this;
-          // Add delay to show splash screen
-          setTimeout(function () {
-            self.prepareLayouts().then(function (xlr) {
-              resolve(xlr);
-            });
-          }, 500);
+          self.prepareLayouts().then(function (xlr) {
+            resolve(xlr);
+          });
         });
       },
       playSchedules: function playSchedules(xlr) {

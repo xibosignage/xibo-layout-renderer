@@ -62,12 +62,9 @@ export default function XiboLayoutRenderer(
             return new Promise<IXlr>((resolve) => {
                 const self = this;
 
-                // Add delay to show splash screen
-                setTimeout(() => {
-                    self.prepareLayouts().then((xlr) => {
-                        resolve(xlr);
-                    });
-                }, 500);
+                self.prepareLayouts().then((xlr) => {
+                    resolve(xlr);
+                });
             });
         },
 
