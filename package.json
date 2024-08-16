@@ -19,7 +19,8 @@
     "xibo-layout-renderer.min.js",
     "xibo-layout-renderer.min.js.map",
     "xibo-layout-renderer.d.ts",
-    "styles.css"
+    "styles.css",
+    "dist/assets"
   ],
   "author": "Xibo Signage Ltd",
   "license": "LGPL-3.0",
