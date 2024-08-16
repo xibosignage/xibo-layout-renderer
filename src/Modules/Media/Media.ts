@@ -62,6 +62,11 @@ export default function Media(
                 media.emitter?.emit('end', media);
             }
         }, 1000);
+        const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
+        if ($splashScreen !== null && $splashScreen.style.display === 'block') {
+            $splashScreen?.hide();
+        }
+
         console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
 
@@ -341,11 +346,6 @@ export default function Media(
             }
 
             if ($media !== null) {
-                const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
-                if ($splashScreen !== null && $splashScreen.style.display === 'block') {
-                    $splashScreen?.hide();
-                }
-
                 $media.style.setProperty('display', 'block');
 
                 if (Boolean(self.options['transin'])) {

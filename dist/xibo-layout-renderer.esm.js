@@ -1155,6 +1155,10 @@ function Media(region, mediaId, xml, options, xlr) {
         (_media$emitter = media.emitter) === null || _media$emitter === void 0 || _media$emitter.emit('end', media);
       }
     }, 1000);
+    var $splashScreen = document.querySelector('.preview-splash');
+    if ($splashScreen !== null && $splashScreen.style.display === 'block') {
+      $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
+    }
     console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
   };
   emitter.on('start', function (media) {
@@ -1393,7 +1397,7 @@ function Media(region, mediaId, xml, options, xlr) {
     }
     var showCurrentMedia = /*#__PURE__*/function () {
       var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-        var $mediaId, $media, isCMS, _self$emitter, $splashScreen;
+        var $mediaId, $media, isCMS, _self$emitter;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
@@ -1404,84 +1408,80 @@ function Media(region, mediaId, xml, options, xlr) {
                 $media = getNewMedia();
               }
               if (!($media !== null)) {
-                _context2.next = 48;
+                _context2.next = 46;
                 break;
-              }
-              $splashScreen = document.querySelector('.preview-splash');
-              if ($splashScreen !== null && $splashScreen.style.display === 'block') {
-                $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
               }
               $media.style.setProperty('display', 'block');
               if (Boolean(self.options['transin'])) {
                 $media.animate(transIn.keyframes, transIn.timing);
               }
               if (!(self.mediaType === 'image' && self.url !== null)) {
-                _context2.next = 24;
+                _context2.next = 22;
                 break;
               }
               _context2.t0 = $media.style;
               _context2.t1 = "url(";
               if (isCMS) {
-                _context2.next = 16;
+                _context2.next = 14;
                 break;
               }
               _context2.t2 = self.url;
-              _context2.next = 19;
+              _context2.next = 17;
               break;
-            case 16:
-              _context2.next = 18;
+            case 14:
+              _context2.next = 16;
               return getDataBlob(self.url);
-            case 18:
+            case 16:
               _context2.t2 = _context2.sent;
-            case 19:
+            case 17:
               _context2.t3 = _context2.t2;
               _context2.t4 = _context2.t1.concat.call(_context2.t1, _context2.t3);
               _context2.t0.setProperty.call(_context2.t0, 'background-image', _context2.t4);
-              _context2.next = 47;
+              _context2.next = 45;
               break;
-            case 24:
+            case 22:
               if (!(self.mediaType === 'video' && self.url !== null)) {
-                _context2.next = 35;
+                _context2.next = 33;
                 break;
               }
               if (!isCMS) {
-                _context2.next = 31;
+                _context2.next = 29;
                 break;
               }
-              _context2.next = 28;
+              _context2.next = 26;
               return preloadMediaBlob(self.url, self.mediaType);
-            case 28:
+            case 26:
               _context2.t5 = _context2.sent;
-              _context2.next = 32;
+              _context2.next = 30;
               break;
-            case 31:
+            case 29:
               _context2.t5 = self.url;
-            case 32:
+            case 30:
               $media.src = _context2.t5;
-              _context2.next = 47;
+              _context2.next = 45;
               break;
-            case 35:
+            case 33:
               if (!(self.mediaType === 'audio' && self.url !== null)) {
-                _context2.next = 46;
+                _context2.next = 44;
                 break;
               }
               if (!isCMS) {
-                _context2.next = 42;
+                _context2.next = 40;
                 break;
               }
-              _context2.next = 39;
+              _context2.next = 37;
               return preloadMediaBlob(self.url, self.mediaType);
-            case 39:
+            case 37:
               _context2.t6 = _context2.sent;
-              _context2.next = 43;
+              _context2.next = 41;
               break;
-            case 42:
+            case 40:
               _context2.t6 = self.url;
-            case 43:
+            case 41:
               $media.src = _context2.t6;
-              _context2.next = 47;
+              _context2.next = 45;
               break;
-            case 46:
+            case 44:
               if ((self.render === 'html' || self.mediaType === 'webpage') && self.iframe && self.checkIframeStatus) {
                 // Set state as false ( for now )
                 self.ready = false;
@@ -1497,9 +1497,9 @@ function Media(region, mediaId, xml, options, xlr) {
                   }
                 });
               }
-            case 47:
+            case 45:
               (_self$emitter = self.emitter) === null || _self$emitter === void 0 || _self$emitter.emit('start', self);
-            case 48:
+            case 46:
             case "end":
               return _context2.stop();
           }
