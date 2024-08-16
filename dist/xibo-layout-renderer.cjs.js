@@ -2239,8 +2239,9 @@ function SplashScreen($parent) {
       $previewLoader.classList.add('preview-loader');
       $previewLoader.style.setProperty('background-image', "url(".concat(img, ")"));
       $previewLoaderCaption.classList.add('preview-loaderCaption');
+      $previewLoaderCaption.innerHTML = '<p>Loading Layout...</p>';
       $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
-      $previewSplash.insertBefore($previewLoaderCaption, $previewSplash.lastElementChild);
+      $previewSplash.insertBefore($previewLoaderCaption, null);
       this.hide();
     },
     show: function show() {
@@ -2279,10 +2280,13 @@ function XiboLayoutRenderer(inputLayouts, options) {
       splashScreen.show();
       return new Promise(function (resolve) {
         var self = _this;
-        self.prepareLayouts().then(function (xlr) {
-          splashScreen.hide();
-          resolve(xlr);
-        });
+        // Add delay to show splash screen
+        setTimeout(function () {
+          self.prepareLayouts().then(function (xlr) {
+            splashScreen.hide();
+            resolve(xlr);
+          });
+        }, 500);
       });
     },
     playSchedules: function playSchedules(xlr) {

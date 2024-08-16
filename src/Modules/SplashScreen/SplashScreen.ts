@@ -49,9 +49,10 @@ export default function SplashScreen($parent: Element | null): ISplashScreen {
              );
 
              $previewLoaderCaption.classList.add('preview-loaderCaption');
+             $previewLoaderCaption.innerHTML = '<p>Loading Layout...</p>';
 
              $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
-             $previewSplash.insertBefore($previewLoaderCaption, $previewSplash.lastElementChild);
+             $previewSplash.insertBefore($previewLoaderCaption, null);
 
              this.hide();
          },
