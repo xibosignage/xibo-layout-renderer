@@ -2262,27 +2262,27 @@ var XiboLayoutRenderer = (function () {
       inputLayouts: inputLayouts,
       options: options
     };
+    var splashScreen = null;
     var xlrObject = _objectSpread2(_objectSpread2({}, initialXlr), {}, {
       bootstrap: function bootstrap() {
         // Place to set configurations and initialize required props
         var self = this;
         self.inputLayouts = !Array.isArray(props.inputLayouts) ? [props.inputLayouts] : props.inputLayouts;
         self.config = JSON.parse(JSON.stringify(_objectSpread2(_objectSpread2({}, platform), props.options)));
-      },
-      init: function init() {
-        var _this = this;
         // Prepare rendering DOM
         var previewCanvas = document.querySelector('.preview-canvas');
         initRenderingDOM(previewCanvas);
         // Prepare splash screen
-        var splashScreen = SplashScreen(document.querySelector('.player-preview'));
+        splashScreen = SplashScreen(document.querySelector('.player-preview'));
         splashScreen.show();
+      },
+      init: function init() {
+        var _this = this;
         return new Promise(function (resolve) {
           var self = _this;
           // Add delay to show splash screen
           setTimeout(function () {
             self.prepareLayouts().then(function (xlr) {
-              splashScreen.hide();
               resolve(xlr);
             });
           }, 500);
@@ -2292,6 +2292,7 @@ var XiboLayoutRenderer = (function () {
         // Check if there's a current layout
         if (xlr.currentLayout !== undefined) {
           var _xlr$currentLayout$em;
+          splashScreen !== null && splashScreen.hide();
           (_xlr$currentLayout$em = xlr.currentLayout.emitter) === null || _xlr$currentLayout$em === void 0 || _xlr$currentLayout$em.emit('start', xlr.currentLayout);
           xlr.currentLayout.run();
         }

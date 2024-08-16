@@ -26,8 +26,7 @@ import {
     ILayout, initialLayout, InputLayoutType, OptionsType,
 } from './Types/Layout';
 import { initialXlr, IXlr } from './Types/XLR';
-import {splashScreenDOM} from './Modules/Generators/Generators';
-import {SplashScreen} from "./Modules/SplashScreen";
+import {SplashScreen, ISplashScreen} from './Modules/SplashScreen';
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -37,6 +36,7 @@ export default function XiboLayoutRenderer(
         inputLayouts,
         options,
     }
+    let splashScreen: ISplashScreen | null = null;
 
     const xlrObject: IXlr = {
         ...initialXlr,
@@ -46,25 +46,25 @@ export default function XiboLayoutRenderer(
             self.inputLayouts = !Array.isArray(props.inputLayouts) ?
                 [props.inputLayouts] : props.inputLayouts;
             self.config = JSON.parse(JSON.stringify({...platform, ...props.options}));
-        },
-        init() {
+
             // Prepare rendering DOM
             const previewCanvas = document.querySelector('.preview-canvas');
 
             initRenderingDOM(previewCanvas);
 
             // Prepare splash screen
-            const splashScreen = SplashScreen(document.querySelector('.player-preview'));
+            splashScreen = SplashScreen(document.querySelector('.player-preview'));
 
             splashScreen.show();
 
+        },
+        init() {
             return new Promise<IXlr>((resolve) => {
                 const self = this;
 
                 // Add delay to show splash screen
                 setTimeout(() => {
                     self.prepareLayouts().then((xlr) => {
-                        splashScreen.hide();
                         resolve(xlr);
                     });
                 }, 500);
@@ -74,6 +74,7 @@ export default function XiboLayoutRenderer(
         playSchedules(xlr: IXlr) {
             // Check if there's a current layout
             if (xlr.currentLayout !== undefined) {
+                (splashScreen !== null) && splashScreen.hide();
                 xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
                 xlr.currentLayout.run();
             }

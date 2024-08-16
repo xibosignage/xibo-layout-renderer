@@ -1,3 +1,4 @@
 export {
-    default as SplashScreen
+    default as SplashScreen,
+    ISplashScreen,
 } from './SplashScreen';
