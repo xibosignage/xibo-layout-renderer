@@ -28,8 +28,12 @@ export interface ISplashScreen {
     hide: () => void;
 }
 
+export interface PreviewSplashElement extends HTMLDivElement {
+    hide: () => void;
+}
+
 export default function SplashScreen($parent: Element | null): ISplashScreen {
-    const $previewSplash = document.createElement('div');
+    const $previewSplash = document.createElement('div') as PreviewSplashElement;
     const $previewLoader = document.createElement('div');
     const $previewLoaderCaption = document.createElement('div');
     const $defaultNoLayout = document.createElement('div');
@@ -41,6 +45,9 @@ export default function SplashScreen($parent: Element | null): ISplashScreen {
                  'background-image',
                  `url(${xiboLogoImg})`,
              );
+             $previewSplash.constructor.prototype.hide = () => {
+                 this.hide();
+             };
 
              $previewLoader.classList.add('preview-loader');
              $previewLoader.style.setProperty(

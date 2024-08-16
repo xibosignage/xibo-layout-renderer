@@ -36,7 +36,6 @@ export default function XiboLayoutRenderer(
         inputLayouts,
         options,
     }
-    let splashScreen: ISplashScreen | null = null;
 
     const xlrObject: IXlr = {
         ...initialXlr,
@@ -53,7 +52,7 @@ export default function XiboLayoutRenderer(
             initRenderingDOM(previewCanvas);
 
             // Prepare splash screen
-            splashScreen = SplashScreen(document.querySelector('.player-preview'));
+            const splashScreen = SplashScreen(document.querySelector('.player-preview'));
 
             splashScreen.show();
 
@@ -71,7 +70,6 @@ export default function XiboLayoutRenderer(
         playSchedules(xlr: IXlr) {
             // Check if there's a current layout
             if (xlr.currentLayout !== undefined) {
-                (splashScreen !== null) && splashScreen.hide();
                 xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
                 xlr.currentLayout.run();
             }

@@ -28,6 +28,7 @@ import VideoMedia from './VideoMedia';
 import AudioMedia from './AudioMedia';
 import {composeResourceUrlByPlatform, getDataBlob} from '../Generators/Generators';
 import {IXlr} from '../../Types/XLR';
+import {PreviewSplashElement} from '../SplashScreen/SplashScreen';
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -340,6 +341,11 @@ export default function Media(
             }
 
             if ($media !== null) {
+                const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
+                if ($splashScreen !== null && $splashScreen.style.display === 'block') {
+                    $splashScreen?.hide();
+                }
+
                 $media.style.setProperty('display', 'block');
 
                 if (Boolean(self.options['transin'])) {

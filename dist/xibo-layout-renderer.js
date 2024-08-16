@@ -1396,7 +1396,7 @@ var XiboLayoutRenderer = (function () {
       }
       var showCurrentMedia = /*#__PURE__*/function () {
         var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-          var $mediaId, $media, isCMS, _self$emitter;
+          var $mediaId, $media, isCMS, _self$emitter, $splashScreen;
           return _regeneratorRuntime().wrap(function _callee2$(_context2) {
             while (1) switch (_context2.prev = _context2.next) {
               case 0:
@@ -1407,80 +1407,84 @@ var XiboLayoutRenderer = (function () {
                   $media = getNewMedia();
                 }
                 if (!($media !== null)) {
-                  _context2.next = 46;
+                  _context2.next = 48;
                   break;
+                }
+                $splashScreen = document.querySelector('.preview-splash');
+                if ($splashScreen !== null && $splashScreen.style.display === 'block') {
+                  $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
                 }
                 $media.style.setProperty('display', 'block');
                 if (Boolean(self.options['transin'])) {
                   $media.animate(transIn.keyframes, transIn.timing);
                 }
                 if (!(self.mediaType === 'image' && self.url !== null)) {
-                  _context2.next = 22;
+                  _context2.next = 24;
                   break;
                 }
                 _context2.t0 = $media.style;
                 _context2.t1 = "url(";
                 if (isCMS) {
-                  _context2.next = 14;
+                  _context2.next = 16;
                   break;
                 }
                 _context2.t2 = self.url;
-                _context2.next = 17;
+                _context2.next = 19;
                 break;
-              case 14:
-                _context2.next = 16;
-                return getDataBlob(self.url);
               case 16:
+                _context2.next = 18;
+                return getDataBlob(self.url);
+              case 18:
                 _context2.t2 = _context2.sent;
-              case 17:
+              case 19:
                 _context2.t3 = _context2.t2;
                 _context2.t4 = _context2.t1.concat.call(_context2.t1, _context2.t3);
                 _context2.t0.setProperty.call(_context2.t0, 'background-image', _context2.t4);
-                _context2.next = 45;
+                _context2.next = 47;
                 break;
-              case 22:
+              case 24:
                 if (!(self.mediaType === 'video' && self.url !== null)) {
-                  _context2.next = 33;
+                  _context2.next = 35;
                   break;
                 }
                 if (!isCMS) {
-                  _context2.next = 29;
+                  _context2.next = 31;
                   break;
                 }
-                _context2.next = 26;
+                _context2.next = 28;
                 return preloadMediaBlob(self.url, self.mediaType);
-              case 26:
+              case 28:
                 _context2.t5 = _context2.sent;
-                _context2.next = 30;
+                _context2.next = 32;
                 break;
-              case 29:
+              case 31:
                 _context2.t5 = self.url;
-              case 30:
+              case 32:
                 $media.src = _context2.t5;
-                _context2.next = 45;
+                _context2.next = 47;
                 break;
-              case 33:
+              case 35:
                 if (!(self.mediaType === 'audio' && self.url !== null)) {
-                  _context2.next = 44;
+                  _context2.next = 46;
                   break;
                 }
                 if (!isCMS) {
-                  _context2.next = 40;
+                  _context2.next = 42;
                   break;
                 }
-                _context2.next = 37;
+                _context2.next = 39;
                 return preloadMediaBlob(self.url, self.mediaType);
-              case 37:
+              case 39:
                 _context2.t6 = _context2.sent;
-                _context2.next = 41;
+                _context2.next = 43;
                 break;
-              case 40:
+              case 42:
                 _context2.t6 = self.url;
-              case 41:
+              case 43:
                 $media.src = _context2.t6;
-                _context2.next = 45;
+                _context2.next = 47;
                 break;
-              case 44:
+              case 46:
                 if ((self.render === 'html' || self.mediaType === 'webpage') && self.iframe && self.checkIframeStatus) {
                   // Set state as false ( for now )
                   self.ready = false;
@@ -1496,9 +1500,9 @@ var XiboLayoutRenderer = (function () {
                     }
                   });
                 }
-              case 45:
+              case 47:
                 (_self$emitter = self.emitter) === null || _self$emitter === void 0 || _self$emitter.emit('start', self);
-              case 46:
+              case 48:
               case "end":
                 return _context2.stop();
             }
@@ -2233,8 +2237,12 @@ var XiboLayoutRenderer = (function () {
     document.createElement('div');
     var splashScreenObj = {
       init: function init() {
+        var _this = this;
         $previewSplash.classList.add('preview-splash');
         $previewSplash.style.setProperty('background-image', "url(".concat(img$1, ")"));
+        $previewSplash.constructor.prototype.hide = function () {
+          _this.hide();
+        };
         $previewLoader.classList.add('preview-loader');
         $previewLoader.style.setProperty('background-image', "url(".concat(img, ")"));
         $previewLoaderCaption.classList.add('preview-loaderCaption');
@@ -2262,7 +2270,6 @@ var XiboLayoutRenderer = (function () {
       inputLayouts: inputLayouts,
       options: options
     };
-    var splashScreen = null;
     var xlrObject = _objectSpread2(_objectSpread2({}, initialXlr), {}, {
       bootstrap: function bootstrap() {
         // Place to set configurations and initialize required props
@@ -2273,7 +2280,7 @@ var XiboLayoutRenderer = (function () {
         var previewCanvas = document.querySelector('.preview-canvas');
         initRenderingDOM(previewCanvas);
         // Prepare splash screen
-        splashScreen = SplashScreen(document.querySelector('.player-preview'));
+        var splashScreen = SplashScreen(document.querySelector('.player-preview'));
         splashScreen.show();
       },
       init: function init() {
@@ -2289,7 +2296,6 @@ var XiboLayoutRenderer = (function () {
         // Check if there's a current layout
         if (xlr.currentLayout !== undefined) {
           var _xlr$currentLayout$em;
-          splashScreen !== null && splashScreen.hide();
           (_xlr$currentLayout$em = xlr.currentLayout.emitter) === null || _xlr$currentLayout$em === void 0 || _xlr$currentLayout$em.emit('start', xlr.currentLayout);
           xlr.currentLayout.run();
         }
