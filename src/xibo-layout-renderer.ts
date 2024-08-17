@@ -75,45 +75,26 @@ export default function XiboLayoutRenderer(
             }
         },
 
-        async prepareLayoutXlf(inputLayout: ILayout) {
+        updateLayouts(inputLayouts: InputLayoutType[]) {
+            /**
+             * @TODO
+             * Case 1: If currentLayout in inputLayouts and in the same sequence,
+             * Then, continue playing currentLayout.
+             * Check nextLayout in inputLayouts. If in inputLayouts and same sequence, then don't change.
+             * If not in inputLayouts, then replace and prepare nextLayout.
+             *
+             * Case 2: If currentLayout in inputLayouts but not in the same sequence,
+             * Then, replace loop, prepare layouts and start currentLayout
+             * Case 3: If currentLayout not in inputLayouts,
+             * Then,
+             */
             const self = this;
-            // Compose layout props first
-            let newOptions: OptionsType = Object.assign({}, platform);
 
-            newOptions = {
-                ...newOptions,
-                ...props.options,
-            };
+            self.inputLayouts = inputLayouts;
 
-            if (self.config.platform ==='CMS' &&
-                inputLayout && Boolean(inputLayout.layoutId)
-            ) {
-                newOptions.xlfUrl =
-                    newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
-            } else if (self.config.platform === 'chromeOS') {
-                newOptions.xlfUrl = inputLayout.path as string;
-            }
+            const xlrLayouts = getLayout({xlr: self});
 
-            let layoutXlf: string;
-            let layoutXlfNode: Document | null;
-            if (inputLayout && inputLayout.layoutNode === null) {
-                layoutXlf = await getXlf(newOptions);
-
-                const parser = new window.DOMParser();
-                layoutXlfNode = parser.parseFromString(layoutXlf as string, 'text/xml');
-            } else {
-                layoutXlfNode = inputLayout && inputLayout.layoutNode;
-            }
-
-            return new Promise<ILayout>((resolve) => {
-                const xlrLayoutObj = initialLayout;
-                
-                xlrLayoutObj.id = Number(inputLayout.layoutId);
-                xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
-                xlrLayoutObj.options = newOptions;
-
-                resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
-            });
+            console.log({xlrLayouts});
         },
 
         async prepareLayouts() {
@@ -156,6 +137,47 @@ export default function XiboLayoutRenderer(
                 self.layouts[self.currentLayoutIndex] = self.currentLayout;
 
                 resolve(self);
+            });
+        },
+
+        async prepareLayoutXlf(inputLayout: ILayout) {
+            const self = this;
+            // Compose layout props first
+            let newOptions: OptionsType = Object.assign({}, platform);
+
+            newOptions = {
+                ...newOptions,
+                ...props.options,
+            };
+
+            if (self.config.platform ==='CMS' &&
+                inputLayout && Boolean(inputLayout.layoutId)
+            ) {
+                newOptions.xlfUrl =
+                    newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
+            } else if (self.config.platform === 'chromeOS') {
+                newOptions.xlfUrl = inputLayout.path as string;
+            }
+
+            let layoutXlf: string;
+            let layoutXlfNode: Document | null;
+            if (inputLayout && inputLayout.layoutNode === null) {
+                layoutXlf = await getXlf(newOptions);
+
+                const parser = new window.DOMParser();
+                layoutXlfNode = parser.parseFromString(layoutXlf as string, 'text/xml');
+            } else {
+                layoutXlfNode = inputLayout && inputLayout.layoutNode;
+            }
+
+            return new Promise<ILayout>((resolve) => {
+                const xlrLayoutObj = initialLayout;
+                
+                xlrLayoutObj.id = Number(inputLayout.layoutId);
+                xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
+                xlrLayoutObj.options = newOptions;
+
+                resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
             });
         },
     }

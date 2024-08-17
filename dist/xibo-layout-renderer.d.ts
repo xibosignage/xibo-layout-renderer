@@ -13,6 +13,7 @@ interface IXlr {
     playSchedules(xlr: IXlr): void;
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(): Promise<IXlr>;
+    updateLayouts(inputLayouts: InputLayoutType[]): void;
 }
 
 interface IMediaEvents {
