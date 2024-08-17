@@ -19,7 +19,7 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import './splash-screen.css';
-import xiboLogoImg from './img/xibologo.png';
+import xiboLogoImg from './img/logo.png';
 import loaderImg from './img/loader.gif';
 
 export interface ISplashScreen {
