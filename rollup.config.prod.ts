@@ -59,6 +59,7 @@ const config: RollupOptions[] = [
             {
                 file: `${outputPath}${libName}.esm.js`,
                 format: 'esm',
+                exports: 'named',
             }
         ],
     },
@@ -69,12 +70,14 @@ const config: RollupOptions[] = [
                 ...iifeCommonOutputOptions,
                 file: `${outputPath}${libName}.js`,
                 format: 'iife',
+                exports: 'named',
             },
             {
                 ...iifeCommonOutputOptions,
                 file: `${outputPath}${libName}.min.js`,
                 format: 'iife',
                 sourcemap: true,
+                exports: 'named',
                 plugins: [
                     terserPlugin(),
                 ],

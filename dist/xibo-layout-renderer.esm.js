@@ -2417,4 +2417,4 @@ function XiboLayoutRenderer(inputLayouts, options) {
   return xlrObject;
 }
 
-export { XiboLayoutRenderer as default };
+export { ELayoutType, XiboLayoutRenderer as default, initialLayout, initialMedia, initialRegion, initialXlr };

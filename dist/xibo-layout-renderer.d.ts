@@ -1,5 +1,9 @@
 import { Emitter, DefaultEvents, Unsubscribe } from 'nanoevents';
 
+declare enum ELayoutType {
+    CURRENT = 0,
+    NEXT = 1
+}
 interface IXlr {
     inputLayouts: InputLayoutType[];
     config: OptionsType;
@@ -15,6 +19,7 @@ interface IXlr {
     prepareLayouts(): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
 }
+declare const initialXlr: IXlr;
 
 interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -60,6 +65,7 @@ interface IMedia {
     stop(): Promise<void>;
     on<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]): Unsubscribe;
 }
+declare const initialMedia: IMedia;
 
 interface IRegionEvents {
     start: (layout: IRegion) => void;
@@ -105,6 +111,7 @@ interface IRegion {
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe;
     prepareMediaObjects(): void;
 }
+declare const initialRegion: IRegion;
 
 interface ILayoutEvents {
     start: (layout: ILayout) => void;
@@ -172,7 +179,18 @@ interface ILayout {
     regionEnded(): void;
     stopAllMedia(): Promise<void>;
 }
+declare const initialLayout: ILayout;
+type GetLayoutParamType = {
+    xlr: IXlr;
+    moveNext?: boolean;
+};
+type GetLayoutType = {
+    currentLayoutIndex: number;
+    inputLayouts: InputLayoutType[];
+    current: ILayout | undefined;
+    next: ILayout | undefined;
+};
 
 declare function XiboLayoutRenderer(inputLayouts: InputLayoutType[], options?: OptionsType): IXlr;
 
-export { XiboLayoutRenderer as default };
+export { ELayoutType, type GetLayoutParamType, type GetLayoutType, type ILayout, type IMedia, type IRegion, type IRegionEvents, type IXlr, type InputLayoutType, type OptionsType, XiboLayoutRenderer as default, initialLayout, initialMedia, initialRegion, initialXlr };

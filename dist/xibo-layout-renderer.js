@@ -1,4 +1,4 @@
-var XiboLayoutRenderer = (function () {
+var XiboLayoutRenderer = (function (exports) {
   'use strict';
 
   function ownKeys(e, r) {
@@ -2180,11 +2180,11 @@ var XiboLayoutRenderer = (function () {
     return layoutObject;
   }
 
-  var ELayoutType;
+  exports.ELayoutType = void 0;
   (function (ELayoutType) {
     ELayoutType[ELayoutType["CURRENT"] = 0] = "CURRENT";
     ELayoutType[ELayoutType["NEXT"] = 1] = "NEXT";
-  })(ELayoutType || (ELayoutType = {}));
+  })(exports.ELayoutType || (exports.ELayoutType = {}));
   var initialXlr = {
     inputLayouts: [],
     config: platform,
@@ -2420,6 +2420,14 @@ var XiboLayoutRenderer = (function () {
     return xlrObject;
   }
 
-  return XiboLayoutRenderer;
+  exports.default = XiboLayoutRenderer;
+  exports.initialLayout = initialLayout;
+  exports.initialMedia = initialMedia;
+  exports.initialRegion = initialRegion;
+  exports.initialXlr = initialXlr;
 
-})();
+  Object.defineProperty(exports, '__esModule', { value: true });
+
+  return exports;
+
+})({});

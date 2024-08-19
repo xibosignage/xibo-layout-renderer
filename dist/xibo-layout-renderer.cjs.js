@@ -2181,11 +2181,11 @@ function Layout(data, options, xlr, layout) {
   return layoutObject;
 }
 
-var ELayoutType;
+exports.ELayoutType = void 0;
 (function (ELayoutType) {
   ELayoutType[ELayoutType["CURRENT"] = 0] = "CURRENT";
   ELayoutType[ELayoutType["NEXT"] = 1] = "NEXT";
-})(ELayoutType || (ELayoutType = {}));
+})(exports.ELayoutType || (exports.ELayoutType = {}));
 var initialXlr = {
   inputLayouts: [],
   config: platform,
@@ -2422,4 +2422,8 @@ function XiboLayoutRenderer(inputLayouts, options) {
 }
 
 exports.default = XiboLayoutRenderer;
+exports.initialLayout = initialLayout;
+exports.initialMedia = initialMedia;
+exports.initialRegion = initialRegion;
+exports.initialXlr = initialXlr;
 //# sourceMappingURL=xibo-layout-renderer.cjs.js.map
