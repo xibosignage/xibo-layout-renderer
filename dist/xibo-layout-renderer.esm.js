@@ -2301,10 +2301,11 @@ function XiboLayoutRenderer(inputLayouts, options) {
         // Check if only have splash screen from inputLayouts
         if (self.inputLayouts.length === 1 && self.inputLayouts[0].layoutId === 0) {
           resolve(self);
+        } else {
+          self.prepareLayouts().then(function (xlr) {
+            resolve(xlr);
+          });
         }
-        self.prepareLayouts().then(function (xlr) {
-          resolve(xlr);
-        });
       });
     },
     playSchedules: function playSchedules(xlr) {
