@@ -85,8 +85,9 @@ export default function XiboLayoutRenderer(
              *
              * Case 2: If currentLayout in inputLayouts but not in the same sequence,
              * Then, replace loop, prepare layouts and start currentLayout
+             *
              * Case 3: If currentLayout not in inputLayouts,
-             * Then,
+             * Then, replace everything and start from first layout in sequence.
              */
             const self = this;
 

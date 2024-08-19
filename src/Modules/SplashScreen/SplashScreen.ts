@@ -21,6 +21,7 @@
 import './splash-screen.css';
 import xiboLogoImg from './img/logo.png';
 import loaderImg from './img/loader.gif';
+import {OptionsType} from '../../Types/Layout';
 
 export interface ISplashScreen {
     init: () => void;
@@ -32,7 +33,7 @@ export interface PreviewSplashElement extends HTMLDivElement {
     hide: () => void;
 }
 
-export default function SplashScreen($parent: Element | null): ISplashScreen {
+export default function SplashScreen($parent: Element | null, config?: OptionsType): ISplashScreen {
     const $previewSplash = document.createElement('div') as PreviewSplashElement;
     const $previewLoader = document.createElement('div');
     const $previewLoaderCaption = document.createElement('div');
@@ -41,22 +42,38 @@ export default function SplashScreen($parent: Element | null): ISplashScreen {
      const splashScreenObj = {
          init() {
              $previewSplash.classList.add('preview-splash');
-             $previewSplash.style.setProperty(
-                 'background-image',
-                 `url(${xiboLogoImg})`,
-             );
+
+             // Don't show Xibo logo on CMS Preview
+             if (config && config.platform !== 'CMS') {
+                 $previewSplash.style.setProperty(
+                     'background-image',
+                     `url(${xiboLogoImg})`,
+                 );
+                 $previewSplash.style.setProperty(
+                     'background-size',
+                     '200px 120px',
+                 );
+                 $previewSplash.style.setProperty(
+                     'background-position',
+                     'bottom right',
+                 );
+             }
+
              $previewSplash.constructor.prototype.hide = () => {
                  this.hide();
              };
 
              $previewLoader.classList.add('preview-loader');
-             $previewLoader.style.setProperty(
-                 'background-image',
-                 `url(${loaderImg})`,
-             );
-
              $previewLoaderCaption.classList.add('preview-loaderCaption');
-             $previewLoaderCaption.innerHTML = '<p>Loading Layout...</p>';
+
+             // Show loader bar and text on CMS Preview
+             if (config && config.platform === 'CMS') {
+                 $previewLoader.style.setProperty(
+                     'background-image',
+                     `url(${loaderImg})`,
+                 );
+                 $previewLoaderCaption.innerHTML = '<p>Loading Layout...</p>';
+             }
 
              $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
              $previewSplash.insertBefore($previewLoaderCaption, null);
