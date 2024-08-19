@@ -52,7 +52,10 @@ export default function XiboLayoutRenderer(
             initRenderingDOM(previewCanvas);
 
             // Prepare splash screen
-            const splashScreen = SplashScreen(document.querySelector('.player-preview'));
+            const splashScreen = SplashScreen(
+                document.querySelector('.player-preview'),
+                self.config,
+            );
 
             splashScreen.show();
 
