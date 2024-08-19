@@ -23,6 +23,7 @@ import {
 } from './Modules/Layout';
 import { platform } from './Modules/Platform';
 import {
+    GetLayoutType,
     ILayout, initialLayout, InputLayoutType, OptionsType,
 } from './Types/Layout';
 import { initialXlr, IXlr } from './Types/XLR';
@@ -120,10 +121,19 @@ export default function XiboLayoutRenderer(
                     ];
                 }, []);
             };
+
             let layouts: ILayout[] = [];
             Promise.all<Array<Promise<ILayout>>>(layoutsXlf()).then((data) => {
                 layouts = data;
             });
+
+            self.updateLoop(self, layouts, xlrLayouts).then((xlr) => {
+                xlr.playSchedules(xlr);
+            });
+        },
+
+        async updateLoop(xlr: IXlr, layouts: ILayout[], xlrLayouts: GetLayoutType) {
+            const self = xlr;
 
             return new Promise<IXlr>((resolve) => {
                 self.layouts = layouts;

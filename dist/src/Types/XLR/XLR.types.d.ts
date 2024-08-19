@@ -1,4 +1,4 @@
-import { ILayout, InputLayoutType, OptionsType } from '../Layout';
+import { GetLayoutType, ILayout, InputLayoutType, OptionsType } from '../Layout';
 export type PrepareLayoutsType = {
     moveNext?: boolean;
 };
@@ -20,5 +20,6 @@ export interface IXlr {
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
+    updateLoop(xlr: IXlr, layouts: ILayout[], xlrLayouts: GetLayoutType): Promise<IXlr>;
 }
 export declare const initialXlr: IXlr;

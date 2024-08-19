@@ -136,11 +136,6 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
     const hasLayout = inputLayouts.length > 0;
     let currentLayoutIndex = currLayoutIndx;
     let nextLayoutIndex = currentLayoutIndex + 1;
-    console.log({
-        currentLayout,
-        nextLayout,
-        inputLayouts,
-    })
 
     if (currentLayout === undefined && nextLayout === undefined) {
         let activeLayout;

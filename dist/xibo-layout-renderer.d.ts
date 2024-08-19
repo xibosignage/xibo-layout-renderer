@@ -18,6 +18,7 @@ interface IXlr {
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
+    updateLoop(xlr: IXlr, layouts: ILayout[], xlrLayouts: GetLayoutType): Promise<IXlr>;
 }
 declare const initialXlr: IXlr;
 

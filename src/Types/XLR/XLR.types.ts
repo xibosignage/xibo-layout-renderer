@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {ILayout, InputLayoutType, OptionsType} from '../Layout';
+import {GetLayoutType, ILayout, InputLayoutType, OptionsType} from '../Layout';
 import {platform} from '../../Modules/Platform';
 
 export type PrepareLayoutsType = {
@@ -44,6 +44,7 @@ export interface IXlr {
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
+    updateLoop(xlr: IXlr, layouts: ILayout[], xlrLayouts: GetLayoutType): Promise<IXlr>;
 }
 
 export const initialXlr: IXlr = {
@@ -68,5 +69,8 @@ export const initialXlr: IXlr = {
         return Promise.resolve(<IXlr>{});
     },
     updateLayouts(inputLayouts: InputLayoutType[]) {
+    },
+    updateLoop(xlr: IXlr, layouts: ILayout[], xlrLayouts: GetLayoutType): Promise<IXlr> {
+        return Promise.resolve(<IXlr>{});
     }
 };
