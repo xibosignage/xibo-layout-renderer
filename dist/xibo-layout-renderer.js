@@ -2244,7 +2244,7 @@ var XiboLayoutRenderer = (function (exports) {
         if (config && config.platform !== 'CMS') {
           $previewSplash.style.setProperty('background-image', "url(".concat(img$1, ")"));
           $previewSplash.style.setProperty('background-size', '200px 120px');
-          $previewSplash.style.setProperty('background-position', 'bottom right');
+          $previewSplash.style.setProperty('background-position', 'calc(100% - 50px) calc(100% - 30px)');
         }
         $previewSplash.constructor.prototype.hide = function () {
           _this.hide();

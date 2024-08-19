@@ -55,7 +55,7 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
                  );
                  $previewSplash.style.setProperty(
                      'background-position',
-                     'bottom right',
+                     'calc(100% - 50px) calc(100% - 30px)',
                  );
              }
 
