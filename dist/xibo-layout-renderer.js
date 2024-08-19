@@ -1890,6 +1890,11 @@ var XiboLayoutRenderer = (function (exports) {
     var hasLayout = inputLayouts.length > 0;
     var currentLayoutIndex = currLayoutIndx;
     var nextLayoutIndex = currentLayoutIndex + 1;
+    console.log({
+      currentLayout: currentLayout,
+      nextLayout: nextLayout,
+      inputLayouts: inputLayouts
+    });
     if (currentLayout === undefined && nextLayout === undefined) {
       var activeLayout;
       // Preview just got started
