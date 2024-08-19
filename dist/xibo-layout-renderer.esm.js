@@ -2436,3 +2436,4 @@ function XiboLayoutRenderer(inputLayouts, options) {
 }
 
 export { ELayoutType, XiboLayoutRenderer as default, initialLayout, initialMedia, initialRegion, initialXlr };
+//# sourceMappingURL=xibo-layout-renderer.esm.js.map

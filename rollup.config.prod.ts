@@ -60,6 +60,7 @@ const config: RollupOptions[] = [
                 file: `${outputPath}${libName}.esm.js`,
                 format: 'esm',
                 exports: 'named',
+                sourcemap: true,
             }
         ],
     },
