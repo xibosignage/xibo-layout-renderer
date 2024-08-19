@@ -16,6 +16,7 @@
   },
   "files": [
     "xibo-layout-renderer.esm.js",
+    "xibo-layout-renderer.esm.js.map",
     "xibo-layout-renderer.min.js",
     "xibo-layout-renderer.min.js.map",
     "xibo-layout-renderer.d.ts",
