@@ -58,11 +58,15 @@ export default function XiboLayoutRenderer(
             );
 
             splashScreen.show();
-
         },
         init() {
             return new Promise<IXlr>((resolve) => {
                 const self = this;
+
+                // Check if only have splash screen from inputLayouts
+                if (self.inputLayouts.length === 0 && self.inputLayouts[0].layoutId === 0) {
+                    resolve(self);
+                }
 
                 self.prepareLayouts().then((xlr) => {
                     resolve(xlr);

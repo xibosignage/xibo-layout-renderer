@@ -2293,6 +2293,10 @@ function XiboLayoutRenderer(inputLayouts, options) {
       var _this = this;
       return new Promise(function (resolve) {
         var self = _this;
+        // Check if only have splash screen from inputLayouts
+        if (self.inputLayouts.length === 0 && self.inputLayouts[0].layoutId === 0) {
+          resolve(self);
+        }
         self.prepareLayouts().then(function (xlr) {
           resolve(xlr);
         });
