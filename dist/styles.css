@@ -5,6 +5,7 @@ div.preview-splash {
     background-repeat: no-repeat;
     background-position: center center;
     background-size: 45%;
+    padding: 50px 30px;
 }
 
 div.preview-loader {
