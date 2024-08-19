@@ -64,7 +64,7 @@ export default function XiboLayoutRenderer(
                 const self = this;
 
                 // Check if only have splash screen from inputLayouts
-                if (self.inputLayouts.length === 0 && self.inputLayouts[0].layoutId === 0) {
+                if (self.inputLayouts.length === 1 && self.inputLayouts[0].layoutId === 0) {
                     resolve(self);
                 }
 
