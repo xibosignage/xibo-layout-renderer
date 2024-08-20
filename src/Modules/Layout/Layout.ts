@@ -364,7 +364,7 @@ export default function Layout(
         });
     };
 
-    layoutObject.prepareLayout = function() {
+    layoutObject.prepareLayout = function(){
         layoutObject.parseXlf();
     };
 

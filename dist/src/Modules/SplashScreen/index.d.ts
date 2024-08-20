@@ -1,1 +1,1 @@
-export { default as SplashScreen, ISplashScreen, } from './SplashScreen';
+export { SplashScreen as default, ISplashScreen, PreviewSplashElement, } from './SplashScreen';

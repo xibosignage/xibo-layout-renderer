@@ -27,7 +27,7 @@ import {
     ILayout, initialLayout, InputLayoutType, OptionsType,
 } from './Types/Layout';
 import { initialXlr, IXlr } from './Types/XLR';
-import {SplashScreen, ISplashScreen} from './Modules/SplashScreen';
+import SplashScreen, {PreviewSplashElement} from './Modules/SplashScreen';
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -78,6 +78,11 @@ export default function XiboLayoutRenderer(
         playSchedules(xlr: IXlr) {
             // Check if there's a current layout
             if (xlr.currentLayout !== undefined) {
+                const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
+                if ($splashScreen !== null && $splashScreen.style.display === 'block') {
+                    $splashScreen?.hide();
+                }
+
                 xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
                 xlr.currentLayout.run();
             }
@@ -128,6 +133,7 @@ export default function XiboLayoutRenderer(
             });
 
             self.updateLoop(self, layouts, xlrLayouts).then((xlr) => {
+
                 xlr.playSchedules(xlr);
             });
         },

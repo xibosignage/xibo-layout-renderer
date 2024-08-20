@@ -28,7 +28,6 @@ import VideoMedia from './VideoMedia';
 import AudioMedia from './AudioMedia';
 import {composeResourceUrlByPlatform, getDataBlob} from '../Generators/Generators';
 import {IXlr} from '../../Types/XLR';
-import {PreviewSplashElement} from '../SplashScreen/SplashScreen';
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -62,10 +61,6 @@ export default function Media(
                 media.emitter?.emit('end', media);
             }
         }, 1000);
-        const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
-        if ($splashScreen !== null && $splashScreen.style.display === 'block') {
-            $splashScreen?.hide();
-        }
 
         console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };

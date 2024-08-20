@@ -1158,10 +1158,6 @@ var XiboLayoutRenderer = (function (exports) {
           (_media$emitter = media.emitter) === null || _media$emitter === void 0 || _media$emitter.emit('end', media);
         }
       }, 1000);
-      var $splashScreen = document.querySelector('.preview-splash');
-      if ($splashScreen !== null && $splashScreen.style.display === 'block') {
-        $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
-      }
       console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
     emitter.on('start', function (media) {
@@ -2313,6 +2309,10 @@ var XiboLayoutRenderer = (function (exports) {
         // Check if there's a current layout
         if (xlr.currentLayout !== undefined) {
           var _xlr$currentLayout$em;
+          var $splashScreen = document.querySelector('.preview-splash');
+          if ($splashScreen !== null && $splashScreen.style.display === 'block') {
+            $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
+          }
           (_xlr$currentLayout$em = xlr.currentLayout.emitter) === null || _xlr$currentLayout$em === void 0 || _xlr$currentLayout$em.emit('start', xlr.currentLayout);
           xlr.currentLayout.run();
         }

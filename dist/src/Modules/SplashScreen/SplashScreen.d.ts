@@ -8,4 +8,4 @@ export interface ISplashScreen {
 export interface PreviewSplashElement extends HTMLDivElement {
     hide: () => void;
 }
-export default function SplashScreen($parent: Element | null, config?: OptionsType): ISplashScreen;
+export declare function SplashScreen($parent: Element | null, config?: OptionsType): ISplashScreen;
