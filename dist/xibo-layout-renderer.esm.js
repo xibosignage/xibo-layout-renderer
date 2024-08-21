@@ -691,7 +691,12 @@ function audioFileType(str) {
 function composeResourceUrlByPlatform(platform, params) {
   var resourceUrl = params.regionOptions.getResourceUrl.replace(":regionId", params.regionId).replace(":id", params.mediaId) + '?preview=1&layoutPreview=1';
   if (platform === 'chromeOS') {
-    resourceUrl = params.cmsUrl + '/chromeOS/resource/' + params.fileId + '?saveAs=' + params.uri;
+    var resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
+    if (params.isGlobalContent) {
+      resourceUrl = resourceEndpoint + params.mediaId + '?saveAs=' + params.uri;
+    } else {
+      resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+    }
   } else if (!Boolean(params['mediaType'])) {
     resourceUrl += '&scale_override=' + params.scaleFactor;
   }
@@ -1247,7 +1252,8 @@ function Media(region, mediaId, xml, options, xlr) {
       mediaId: self.id,
       fileId: self.fileId,
       scaleFactor: self.region.layout.scaleFactor,
-      uri: self.uri
+      uri: self.uri,
+      isGlobalContent: self.mediaType === 'global'
     });
     if (self.mediaType === 'image' || self.mediaType === 'video') {
       resourceUrlParams.mediaType = self.mediaType;

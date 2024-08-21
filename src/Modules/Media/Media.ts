@@ -177,6 +177,7 @@ export default function Media(
             fileId: self.fileId,
             scaleFactor: self.region.layout.scaleFactor,
             uri: self.uri,
+            isGlobalContent: self.mediaType === 'global',
         };
 
         if (self.mediaType === 'image' || self.mediaType === 'video') {

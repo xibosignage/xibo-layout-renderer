@@ -113,10 +113,13 @@ export function composeResourceUrlByPlatform(platform: OptionsType['platform'], 
         '?preview=1&layoutPreview=1';
 
     if (platform === 'chromeOS') {
-        resourceUrl = params.cmsUrl +
-            '/chromeOS/resource/' +
-            params.fileId +
-            '?saveAs=' + params.uri;
+        const resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
+
+        if (params.isGlobalContent) {
+            resourceUrl = resourceEndpoint + params.mediaId + '?saveAs=' + params.uri;
+        } else {
+            resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+        }
     } else if (!Boolean(params['mediaType'])) {
         resourceUrl += '&scale_override=' + params.scaleFactor;
     }
