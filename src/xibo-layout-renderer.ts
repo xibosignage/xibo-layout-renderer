@@ -115,13 +115,10 @@ export default function XiboLayoutRenderer(
         });
     };
 
-    xlrObject.updateLoop = function() {
-        const self = this;
+    xlrObject.updateLoop = async function() {
+        const xlrLayouts = getLayout({xlr: this});
 
-        const xlrLayouts = getLayout({xlr: self});
-        console.log({xlrLayouts});
-
-        self.currentLayoutId = xlrLayouts.current?.layoutId as ILayout['layoutId'];
+        this.currentLayoutId = xlrLayouts.current?.layoutId as ILayout['layoutId'];
 
         const layoutsXlf = () => {
             let xlf = [];
@@ -135,32 +132,29 @@ export default function XiboLayoutRenderer(
             return xlf.reduce((coll: Promise<ILayout>[], item) => {
                 return [
                     ...coll,
-                    self.prepareLayoutXlf(item),
+                    this.prepareLayoutXlf(item),
                 ];
             }, []);
         };
 
-        let layouts: ILayout[] = [];
-        Promise.all<Array<Promise<ILayout>>>(layoutsXlf()).then((data) => {
-            console.log({data});
-            layouts = data;
-        });
+        const layouts: ILayout[] = await Promise.all<Array<Promise<ILayout>>>(layoutsXlf());
+        console.log({xlrLayouts, layouts});
 
         return new Promise<IXlr>((resolve) => {
-            self.layouts = layouts;
-            self.currentLayout = self.layouts[0];
+            this.layouts = layouts;
+            this.currentLayout = this.layouts[0];
 
-            if (Boolean(self.layouts[1])) {
-                self.nextLayout = self.layouts[1];
+            if (Boolean(this.layouts[1])) {
+                this.nextLayout = this.layouts[1];
             } else {
                 // Use current layout as next layout if only one layout is available
-                self.nextLayout = self.layouts[0];
+                this.nextLayout = this.layouts[0];
             }
 
-            self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
-            self.layouts[self.currentLayoutIndex] = self.currentLayout;
+            this.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
+            this.layouts[this.currentLayoutIndex] = this.currentLayout;
 
-            resolve(self);
+            resolve(this);
         });
     };
 

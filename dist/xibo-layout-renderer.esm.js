@@ -2339,53 +2339,60 @@ function XiboLayoutRenderer(inputLayouts, options) {
       xlr.playSchedules(xlr);
     });
   };
-  xlrObject.updateLoop = function () {
-    var _xlrLayouts$current;
-    var self = this;
-    var xlrLayouts = getLayout({
-      xlr: self
-    });
-    console.log({
-      xlrLayouts: xlrLayouts
-    });
-    self.currentLayoutId = (_xlrLayouts$current = xlrLayouts.current) === null || _xlrLayouts$current === void 0 ? void 0 : _xlrLayouts$current.layoutId;
-    var layoutsXlf = function layoutsXlf() {
-      var _xlrLayouts$current2, _xlrLayouts$next;
-      var xlf = [];
-      xlf.push(xlrLayouts.current);
-      if (((_xlrLayouts$current2 = xlrLayouts.current) === null || _xlrLayouts$current2 === void 0 ? void 0 : _xlrLayouts$current2.layoutId) !== ((_xlrLayouts$next = xlrLayouts.next) === null || _xlrLayouts$next === void 0 ? void 0 : _xlrLayouts$next.layoutId)) {
-        xlf.push(xlrLayouts.next);
-      }
-      return xlf.reduce(function (coll, item) {
-        return [].concat(_toConsumableArray(coll), [self.prepareLayoutXlf(item)]);
-      }, []);
-    };
-    var layouts = [];
-    Promise.all(layoutsXlf()).then(function (data) {
-      console.log({
-        data: data
-      });
-      layouts = data;
-    });
-    return new Promise(function (resolve) {
-      self.layouts = layouts;
-      self.currentLayout = self.layouts[0];
-      if (Boolean(self.layouts[1])) {
-        self.nextLayout = self.layouts[1];
-      } else {
-        // Use current layout as next layout if only one layout is available
-        self.nextLayout = self.layouts[0];
-      }
-      self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
-      self.layouts[self.currentLayoutIndex] = self.currentLayout;
-      resolve(self);
-    });
-  };
-  xlrObject.prepareLayouts = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-    var _xlrLayouts$current3;
-    var self, xlrLayouts, layoutsXlf, layouts;
+  xlrObject.updateLoop = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+    var _xlrLayouts$current,
+      _this2 = this;
+    var xlrLayouts, layoutsXlf, layouts;
     return _regeneratorRuntime().wrap(function _callee$(_context) {
       while (1) switch (_context.prev = _context.next) {
+        case 0:
+          xlrLayouts = getLayout({
+            xlr: this
+          });
+          this.currentLayoutId = (_xlrLayouts$current = xlrLayouts.current) === null || _xlrLayouts$current === void 0 ? void 0 : _xlrLayouts$current.layoutId;
+          layoutsXlf = function layoutsXlf() {
+            var _xlrLayouts$current2, _xlrLayouts$next;
+            var xlf = [];
+            xlf.push(xlrLayouts.current);
+            if (((_xlrLayouts$current2 = xlrLayouts.current) === null || _xlrLayouts$current2 === void 0 ? void 0 : _xlrLayouts$current2.layoutId) !== ((_xlrLayouts$next = xlrLayouts.next) === null || _xlrLayouts$next === void 0 ? void 0 : _xlrLayouts$next.layoutId)) {
+              xlf.push(xlrLayouts.next);
+            }
+            return xlf.reduce(function (coll, item) {
+              return [].concat(_toConsumableArray(coll), [_this2.prepareLayoutXlf(item)]);
+            }, []);
+          };
+          _context.next = 5;
+          return Promise.all(layoutsXlf());
+        case 5:
+          layouts = _context.sent;
+          console.log({
+            xlrLayouts: xlrLayouts,
+            layouts: layouts
+          });
+          return _context.abrupt("return", new Promise(function (resolve) {
+            _this2.layouts = layouts;
+            _this2.currentLayout = _this2.layouts[0];
+            if (Boolean(_this2.layouts[1])) {
+              _this2.nextLayout = _this2.layouts[1];
+            } else {
+              // Use current layout as next layout if only one layout is available
+              _this2.nextLayout = _this2.layouts[0];
+            }
+            _this2.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
+            _this2.layouts[_this2.currentLayoutIndex] = _this2.currentLayout;
+            resolve(_this2);
+          }));
+        case 8:
+        case "end":
+          return _context.stop();
+      }
+    }, _callee, this);
+  }));
+  xlrObject.prepareLayouts = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+    var _xlrLayouts$current3;
+    var self, xlrLayouts, layoutsXlf, layouts;
+    return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+      while (1) switch (_context2.prev = _context2.next) {
         case 0:
           self = this; // Get layouts
           xlrLayouts = getLayout({
@@ -2403,11 +2410,11 @@ function XiboLayoutRenderer(inputLayouts, options) {
               return [].concat(_toConsumableArray(coll), [self.prepareLayoutXlf(item)]);
             }, []);
           };
-          _context.next = 6;
+          _context2.next = 6;
           return Promise.all(layoutsXlf());
         case 6:
-          layouts = _context.sent;
-          return _context.abrupt("return", new Promise(function (resolve) {
+          layouts = _context2.sent;
+          return _context2.abrupt("return", new Promise(function (resolve) {
             self.layouts = layouts;
             self.currentLayout = self.layouts[0];
             if (Boolean(self.layouts[1])) {
@@ -2422,15 +2429,15 @@ function XiboLayoutRenderer(inputLayouts, options) {
           }));
         case 8:
         case "end":
-          return _context.stop();
+          return _context2.stop();
       }
-    }, _callee, this);
+    }, _callee2, this);
   }));
   xlrObject.prepareLayoutXlf = /*#__PURE__*/function () {
-    var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(inputLayout) {
+    var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(inputLayout) {
       var self, newOptions, layoutXlf, layoutXlfNode, parser;
-      return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-        while (1) switch (_context2.prev = _context2.next) {
+      return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+        while (1) switch (_context3.prev = _context3.next) {
           case 0:
             self = this; // Compose layout props first
             newOptions = Object.assign({}, platform);
@@ -2441,21 +2448,21 @@ function XiboLayoutRenderer(inputLayouts, options) {
               newOptions.xlfUrl = inputLayout.path;
             }
             if (!(inputLayout && inputLayout.layoutNode === null)) {
-              _context2.next = 12;
+              _context3.next = 12;
               break;
             }
-            _context2.next = 7;
+            _context3.next = 7;
             return getXlf(newOptions);
           case 7:
-            layoutXlf = _context2.sent;
+            layoutXlf = _context3.sent;
             parser = new window.DOMParser();
             layoutXlfNode = parser.parseFromString(layoutXlf, 'text/xml');
-            _context2.next = 13;
+            _context3.next = 13;
             break;
           case 12:
             layoutXlfNode = inputLayout && inputLayout.layoutNode;
           case 13:
-            return _context2.abrupt("return", new Promise(function (resolve) {
+            return _context3.abrupt("return", new Promise(function (resolve) {
               var xlrLayoutObj = initialLayout;
               xlrLayoutObj.id = Number(inputLayout.layoutId);
               xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
@@ -2464,12 +2471,12 @@ function XiboLayoutRenderer(inputLayouts, options) {
             }));
           case 14:
           case "end":
-            return _context2.stop();
+            return _context3.stop();
         }
-      }, _callee2, this);
+      }, _callee3, this);
     }));
     return function (_x) {
-      return _ref2.apply(this, arguments);
+      return _ref3.apply(this, arguments);
     };
   }();
   xlrObject.bootstrap();
