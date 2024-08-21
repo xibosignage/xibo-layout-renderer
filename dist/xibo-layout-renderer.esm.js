@@ -2303,12 +2303,18 @@ function XiboLayoutRenderer(inputLayouts, options) {
     },
     playSchedules: function playSchedules(xlr) {
       // Check if there's a current layout
+      console.log({
+        xlr: xlr
+      });
       if (xlr.currentLayout !== undefined) {
         var _xlr$currentLayout$em;
         var $splashScreen = document.querySelector('.preview-splash');
         if ($splashScreen && $splashScreen.style.display === 'block') {
           $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
         }
+        console.log({
+          $splashScreen: $splashScreen
+        });
         (_xlr$currentLayout$em = xlr.currentLayout.emitter) === null || _xlr$currentLayout$em === void 0 || _xlr$currentLayout$em.emit('start', xlr.currentLayout);
         xlr.currentLayout.run();
       }

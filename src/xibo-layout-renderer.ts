@@ -75,11 +75,14 @@ export default function XiboLayoutRenderer(
 
         playSchedules(xlr: IXlr) {
             // Check if there's a current layout
+            console.log({xlr});
             if (xlr.currentLayout !== undefined) {
                 const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
                 if ($splashScreen && $splashScreen.style.display === 'block') {
                     $splashScreen?.hide();
                 }
+
+                console.log({$splashScreen});
 
                 xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
                 xlr.currentLayout.run();
