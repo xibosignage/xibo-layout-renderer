@@ -2339,6 +2339,9 @@ function XiboLayoutRenderer(inputLayouts, options) {
       var xlrLayouts = getLayout({
         xlr: self
       });
+      console.log({
+        xlrLayouts: xlrLayouts
+      });
       self.currentLayoutId = (_xlrLayouts$current = xlrLayouts.current) === null || _xlrLayouts$current === void 0 ? void 0 : _xlrLayouts$current.layoutId;
       var layoutsXlf = function layoutsXlf() {
         var _xlrLayouts$current2, _xlrLayouts$next;
@@ -2353,6 +2356,9 @@ function XiboLayoutRenderer(inputLayouts, options) {
       };
       var layouts = [];
       Promise.all(layoutsXlf()).then(function (data) {
+        console.log({
+          data: data
+        });
         layouts = data;
       });
       self.updateLoop(self, layouts, xlrLayouts).then(function (xlr) {

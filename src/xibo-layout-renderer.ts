@@ -108,6 +108,7 @@ export default function XiboLayoutRenderer(
             self.inputLayouts = inputLayouts;
 
             const xlrLayouts = getLayout({xlr: self});
+            console.log({xlrLayouts});
 
             self.currentLayoutId = xlrLayouts.current?.layoutId as ILayout['layoutId'];
 
@@ -130,6 +131,7 @@ export default function XiboLayoutRenderer(
 
             let layouts: ILayout[] = [];
             Promise.all<Array<Promise<ILayout>>>(layoutsXlf()).then((data) => {
+                console.log({data});
                 layouts = data;
             });
 
