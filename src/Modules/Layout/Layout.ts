@@ -206,12 +206,12 @@ export default function Layout(
     }
     const emitter = createNanoEvents<ILayoutEvents>();
 
-    emitter.on('start', (layout) => {
+    emitter.on('start', (layout: ILayout) => {
         layout.done = false;
         console.debug('Layout start emitted > Layout ID > ', layout.id);
     });
 
-    emitter.on('end', (layout) => {
+    emitter.on('end', (layout: ILayout) => {
         console.debug('Ending layout with ID of > ', layout.layoutId);
         layout.done = true;
         /* Remove layout that has ended */

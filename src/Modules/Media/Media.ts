@@ -58,14 +58,14 @@ export default function Media(
         mediaTimer = setInterval(() => {
             mediaTimeCount++;
             if (mediaTimeCount > media.duration) {
-                media.emitter?.emit('end', media);
+                media.emitter.emit('end', media);
             }
         }, 1000);
 
         console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
 
-    emitter.on('start', function(media) {
+    mediaObject.on('start', function(media: IMedia) {
         if (media.mediaType === 'video') {
             VideoMedia(media).init();
 
@@ -82,7 +82,7 @@ export default function Media(
         }
     });
 
-    emitter.on('end', function(media) {
+    mediaObject.on('end', function(media) {
         if (mediaTimer) {
             clearInterval(mediaTimer);
             mediaTimeCount = 0;
@@ -101,7 +101,7 @@ export default function Media(
         self.mediaType = self.xml?.getAttribute('type') || '';
         self.render = self.xml?.getAttribute('render') || '';
         self.duration = parseInt(self.xml?.getAttribute('duration') as string) || 0;
-        self.options = { ...props.options, mediaId };
+        self.options = { ...props.options };
 
         const $mediaIframe = document.createElement('iframe');
         const mediaOptions = self.xml?.getElementsByTagName('options');
@@ -336,11 +336,11 @@ export default function Media(
             let $media = document.getElementById($mediaId);
             const isCMS = xlr.config.platform === 'CMS';
 
-            if ($media === null) {
+            if (!$media) {
                 $media = getNewMedia();
             }
 
-            if ($media !== null) {
+            if ($media) {
                 $media.style.setProperty('display', 'block');
 
                 if (Boolean(self.options['transin'])) {

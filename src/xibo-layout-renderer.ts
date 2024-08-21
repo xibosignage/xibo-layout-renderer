@@ -18,9 +18,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {
-    Layout, getLayout, getXlf, initRenderingDOM
-} from './Modules/Layout';
+import Layout, { getLayout, getXlf, initRenderingDOM } from './Modules/Layout';
 import { platform } from './Modules/Platform';
 import {
     GetLayoutType,
@@ -79,7 +77,7 @@ export default function XiboLayoutRenderer(
             // Check if there's a current layout
             if (xlr.currentLayout !== undefined) {
                 const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
-                if ($splashScreen !== null && $splashScreen.style.display === 'block') {
+                if ($splashScreen && $splashScreen.style.display === 'block') {
                     $splashScreen?.hide();
                 }
 
@@ -185,7 +183,7 @@ export default function XiboLayoutRenderer(
             const layouts = await Promise.all<Array<Promise<ILayout>>>(layoutsXlf());
 
             return new Promise<IXlr>((resolve) => {
-                self.layouts = layouts;
+                self.layouts = layouts as ILayout[];
                 self.currentLayout = self.layouts[0];
 
                 if (Boolean(self.layouts[1])) {

@@ -1,5 +1,5 @@
 export {
-    SplashScreen as default,
+    default,
     ISplashScreen,
     PreviewSplashElement,
 } from './SplashScreen';

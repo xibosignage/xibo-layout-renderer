@@ -765,6 +765,7 @@ var initialMedia = {
   region: initialRegion,
   xml: null,
   id: '',
+  mediaId: '',
   index: 0,
   idCounter: 0,
   containerName: '',
@@ -775,7 +776,7 @@ var initialMedia = {
   render: 'html',
   attachedAudio: false,
   singlePlay: false,
-  timeoutId: setTimeout(function () {}, 100),
+  timeoutId: setTimeout(function () {}, 0),
   ready: true,
   checkIframeStatus: false,
   loadIframeOnRun: false,
@@ -799,7 +800,8 @@ var initialMedia = {
   },
   on: function on(event, callback) {
     return {};
-  }
+  },
+  emitter: {}
 };
 
 /*
@@ -1155,13 +1157,12 @@ function Media(region, mediaId, xml, options, xlr) {
     mediaTimer = setInterval(function () {
       mediaTimeCount++;
       if (mediaTimeCount > media.duration) {
-        var _media$emitter;
-        (_media$emitter = media.emitter) === null || _media$emitter === void 0 || _media$emitter.emit('end', media);
+        media.emitter.emit('end', media);
       }
     }, 1000);
     console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
   };
-  emitter.on('start', function (media) {
+  mediaObject.on('start', function (media) {
     if (media.mediaType === 'video') {
       VideoMedia(media).init();
       if (media.duration > 0) {
@@ -1176,7 +1177,7 @@ function Media(region, mediaId, xml, options, xlr) {
       startMediaTimer(media);
     }
   });
-  emitter.on('end', function (media) {
+  mediaObject.on('end', function (media) {
     if (mediaTimer) {
       clearInterval(mediaTimer);
       mediaTimeCount = 0;
@@ -1194,9 +1195,7 @@ function Media(region, mediaId, xml, options, xlr) {
     self.mediaType = ((_self$xml2 = self.xml) === null || _self$xml2 === void 0 ? void 0 : _self$xml2.getAttribute('type')) || '';
     self.render = ((_self$xml3 = self.xml) === null || _self$xml3 === void 0 ? void 0 : _self$xml3.getAttribute('render')) || '';
     self.duration = parseInt((_self$xml4 = self.xml) === null || _self$xml4 === void 0 ? void 0 : _self$xml4.getAttribute('duration')) || 0;
-    self.options = _objectSpread2(_objectSpread2({}, props.options), {}, {
-      mediaId: mediaId
-    });
+    self.options = _objectSpread2({}, props.options);
     var $mediaIframe = document.createElement('iframe');
     var mediaOptions = (_self$xml5 = self.xml) === null || _self$xml5 === void 0 ? void 0 : _self$xml5.getElementsByTagName('options');
     if (mediaOptions) {
@@ -1404,10 +1403,10 @@ function Media(region, mediaId, xml, options, xlr) {
               $mediaId = getMediaId(self);
               $media = document.getElementById($mediaId);
               isCMS = xlr.config.platform === 'CMS';
-              if ($media === null) {
+              if (!$media) {
                 $media = getNewMedia();
               }
-              if (!($media !== null)) {
+              if (!$media) {
                 _context2.next = 46;
                 break;
               }
@@ -2311,7 +2310,7 @@ function XiboLayoutRenderer(inputLayouts, options) {
       if (xlr.currentLayout !== undefined) {
         var _xlr$currentLayout$em;
         var $splashScreen = document.querySelector('.preview-splash');
-        if ($splashScreen !== null && $splashScreen.style.display === 'block') {
+        if ($splashScreen && $splashScreen.style.display === 'block') {
           $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
         }
         (_xlr$currentLayout$em = xlr.currentLayout.emitter) === null || _xlr$currentLayout$em === void 0 || _xlr$currentLayout$em.emit('start', xlr.currentLayout);

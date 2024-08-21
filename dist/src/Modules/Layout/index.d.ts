@@ -1,1 +1,1 @@
-export { default as Layout, initRenderingDOM, getXlf, getLayout, ILayoutEvents } from './Layout';
+export { default, initRenderingDOM, getXlf, getLayout, ILayoutEvents } from './Layout';
