@@ -2200,7 +2200,7 @@ var XiboLayoutRenderer = (function (exports) {
       return Promise.resolve({});
     },
     updateLayouts: function updateLayouts(inputLayouts) {},
-    updateLoop: function updateLoop(xlr, layouts, xlrLayouts) {
+    updateLoop: function updateLoop() {
       return Promise.resolve({});
     }
   };
@@ -2277,217 +2277,204 @@ var XiboLayoutRenderer = (function (exports) {
       inputLayouts: inputLayouts,
       options: options
     };
-    var xlrObject = _objectSpread2(_objectSpread2({}, initialXlr), {}, {
-      bootstrap: function bootstrap() {
-        // Place to set configurations and initialize required props
-        var self = this;
-        self.inputLayouts = !Array.isArray(props.inputLayouts) ? [props.inputLayouts] : props.inputLayouts;
-        self.config = JSON.parse(JSON.stringify(_objectSpread2(_objectSpread2({}, platform), props.options)));
-        // Prepare rendering DOM
-        var previewCanvas = document.querySelector('.preview-canvas');
-        initRenderingDOM(previewCanvas);
-        // Prepare splash screen
-        var splashScreen = SplashScreen(document.querySelector('.player-preview'), self.config);
-        splashScreen.show();
-      },
-      init: function init() {
-        var _this = this;
-        return new Promise(function (resolve) {
-          var self = _this;
-          // Check if only have splash screen from inputLayouts
-          if (self.inputLayouts.length === 1 && self.inputLayouts[0].layoutId === 0) {
-            resolve(self);
-          } else {
-            self.prepareLayouts().then(function (xlr) {
-              resolve(xlr);
-            });
-          }
-        });
-      },
-      playSchedules: function playSchedules(xlr) {
-        // Check if there's a current layout
-        console.log({
-          xlr: xlr
-        });
-        if (xlr.currentLayout !== undefined) {
-          var _xlr$currentLayout$em;
-          var $splashScreen = document.querySelector('.preview-splash');
-          if ($splashScreen && $splashScreen.style.display === 'block') {
-            $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
-          }
-          console.log({
-            $splashScreen: $splashScreen
+    var xlrObject = _objectSpread2({}, initialXlr);
+    xlrObject.bootstrap = function () {
+      // Place to set configurations and initialize required props
+      var self = this;
+      self.inputLayouts = !Array.isArray(props.inputLayouts) ? [props.inputLayouts] : props.inputLayouts;
+      self.config = JSON.parse(JSON.stringify(_objectSpread2(_objectSpread2({}, platform), props.options)));
+      // Prepare rendering DOM
+      var previewCanvas = document.querySelector('.preview-canvas');
+      initRenderingDOM(previewCanvas);
+      // Prepare splash screen
+      var splashScreen = SplashScreen(document.querySelector('.player-preview'), self.config);
+      splashScreen.show();
+    };
+    xlrObject.init = function () {
+      var _this = this;
+      return new Promise(function (resolve) {
+        var self = _this;
+        // Check if only have splash screen from inputLayouts
+        if (self.inputLayouts.length === 1 && self.inputLayouts[0].layoutId === 0) {
+          resolve(self);
+        } else {
+          self.prepareLayouts().then(function (xlr) {
+            resolve(xlr);
           });
-          (_xlr$currentLayout$em = xlr.currentLayout.emitter) === null || _xlr$currentLayout$em === void 0 || _xlr$currentLayout$em.emit('start', xlr.currentLayout);
-          xlr.currentLayout.run();
         }
-      },
-      updateLayouts: function updateLayouts(inputLayouts) {
-        var _xlrLayouts$current;
-        /**
-         * @TODO
-         * Case 1: If currentLayout in inputLayouts and in the same sequence,
-         * Then, continue playing currentLayout.
-         * Check nextLayout in inputLayouts. If in inputLayouts and same sequence, then don't change.
-         * If not in inputLayouts, then replace and prepare nextLayout.
-         *
-         * Case 2: If currentLayout in inputLayouts but not in the same sequence,
-         * Then, replace loop, prepare layouts and start currentLayout
-         *
-         * Case 3: If currentLayout not in inputLayouts,
-         * Then, replace everything and start from first layout in sequence.
-         */
-        var self = this;
-        self.inputLayouts = inputLayouts;
-        var xlrLayouts = getLayout({
-          xlr: self
-        });
+      });
+    };
+    xlrObject.playSchedules = function (xlr) {
+      // Check if there's a current layout
+      console.log({
+        xlr: xlr
+      });
+      if (xlr.currentLayout !== undefined) {
+        var _xlr$currentLayout$em;
+        var $splashScreen = document.querySelector('.preview-splash');
+        if ($splashScreen && $splashScreen.style.display === 'block') {
+          $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
+        }
         console.log({
-          xlrLayouts: xlrLayouts
+          $splashScreen: $splashScreen
         });
-        self.currentLayoutId = (_xlrLayouts$current = xlrLayouts.current) === null || _xlrLayouts$current === void 0 ? void 0 : _xlrLayouts$current.layoutId;
-        var layoutsXlf = function layoutsXlf() {
-          var _xlrLayouts$current2, _xlrLayouts$next;
-          var xlf = [];
-          xlf.push(xlrLayouts.current);
-          if (((_xlrLayouts$current2 = xlrLayouts.current) === null || _xlrLayouts$current2 === void 0 ? void 0 : _xlrLayouts$current2.layoutId) !== ((_xlrLayouts$next = xlrLayouts.next) === null || _xlrLayouts$next === void 0 ? void 0 : _xlrLayouts$next.layoutId)) {
-            xlf.push(xlrLayouts.next);
-          }
-          return xlf.reduce(function (coll, item) {
-            return [].concat(_toConsumableArray(coll), [self.prepareLayoutXlf(item)]);
-          }, []);
-        };
-        var layouts = [];
-        Promise.all(layoutsXlf()).then(function (data) {
-          console.log({
-            data: data
-          });
-          layouts = data;
-        });
-        self.updateLoop(self, layouts, xlrLayouts).then(function (xlr) {
-          xlr.playSchedules(xlr);
-        });
-      },
-      updateLoop: function updateLoop(xlr, layouts, xlrLayouts) {
-        return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-          var self;
-          return _regeneratorRuntime().wrap(function _callee$(_context) {
-            while (1) switch (_context.prev = _context.next) {
-              case 0:
-                self = xlr;
-                return _context.abrupt("return", new Promise(function (resolve) {
-                  self.layouts = layouts;
-                  self.currentLayout = self.layouts[0];
-                  if (Boolean(self.layouts[1])) {
-                    self.nextLayout = self.layouts[1];
-                  } else {
-                    // Use current layout as next layout if only one layout is available
-                    self.nextLayout = self.layouts[0];
-                  }
-                  self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
-                  self.layouts[self.currentLayoutIndex] = self.currentLayout;
-                  resolve(self);
-                }));
-              case 2:
-              case "end":
-                return _context.stop();
-            }
-          }, _callee);
-        }))();
-      },
-      prepareLayouts: function prepareLayouts() {
-        var _this2 = this;
-        return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-          var _xlrLayouts$current3;
-          var self, xlrLayouts, layoutsXlf, layouts;
-          return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-            while (1) switch (_context2.prev = _context2.next) {
-              case 0:
-                self = _this2; // Get layouts
-                xlrLayouts = getLayout({
-                  xlr: self
-                });
-                self.currentLayoutId = (_xlrLayouts$current3 = xlrLayouts.current) === null || _xlrLayouts$current3 === void 0 ? void 0 : _xlrLayouts$current3.layoutId;
-                layoutsXlf = function layoutsXlf() {
-                  var _xlrLayouts$current4, _xlrLayouts$next2;
-                  var xlf = [];
-                  xlf.push(xlrLayouts.current);
-                  if (((_xlrLayouts$current4 = xlrLayouts.current) === null || _xlrLayouts$current4 === void 0 ? void 0 : _xlrLayouts$current4.layoutId) !== ((_xlrLayouts$next2 = xlrLayouts.next) === null || _xlrLayouts$next2 === void 0 ? void 0 : _xlrLayouts$next2.layoutId)) {
-                    xlf.push(xlrLayouts.next);
-                  }
-                  return xlf.reduce(function (coll, item) {
-                    return [].concat(_toConsumableArray(coll), [self.prepareLayoutXlf(item)]);
-                  }, []);
-                };
-                _context2.next = 6;
-                return Promise.all(layoutsXlf());
-              case 6:
-                layouts = _context2.sent;
-                return _context2.abrupt("return", new Promise(function (resolve) {
-                  self.layouts = layouts;
-                  self.currentLayout = self.layouts[0];
-                  if (Boolean(self.layouts[1])) {
-                    self.nextLayout = self.layouts[1];
-                  } else {
-                    // Use current layout as next layout if only one layout is available
-                    self.nextLayout = self.layouts[0];
-                  }
-                  self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
-                  self.layouts[self.currentLayoutIndex] = self.currentLayout;
-                  resolve(self);
-                }));
-              case 8:
-              case "end":
-                return _context2.stop();
-            }
-          }, _callee2);
-        }))();
-      },
-      prepareLayoutXlf: function prepareLayoutXlf(inputLayout) {
-        var _this3 = this;
-        return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
-          var self, newOptions, layoutXlf, layoutXlfNode, parser;
-          return _regeneratorRuntime().wrap(function _callee3$(_context3) {
-            while (1) switch (_context3.prev = _context3.next) {
-              case 0:
-                self = _this3; // Compose layout props first
-                newOptions = Object.assign({}, platform);
-                newOptions = _objectSpread2(_objectSpread2({}, newOptions), props.options);
-                if (self.config.platform === 'CMS' && inputLayout && Boolean(inputLayout.layoutId)) {
-                  newOptions.xlfUrl = newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
-                } else if (self.config.platform === 'chromeOS') {
-                  newOptions.xlfUrl = inputLayout.path;
-                }
-                if (!(inputLayout && inputLayout.layoutNode === null)) {
-                  _context3.next = 12;
-                  break;
-                }
-                _context3.next = 7;
-                return getXlf(newOptions);
-              case 7:
-                layoutXlf = _context3.sent;
-                parser = new window.DOMParser();
-                layoutXlfNode = parser.parseFromString(layoutXlf, 'text/xml');
-                _context3.next = 13;
-                break;
-              case 12:
-                layoutXlfNode = inputLayout && inputLayout.layoutNode;
-              case 13:
-                return _context3.abrupt("return", new Promise(function (resolve) {
-                  var xlrLayoutObj = initialLayout;
-                  xlrLayoutObj.id = Number(inputLayout.layoutId);
-                  xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
-                  xlrLayoutObj.options = newOptions;
-                  resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
-                }));
-              case 14:
-              case "end":
-                return _context3.stop();
-            }
-          }, _callee3);
-        }))();
+        (_xlr$currentLayout$em = xlr.currentLayout.emitter) === null || _xlr$currentLayout$em === void 0 || _xlr$currentLayout$em.emit('start', xlr.currentLayout);
+        xlr.currentLayout.run();
       }
-    });
+    };
+    xlrObject.updateLayouts = function (inputLayouts) {
+      /**
+       * @TODO
+       * Case 1: If currentLayout in inputLayouts and in the same sequence,
+       * Then, continue playing currentLayout.
+       * Check nextLayout in inputLayouts. If in inputLayouts and same sequence, then don't change.
+       * If not in inputLayouts, then replace and prepare nextLayout.
+       *
+       * Case 2: If currentLayout in inputLayouts but not in the same sequence,
+       * Then, replace loop, prepare layouts and start currentLayout
+       *
+       * Case 3: If currentLayout not in inputLayouts,
+       * Then, replace everything and start from first layout in sequence.
+       */
+      var self = this;
+      self.inputLayouts = inputLayouts;
+      self.updateLoop().then(function (xlr) {
+        xlr.playSchedules(xlr);
+      });
+    };
+    xlrObject.updateLoop = function () {
+      var _xlrLayouts$current;
+      var self = this;
+      var xlrLayouts = getLayout({
+        xlr: self
+      });
+      console.log({
+        xlrLayouts: xlrLayouts
+      });
+      self.currentLayoutId = (_xlrLayouts$current = xlrLayouts.current) === null || _xlrLayouts$current === void 0 ? void 0 : _xlrLayouts$current.layoutId;
+      var layoutsXlf = function layoutsXlf() {
+        var _xlrLayouts$current2, _xlrLayouts$next;
+        var xlf = [];
+        xlf.push(xlrLayouts.current);
+        if (((_xlrLayouts$current2 = xlrLayouts.current) === null || _xlrLayouts$current2 === void 0 ? void 0 : _xlrLayouts$current2.layoutId) !== ((_xlrLayouts$next = xlrLayouts.next) === null || _xlrLayouts$next === void 0 ? void 0 : _xlrLayouts$next.layoutId)) {
+          xlf.push(xlrLayouts.next);
+        }
+        return xlf.reduce(function (coll, item) {
+          return [].concat(_toConsumableArray(coll), [self.prepareLayoutXlf(item)]);
+        }, []);
+      };
+      var layouts = [];
+      Promise.all(layoutsXlf()).then(function (data) {
+        console.log({
+          data: data
+        });
+        layouts = data;
+      });
+      return new Promise(function (resolve) {
+        self.layouts = layouts;
+        self.currentLayout = self.layouts[0];
+        if (Boolean(self.layouts[1])) {
+          self.nextLayout = self.layouts[1];
+        } else {
+          // Use current layout as next layout if only one layout is available
+          self.nextLayout = self.layouts[0];
+        }
+        self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
+        self.layouts[self.currentLayoutIndex] = self.currentLayout;
+        resolve(self);
+      });
+    };
+    xlrObject.prepareLayouts = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+      var _xlrLayouts$current3;
+      var self, xlrLayouts, layoutsXlf, layouts;
+      return _regeneratorRuntime().wrap(function _callee$(_context) {
+        while (1) switch (_context.prev = _context.next) {
+          case 0:
+            self = this; // Get layouts
+            xlrLayouts = getLayout({
+              xlr: self
+            });
+            self.currentLayoutId = (_xlrLayouts$current3 = xlrLayouts.current) === null || _xlrLayouts$current3 === void 0 ? void 0 : _xlrLayouts$current3.layoutId;
+            layoutsXlf = function layoutsXlf() {
+              var _xlrLayouts$current4, _xlrLayouts$next2;
+              var xlf = [];
+              xlf.push(xlrLayouts.current);
+              if (((_xlrLayouts$current4 = xlrLayouts.current) === null || _xlrLayouts$current4 === void 0 ? void 0 : _xlrLayouts$current4.layoutId) !== ((_xlrLayouts$next2 = xlrLayouts.next) === null || _xlrLayouts$next2 === void 0 ? void 0 : _xlrLayouts$next2.layoutId)) {
+                xlf.push(xlrLayouts.next);
+              }
+              return xlf.reduce(function (coll, item) {
+                return [].concat(_toConsumableArray(coll), [self.prepareLayoutXlf(item)]);
+              }, []);
+            };
+            _context.next = 6;
+            return Promise.all(layoutsXlf());
+          case 6:
+            layouts = _context.sent;
+            return _context.abrupt("return", new Promise(function (resolve) {
+              self.layouts = layouts;
+              self.currentLayout = self.layouts[0];
+              if (Boolean(self.layouts[1])) {
+                self.nextLayout = self.layouts[1];
+              } else {
+                // Use current layout as next layout if only one layout is available
+                self.nextLayout = self.layouts[0];
+              }
+              self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
+              self.layouts[self.currentLayoutIndex] = self.currentLayout;
+              resolve(self);
+            }));
+          case 8:
+          case "end":
+            return _context.stop();
+        }
+      }, _callee, this);
+    }));
+    xlrObject.prepareLayoutXlf = /*#__PURE__*/function () {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(inputLayout) {
+        var self, newOptions, layoutXlf, layoutXlfNode, parser;
+        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              self = this; // Compose layout props first
+              newOptions = Object.assign({}, platform);
+              newOptions = _objectSpread2(_objectSpread2({}, newOptions), props.options);
+              if (self.config.platform === 'CMS' && inputLayout && Boolean(inputLayout.layoutId)) {
+                newOptions.xlfUrl = newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
+              } else if (self.config.platform === 'chromeOS') {
+                newOptions.xlfUrl = inputLayout.path;
+              }
+              if (!(inputLayout && inputLayout.layoutNode === null)) {
+                _context2.next = 12;
+                break;
+              }
+              _context2.next = 7;
+              return getXlf(newOptions);
+            case 7:
+              layoutXlf = _context2.sent;
+              parser = new window.DOMParser();
+              layoutXlfNode = parser.parseFromString(layoutXlf, 'text/xml');
+              _context2.next = 13;
+              break;
+            case 12:
+              layoutXlfNode = inputLayout && inputLayout.layoutNode;
+            case 13:
+              return _context2.abrupt("return", new Promise(function (resolve) {
+                var xlrLayoutObj = initialLayout;
+                xlrLayoutObj.id = Number(inputLayout.layoutId);
+                xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
+                xlrLayoutObj.options = newOptions;
+                resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
+              }));
+            case 14:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, this);
+      }));
+      return function (_x) {
+        return _ref2.apply(this, arguments);
+      };
+    }();
     xlrObject.bootstrap();
     return xlrObject;
   }
