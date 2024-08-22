@@ -118,13 +118,27 @@ export function composeResourceUrlByPlatform(platform: OptionsType['platform'], 
         if (!params.isGlobalContent) {
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
         } else {
-            resourceUrl = params.cmsUrl + resourceUrl;
+            resourceUrl = composeResourceUrl(params);
         }
     } else if (!Boolean(params['mediaType'])) {
         resourceUrl += '&scale_override=' + params.scaleFactor;
     }
 
     return resourceUrl;
+}
+
+export function composeResourceUrl(params: any) {
+    const schemaVersion = localStorage.getItem('schemaVersion');
+    const hardwareKey = localStorage.getItem('hardwareKey');
+    const serverKey = localStorage.getItem('cmsKey');
+
+    return params.cmsUrl + '/chromeOS/getResource' +
+        '?v=' + schemaVersion +
+        '&serverKey=' + serverKey +
+        '&hardwareKey=' + hardwareKey +
+        '&layoutId=' + params.layoutId +
+        '&regionId=' + params.regionId +
+        '&mediaId=' + params.mediaId;
 }
 
 export function composeBgUrlByPlatform(
