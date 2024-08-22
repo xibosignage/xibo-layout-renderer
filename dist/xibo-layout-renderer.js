@@ -697,6 +697,8 @@ var XiboLayoutRenderer = (function (exports) {
       var resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
       if (!params.isGlobalContent) {
         resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+      } else {
+        resourceUrl = params.cmsUrl + resourceUrl;
       }
     } else if (!Boolean(params['mediaType'])) {
       resourceUrl += '&scale_override=' + params.scaleFactor;
