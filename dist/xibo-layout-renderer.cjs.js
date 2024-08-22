@@ -693,14 +693,14 @@ function audioFileType(str) {
   }
   return undefined;
 }
-function composeResourceUrlByPlatform(platform, params) {
+function composeResourceUrlByPlatform(options, params) {
   var resourceUrl = params.regionOptions.getResourceUrl.replace(":regionId", params.regionId).replace(":id", params.mediaId) + '?preview=1&layoutPreview=1';
-  if (platform === 'chromeOS') {
+  if (options.platform === 'chromeOS') {
     var resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
     if (!params.isGlobalContent) {
       resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
     } else {
-      // resourceUrl = composeResourceUrl(params);
+      // resourceUrl = composeResourceUrl(options.config, params);
       resourceUrl = params.cmsUrl + resourceUrl;
     }
   } else if (!Boolean(params['mediaType'])) {
@@ -1264,15 +1264,11 @@ function Media(region, mediaId, xml, options, xlr) {
     if (self.mediaType === 'image' || self.mediaType === 'video') {
       resourceUrlParams.mediaType = self.mediaType;
     }
-    var tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, resourceUrlParams);
+    var tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
     self.url = tmpUrl;
     // Loop if media has loop, or if region has loop and a single media
     self.loop = self.options['loop'] == '1' || self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1;
-    if (self.mediaType === 'global') {
-      $mediaIframe.src = tmpUrl;
-    } else {
-      $mediaIframe.src = "".concat(tmpUrl, "&width=").concat(self.divWidth, "&height=").concat(self.divHeight);
-    }
+    $mediaIframe.src = "".concat(tmpUrl, "&width=").concat(self.divWidth, "&height=").concat(self.divHeight);
     if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
       self.checkIframeStatus = true;
       self.iframe = $mediaIframe;
@@ -2320,17 +2316,11 @@ function XiboLayoutRenderer(inputLayouts, options) {
   };
   xlrObject.playSchedules = function (xlr) {
     // Check if there's a current layout
-    console.log({
-      xlr: xlr
-    });
     if (xlr.currentLayout !== undefined) {
       var $splashScreen = document.querySelector('.preview-splash');
       if ($splashScreen && $splashScreen.style.display === 'block') {
         $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
       }
-      console.log({
-        $splashScreen: $splashScreen
-      });
       xlr.currentLayout.emitter.emit('start', xlr.currentLayout);
       xlr.currentLayout.run();
     }

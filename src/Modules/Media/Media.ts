@@ -184,7 +184,7 @@ export default function Media(
             resourceUrlParams.mediaType = self.mediaType;
         }
 
-        const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, resourceUrlParams);
+        const tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
 
         self.url = tmpUrl;
 
@@ -193,11 +193,7 @@ export default function Media(
             self.options['loop'] == '1' ||
             (self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1);
 
-        if (self.mediaType === 'global') {
-            $mediaIframe.src = tmpUrl;
-        } else {
-            $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
-        }
+        $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
 
         if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
             self.checkIframeStatus = true;

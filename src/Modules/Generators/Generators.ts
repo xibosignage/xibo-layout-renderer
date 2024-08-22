@@ -106,19 +106,19 @@ export function audioFileType(str: string) {
     return undefined;
 }
 
-export function composeResourceUrlByPlatform(platform: OptionsType['platform'], params: any) {
+export function composeResourceUrlByPlatform(options: OptionsType, params: any) {
     let resourceUrl = params.regionOptions.getResourceUrl
         .replace(":regionId", params.regionId)
         .replace(":id", params.mediaId) +
         '?preview=1&layoutPreview=1';
 
-    if (platform === 'chromeOS') {
+    if (options.platform === 'chromeOS') {
         const resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
 
         if (!params.isGlobalContent) {
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
         } else {
-            // resourceUrl = composeResourceUrl(params);
+            // resourceUrl = composeResourceUrl(options.config, params);
             resourceUrl = params.cmsUrl + resourceUrl;
         }
     } else if (!Boolean(params['mediaType'])) {
@@ -128,12 +128,13 @@ export function composeResourceUrlByPlatform(platform: OptionsType['platform'], 
     return resourceUrl;
 }
 
-export function composeResourceUrl(params: any) {
-    const schemaVersion = localStorage.getItem('schemaVersion');
-    const hardwareKey = localStorage.getItem('hardwareKey');
-    const serverKey = localStorage.getItem('cmsKey');
+export function composeResourceUrl(config: OptionsType['config'], params: any) {
+    const schemaVersion = (config) && config.schemaVersion;
+    const hardwareKey = (config) && config.hardwareKey;
+    const serverKey = (config) && config.cmsKey;
+    const cmsUrl = (config) && config.cmsUrl;
 
-    return params.cmsUrl + '/chromeOS/getResource' +
+    return cmsUrl + '/chromeOS/getResource' +
         '?v=' + schemaVersion +
         '&serverKey=' + serverKey +
         '&hardwareKey=' + hardwareKey +
