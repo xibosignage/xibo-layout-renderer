@@ -115,10 +115,10 @@ export function composeResourceUrlByPlatform(platform: OptionsType['platform'], 
     if (platform === 'chromeOS') {
         const resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
 
-        if (params.isGlobalContent) {
-            resourceUrl = resourceEndpoint + params.mediaId + '?saveAs=' + params.uri;
-        } else {
+        if (!params.isGlobalContent) {
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+        } else {
+            // resourceUrl = resourceEndpoint + params.mediaId + '?saveAs=' + params.uri;
         }
     } else if (!Boolean(params['mediaType'])) {
         resourceUrl += '&scale_override=' + params.scaleFactor;

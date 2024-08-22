@@ -696,9 +696,7 @@ function composeResourceUrlByPlatform(platform, params) {
   var resourceUrl = params.regionOptions.getResourceUrl.replace(":regionId", params.regionId).replace(":id", params.mediaId) + '?preview=1&layoutPreview=1';
   if (platform === 'chromeOS') {
     var resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
-    if (params.isGlobalContent) {
-      resourceUrl = resourceEndpoint + params.mediaId + '?saveAs=' + params.uri;
-    } else {
+    if (!params.isGlobalContent) {
       resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
     }
   } else if (!Boolean(params['mediaType'])) {
@@ -1266,7 +1264,11 @@ function Media(region, mediaId, xml, options, xlr) {
     self.url = tmpUrl;
     // Loop if media has loop, or if region has loop and a single media
     self.loop = self.options['loop'] == '1' || self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1;
-    $mediaIframe.src = "".concat(tmpUrl, "&width=").concat(self.divWidth, "&height=").concat(self.divHeight);
+    if (self.mediaType === 'global') {
+      $mediaIframe.src = tmpUrl;
+    } else {
+      $mediaIframe.src = "".concat(tmpUrl, "&width=").concat(self.divWidth, "&height=").concat(self.divHeight);
+    }
     if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
       self.checkIframeStatus = true;
       self.iframe = $mediaIframe;
@@ -2017,8 +2019,8 @@ function Layout(data, options, xlr, layout) {
     layout.zIndex = Number((_layout$layoutNode3 = layout.layoutNode) === null || _layout$layoutNode3 === void 0 || (_layout$layoutNode3 = _layout$layoutNode3.firstElementChild) === null || _layout$layoutNode3 === void 0 ? void 0 : _layout$layoutNode3.getAttribute('zindex')) || 0;
     /* Calculate Scale Factor */
     layout.scaleFactor = Math.min(layout.sw / layout.xw, layout.sh / layout.xh);
-    layout.sWidth = Math.round(layout.xw * layout.scaleFactor);
-    layout.sHeight = Math.round(layout.xh * layout.scaleFactor);
+    layout.sWidth = layout.xw * layout.scaleFactor;
+    layout.sHeight = layout.xh * layout.scaleFactor;
     layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
     layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
     /* Scale the Layout Container */

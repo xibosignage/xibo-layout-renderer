@@ -295,8 +295,8 @@ export default function Layout(
 
         /* Calculate Scale Factor */
         layout.scaleFactor = Math.min((layout.sw / layout.xw), (layout.sh / layout.xh));
-        layout.sWidth = Math.round(layout.xw * layout.scaleFactor);
-        layout.sHeight = Math.round(layout.xh * layout.scaleFactor);
+        layout.sWidth = layout.xw * layout.scaleFactor;
+        layout.sHeight = layout.xh * layout.scaleFactor;
         layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
         layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
 
