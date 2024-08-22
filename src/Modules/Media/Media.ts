@@ -65,7 +65,7 @@ export default function Media(
         console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
 
-    mediaObject.on('start', function(media: IMedia) {
+    emitter.on('start', function(media: IMedia) {
         if (media.mediaType === 'video') {
             VideoMedia(media).init();
 
@@ -82,7 +82,7 @@ export default function Media(
         }
     });
 
-    mediaObject.on('end', function(media) {
+    emitter.on('end', function(media) {
         if (mediaTimer) {
             clearInterval(mediaTimer);
             mediaTimeCount = 0;

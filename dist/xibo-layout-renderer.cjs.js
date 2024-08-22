@@ -543,7 +543,8 @@ var initialLayout = {
   regionEnded: function regionEnded() {},
   stopAllMedia: function stopAllMedia() {
     return Promise.resolve();
-  }
+  },
+  emitter: {}
 };
 
 function nextId(options) {
@@ -1168,7 +1169,7 @@ function Media(region, mediaId, xml, options, xlr) {
     }, 1000);
     console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
   };
-  mediaObject.on('start', function (media) {
+  emitter.on('start', function (media) {
     if (media.mediaType === 'video') {
       VideoMedia(media).init();
       if (media.duration > 0) {
@@ -1183,7 +1184,7 @@ function Media(region, mediaId, xml, options, xlr) {
       startMediaTimer(media);
     }
   });
-  mediaObject.on('end', function (media) {
+  emitter.on('end', function (media) {
     if (mediaTimer) {
       clearInterval(mediaTimer);
       mediaTimeCount = 0;
@@ -1977,6 +1978,7 @@ function Layout(data, options, xlr, layout) {
   layoutObject.on = function (event, callback) {
     return emitter.on(event, callback);
   };
+  layoutObject.emitter = emitter;
   layoutObject.run = function () {
     var layout = layoutObject;
     var $layoutContainer = document.getElementById("".concat(layout.containerName));
@@ -2322,7 +2324,6 @@ function XiboLayoutRenderer(inputLayouts, options) {
       xlr: xlr
     });
     if (xlr.currentLayout !== undefined) {
-      var _xlr$currentLayout$em;
       var $splashScreen = document.querySelector('.preview-splash');
       if ($splashScreen && $splashScreen.style.display === 'block') {
         $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
@@ -2330,7 +2331,7 @@ function XiboLayoutRenderer(inputLayouts, options) {
       console.log({
         $splashScreen: $splashScreen
       });
-      (_xlr$currentLayout$em = xlr.currentLayout.emitter) === null || _xlr$currentLayout$em === void 0 || _xlr$currentLayout$em.emit('start', xlr.currentLayout);
+      xlr.currentLayout.emitter.emit('start', xlr.currentLayout);
       xlr.currentLayout.run();
     }
   };

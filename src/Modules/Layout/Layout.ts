@@ -240,6 +240,8 @@ export default function Layout(
     layoutObject.on = function<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
         return emitter.on(event, callback);
     };
+    layoutObject.emitter = emitter;
+
     layoutObject.run = function() {
         const layout = layoutObject;
         const $layoutContainer = document.getElementById(`${layout.containerName}`);

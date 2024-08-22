@@ -174,7 +174,7 @@ interface ILayout {
     prepareLayout(): void;
     parseXlf(): void;
     run(): void;
-    emitter?: Emitter<DefaultEvents>;
+    emitter: Emitter<ILayoutEvents>;
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;

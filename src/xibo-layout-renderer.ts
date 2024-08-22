@@ -87,7 +87,7 @@ export default function XiboLayoutRenderer(
 
             console.log({$splashScreen});
 
-            xlr.currentLayout.emitter?.emit('start', xlr.currentLayout);
+            xlr.currentLayout.emitter.emit('start', xlr.currentLayout);
             xlr.currentLayout.run();
         }
     };

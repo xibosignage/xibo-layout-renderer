@@ -1,4 +1,4 @@
-import { DefaultEvents, Emitter, Unsubscribe } from 'nanoevents';
+import { Emitter, Unsubscribe } from 'nanoevents';
 import { IRegion } from '../Region';
 import { ILayoutEvents } from '../../Modules/Layout';
 import { IXlr } from '../XLR';
@@ -56,7 +56,7 @@ export interface ILayout {
     prepareLayout(): void;
     parseXlf(): void;
     run(): void;
-    emitter?: Emitter<DefaultEvents>;
+    emitter: Emitter<ILayoutEvents>;
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;
