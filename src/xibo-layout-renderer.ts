@@ -135,7 +135,6 @@ export default function XiboLayoutRenderer(
         };
 
         const layouts: ILayout[] = await Promise.all<Array<Promise<ILayout>>>(layoutsXlf());
-        console.log({xlrLayouts, layouts});
 
         return new Promise<IXlr>((resolve) => {
             this.layouts = layouts;

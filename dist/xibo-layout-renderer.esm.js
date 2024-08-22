@@ -2367,10 +2367,6 @@ function XiboLayoutRenderer(inputLayouts, options) {
           return Promise.all(layoutsXlf());
         case 5:
           layouts = _context.sent;
-          console.log({
-            xlrLayouts: xlrLayouts,
-            layouts: layouts
-          });
           return _context.abrupt("return", new Promise(function (resolve) {
             _this2.layouts = layouts;
             _this2.currentLayout = _this2.layouts[0];
@@ -2384,7 +2380,7 @@ function XiboLayoutRenderer(inputLayouts, options) {
             _this2.layouts[_this2.currentLayoutIndex] = _this2.currentLayout;
             resolve(_this2);
           }));
-        case 8:
+        case 7:
         case "end":
           return _context.stop();
       }
