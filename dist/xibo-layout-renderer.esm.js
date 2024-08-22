@@ -695,18 +695,13 @@ function composeResourceUrlByPlatform(platform, params) {
     if (!params.isGlobalContent) {
       resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
     } else {
-      resourceUrl = composeResourceUrl(params);
+      // resourceUrl = composeResourceUrl(params);
+      resourceUrl = params.cmsUrl + resourceUrl;
     }
   } else if (!Boolean(params['mediaType'])) {
     resourceUrl += '&scale_override=' + params.scaleFactor;
   }
   return resourceUrl;
-}
-function composeResourceUrl(params) {
-  var schemaVersion = localStorage.getItem('schemaVersion');
-  var hardwareKey = localStorage.getItem('hardwareKey');
-  var serverKey = localStorage.getItem('cmsKey');
-  return params.cmsUrl + '/chromeOS/getResource' + '?v=' + schemaVersion + '&serverKey=' + serverKey + '&hardwareKey=' + hardwareKey + '&layoutId=' + params.layoutId + '&regionId=' + params.regionId + '&mediaId=' + params.mediaId;
 }
 function composeBgUrlByPlatform(platform, params) {
   var bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", params.layout.id) + '?preview=1&width=' + params.layout.sWidth + '&height=' + params.layout.sHeight + '&dynamic&proportional=0';

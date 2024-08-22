@@ -118,7 +118,8 @@ export function composeResourceUrlByPlatform(platform: OptionsType['platform'], 
         if (!params.isGlobalContent) {
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
         } else {
-            resourceUrl = composeResourceUrl(params);
+            // resourceUrl = composeResourceUrl(params);
+            resourceUrl = params.cmsUrl + resourceUrl;
         }
     } else if (!Boolean(params['mediaType'])) {
         resourceUrl += '&scale_override=' + params.scaleFactor;
