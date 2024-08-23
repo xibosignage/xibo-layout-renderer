@@ -135,10 +135,12 @@ export default function XiboLayoutRenderer(
         };
 
         const layouts: ILayout[] = await Promise.all<Array<Promise<ILayout>>>(layoutsXlf());
+        console.log('updateLoop:layouts', layouts);
+        console.log('updateLoop:xlrLayouts', xlrLayouts);
 
         return new Promise<IXlr>((resolve) => {
             this.layouts = layouts;
-            this.currentLayout = this.layouts[0];
+            this.currentLayout = this.layouts[xlrLayouts.currentLayoutIndex];
 
             if (Boolean(this.layouts[1])) {
                 this.nextLayout = this.layouts[1];
