@@ -161,6 +161,8 @@ export default function XiboLayoutRenderer(
         // Get layouts
         const xlrLayouts = getLayout({xlr: self});
 
+        console.log('prepareLayouts::xlrLayouts', xlrLayouts);
+
         self.currentLayoutId = xlrLayouts.current?.layoutId as ILayout['layoutId'];
 
         const layoutsXlf = () => {
@@ -180,10 +182,13 @@ export default function XiboLayoutRenderer(
             }, []);
         };
         const layouts = await Promise.all<Array<Promise<ILayout>>>(layoutsXlf());
+        console.log('prepareLayouts::layouts', layouts);
+        console.log('prepareLayouts::xlr>layouts', self.layouts);
 
         return new Promise<IXlr>((resolve) => {
             self.layouts = layouts as ILayout[];
-            self.currentLayout = self.layouts[0];
+            self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
+            self.currentLayout = self.layouts[self.currentLayoutIndex];
 
             if (Boolean(self.layouts[1])) {
                 self.nextLayout = self.layouts[1];
@@ -192,7 +197,6 @@ export default function XiboLayoutRenderer(
                 self.nextLayout = self.layouts[0];
             }
 
-            self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             self.layouts[self.currentLayoutIndex] = self.currentLayout;
 
             resolve(self);

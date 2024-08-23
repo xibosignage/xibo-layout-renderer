@@ -2411,6 +2411,7 @@ function XiboLayoutRenderer(inputLayouts, options) {
           xlrLayouts = getLayout({
             xlr: self
           });
+          console.log('prepareLayouts::xlrLayouts', xlrLayouts);
           self.currentLayoutId = (_xlrLayouts$current3 = xlrLayouts.current) === null || _xlrLayouts$current3 === void 0 ? void 0 : _xlrLayouts$current3.layoutId;
           layoutsXlf = function layoutsXlf() {
             var _xlrLayouts$current4, _xlrLayouts$next2;
@@ -2423,24 +2424,26 @@ function XiboLayoutRenderer(inputLayouts, options) {
               return [].concat(_toConsumableArray(coll), [self.prepareLayoutXlf(item)]);
             }, []);
           };
-          _context2.next = 6;
+          _context2.next = 7;
           return Promise.all(layoutsXlf());
-        case 6:
+        case 7:
           layouts = _context2.sent;
+          console.log('prepareLayouts::layouts', layouts);
+          console.log('prepareLayouts::xlr>layouts', self.layouts);
           return _context2.abrupt("return", new Promise(function (resolve) {
             self.layouts = layouts;
-            self.currentLayout = self.layouts[0];
+            self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
+            self.currentLayout = self.layouts[self.currentLayoutIndex];
             if (Boolean(self.layouts[1])) {
               self.nextLayout = self.layouts[1];
             } else {
               // Use current layout as next layout if only one layout is available
               self.nextLayout = self.layouts[0];
             }
-            self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             self.layouts[self.currentLayoutIndex] = self.currentLayout;
             resolve(self);
           }));
-        case 8:
+        case 11:
         case "end":
           return _context2.stop();
       }
