@@ -140,7 +140,8 @@ export default function XiboLayoutRenderer(
 
         return new Promise<IXlr>((resolve) => {
             this.layouts = layouts;
-            this.currentLayout = this.layouts[xlrLayouts.currentLayoutIndex];
+            this.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
+            this.currentLayout = this.layouts[this.currentLayoutIndex];
 
             if (Boolean(this.layouts[1])) {
                 this.nextLayout = this.layouts[1];
@@ -149,7 +150,6 @@ export default function XiboLayoutRenderer(
                 this.nextLayout = this.layouts[0];
             }
 
-            this.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             this.layouts[this.currentLayoutIndex] = this.currentLayout;
 
             resolve(this);

@@ -1914,6 +1914,10 @@ function getLayout(params) {
       _currentLayout = nextLayout;
       currentLayoutIndex = getIndexByLayoutId(inputLayouts, (_currentLayout2 = _currentLayout) === null || _currentLayout2 === void 0 ? void 0 : _currentLayout2.layoutId).index;
       nextLayoutIndex = currentLayoutIndex + 1;
+      console.log({
+        currentLayoutIndex: currentLayoutIndex,
+        nextLayoutIndex: nextLayoutIndex
+      });
       if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
         if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
           _nextLayout = params.xlr.layouts[nextLayoutIndex];
@@ -1925,6 +1929,9 @@ function getLayout(params) {
       if (_nextLayout === undefined) {
         _nextLayout = params.xlr.layouts[0];
       }
+      console.log({
+        _nextLayout: _nextLayout
+      });
     }
   }
   return {
@@ -2371,14 +2378,14 @@ function XiboLayoutRenderer(inputLayouts, options) {
           console.log('updateLoop:xlrLayouts', xlrLayouts);
           return _context.abrupt("return", new Promise(function (resolve) {
             _this2.layouts = layouts;
-            _this2.currentLayout = _this2.layouts[xlrLayouts.currentLayoutIndex];
+            _this2.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
+            _this2.currentLayout = _this2.layouts[_this2.currentLayoutIndex];
             if (Boolean(_this2.layouts[1])) {
               _this2.nextLayout = _this2.layouts[1];
             } else {
               // Use current layout as next layout if only one layout is available
               _this2.nextLayout = _this2.layouts[0];
             }
-            _this2.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             _this2.layouts[_this2.currentLayoutIndex] = _this2.currentLayout;
             resolve(_this2);
           }));

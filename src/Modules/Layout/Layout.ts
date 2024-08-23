@@ -165,6 +165,11 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
             currentLayoutIndex = getIndexByLayoutId(inputLayouts, _currentLayout?.layoutId).index as number;
             nextLayoutIndex = currentLayoutIndex + 1;
 
+            console.log({
+                currentLayoutIndex,
+                nextLayoutIndex,
+            })
+
             if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
                 if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
                     _nextLayout = params.xlr.layouts[nextLayoutIndex];
@@ -177,6 +182,8 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
             if (_nextLayout === undefined) {
                 _nextLayout = params.xlr.layouts[0];
             }
+
+            console.log({_nextLayout});
         }
     }
 
