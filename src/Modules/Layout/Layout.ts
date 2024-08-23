@@ -137,6 +137,13 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
     let currentLayoutIndex = currLayoutIndx;
     let nextLayoutIndex = currentLayoutIndex + 1;
 
+    console.log('getLayout:_nextLayout', _nextLayout);
+    console.log('getLayout:nextLayoutIndex', nextLayoutIndex);
+    console.log({
+        currentLayout,
+        nextLayout,
+    })
+
     if (currentLayout === undefined && nextLayout === undefined) {
         let activeLayout;
         // Preview just got started

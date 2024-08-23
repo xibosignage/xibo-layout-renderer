@@ -1894,6 +1894,12 @@ function getLayout(params) {
   var hasLayout = inputLayouts.length > 0;
   var currentLayoutIndex = currLayoutIndx;
   var nextLayoutIndex = currentLayoutIndex + 1;
+  console.log('getLayout:_nextLayout', _nextLayout);
+  console.log('getLayout:nextLayoutIndex', nextLayoutIndex);
+  console.log({
+    currentLayout: currentLayout,
+    nextLayout: nextLayout
+  });
   if (currentLayout === undefined && nextLayout === undefined) {
     var activeLayout;
     // Preview just got started
