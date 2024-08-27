@@ -148,8 +148,8 @@ export default function XiboLayoutRenderer(
             this.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             this.currentLayout = this.layouts[this.currentLayoutIndex];
 
-            if (Boolean(this.layouts[this.currentLayoutIndex + 1])) {
-                this.nextLayout = this.layouts[this.currentLayoutIndex + 1];
+            if (Boolean(layouts[1])) {
+                this.nextLayout = layouts[1];
             } else {
                 // Use current layout as next layout if only one layout is available
                 this.nextLayout = this.layouts[0];
@@ -199,8 +199,8 @@ export default function XiboLayoutRenderer(
             self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             self.currentLayout = self.layouts[self.currentLayoutIndex];
 
-            if (Boolean(self.layouts[self.currentLayoutIndex + 1])) {
-                self.nextLayout = self.layouts[self.currentLayoutIndex + 1];
+            if (Boolean(layouts[1])) {
+                self.nextLayout = layouts[1];
             } else {
                 // Use current layout as next layout if only one layout is available
                 self.nextLayout = self.layouts[0];

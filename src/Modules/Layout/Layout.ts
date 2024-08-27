@@ -240,6 +240,8 @@ export default function Layout(
         console.debug('Resetting layout . . .', layout.layoutId);
         await layout.resetLayout();
         layout.done = true;
+        layout.allEnded = false;
+        layout.allExpired = false;
         console.debug('Done resetting existing layout . . .', layout.layoutId);
 
         if (xlr.config.platform !== 'CMS') {
@@ -468,14 +470,9 @@ export default function Layout(
     };
 
     layoutObject.resetLayout = async function() {
-        this.allEnded = false;
-        this.allExpired = false;
-
         await Promise.all(this.regions.map((layoutRegion) => {
             layoutRegion.ended = false;
             this.regions[layoutRegion.index] = layoutRegion;
-
-            return true;
         }));
 
         console.debug('Reset layout', this.layoutId);

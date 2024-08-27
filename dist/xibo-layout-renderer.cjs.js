@@ -1994,6 +1994,8 @@ function Layout(data, options, xlr, layout) {
             return layout.resetLayout();
           case 7:
             layout.done = true;
+            layout.allEnded = false;
+            layout.allExpired = false;
             console.debug('Done resetting existing layout . . .', layout.layoutId);
             if (xlr.config.platform !== 'CMS') {
               console.debug('Transitioning layout . . .', {
@@ -2005,7 +2007,7 @@ function Layout(data, options, xlr, layout) {
                 xlr.playSchedules(parent);
               });
             }
-          case 10:
+          case 12:
           case "end":
             return _context.stop();
         }
@@ -2231,17 +2233,14 @@ function Layout(data, options, xlr, layout) {
     return _regeneratorRuntime().wrap(function _callee3$(_context3) {
       while (1) switch (_context3.prev = _context3.next) {
         case 0:
-          this.allEnded = false;
-          this.allExpired = false;
-          _context3.next = 4;
+          _context3.next = 2;
           return Promise.all(this.regions.map(function (layoutRegion) {
             layoutRegion.ended = false;
             _this.regions[layoutRegion.index] = layoutRegion;
-            return true;
           }));
-        case 4:
+        case 2:
           console.debug('Reset layout', this.layoutId);
-        case 5:
+        case 3:
         case "end":
           return _context3.stop();
       }
@@ -2447,8 +2446,8 @@ function XiboLayoutRenderer(inputLayouts, options) {
             });
             _this2.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             _this2.currentLayout = _this2.layouts[_this2.currentLayoutIndex];
-            if (Boolean(_this2.layouts[_this2.currentLayoutIndex + 1])) {
-              _this2.nextLayout = _this2.layouts[_this2.currentLayoutIndex + 1];
+            if (Boolean(layouts[1])) {
+              _this2.nextLayout = layouts[1];
             } else {
               // Use current layout as next layout if only one layout is available
               _this2.nextLayout = _this2.layouts[0];
@@ -2499,8 +2498,8 @@ function XiboLayoutRenderer(inputLayouts, options) {
             });
             self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             self.currentLayout = self.layouts[self.currentLayoutIndex];
-            if (Boolean(self.layouts[self.currentLayoutIndex + 1])) {
-              self.nextLayout = self.layouts[self.currentLayoutIndex + 1];
+            if (Boolean(layouts[1])) {
+              self.nextLayout = layouts[1];
             } else {
               // Use current layout as next layout if only one layout is available
               self.nextLayout = self.layouts[0];
