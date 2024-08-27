@@ -91,6 +91,12 @@ export default function Media(
         media.region.playNextMedia();
     });
 
+    mediaObject.on = function<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]) {
+        return emitter.on(event, callback);
+    };
+
+    mediaObject.emitter = emitter;
+
     mediaObject.init = function() {
         const self = mediaObject;
         self.id = props.mediaId;
@@ -301,7 +307,7 @@ export default function Media(
     };
 
     mediaObject.run = function() {
-        const self = mediaObject;
+        const self = this;
         let transInDuration = 1;
         let transInDirection: compassPoints = 'E';
 
@@ -380,7 +386,7 @@ export default function Media(
                     });
                 }
 
-                self.emitter?.emit('start', self);
+                self.emitter.emit('start', self);
             }
         };
         const getNewMedia = (): HTMLElement | null => {
@@ -411,13 +417,6 @@ export default function Media(
             $media.remove();
         }
     };
-
-    
-    mediaObject.on = function<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]) {
-        return emitter.on(event, callback);
-    };
-
-    mediaObject.emitter = emitter;
 
     mediaObject.init();
 

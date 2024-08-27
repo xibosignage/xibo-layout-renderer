@@ -1188,6 +1188,10 @@ function Media(region, mediaId, xml, options, xlr) {
     }
     media.region.playNextMedia();
   });
+  mediaObject.on = function (event, callback) {
+    return emitter.on(event, callback);
+  };
+  mediaObject.emitter = emitter;
   mediaObject.init = function () {
     var _self$xml, _self$xml2, _self$xml3, _self$xml4, _self$xml5;
     var self = mediaObject;
@@ -1371,7 +1375,7 @@ function Media(region, mediaId, xml, options, xlr) {
     // Check/set iframe based widgets play status
   };
   mediaObject.run = function () {
-    var self = mediaObject;
+    var self = this;
     var transInDuration = 1;
     var transInDirection = 'E';
     if (Boolean(self.options['transinduration'])) {
@@ -1401,7 +1405,7 @@ function Media(region, mediaId, xml, options, xlr) {
     }
     var showCurrentMedia = /*#__PURE__*/function () {
       var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-        var $mediaId, $media, isCMS, _self$emitter;
+        var $mediaId, $media, isCMS;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
@@ -1502,7 +1506,7 @@ function Media(region, mediaId, xml, options, xlr) {
                 });
               }
             case 45:
-              (_self$emitter = self.emitter) === null || _self$emitter === void 0 || _self$emitter.emit('start', self);
+              self.emitter.emit('start', self);
             case 46:
             case "end":
               return _context2.stop();
@@ -1544,10 +1548,6 @@ function Media(region, mediaId, xml, options, xlr) {
       }
     }, _callee3);
   }));
-  mediaObject.on = function (event, callback) {
-    return emitter.on(event, callback);
-  };
-  mediaObject.emitter = emitter;
   mediaObject.init();
   return mediaObject;
 }
@@ -1562,21 +1562,26 @@ function Region(layout, xml, regionId, options, xlr) {
   var emitter = createNanoEvents();
   var regionObject = _objectSpread2(_objectSpread2({}, initialRegion), props);
   regionObject.prepareRegion = function () {
-    var _self$xml, _self$xml2, _self$xml3, _self$xml4, _self$xml5, _self$xml6;
-    var self = regionObject;
-    var layout = self.layout,
-      options = self.options;
-    self.id = props.regionId;
-    self.options = _objectSpread2(_objectSpread2({}, platform), props.options);
-    self.containerName = "R-".concat(self.id, "-").concat(nextId(self.options));
-    self.xml = props.xml;
-    self.mediaObjects = [];
-    self.sWidth = self.xml && Number((_self$xml = self.xml) === null || _self$xml === void 0 ? void 0 : _self$xml.getAttribute('width')) * layout.scaleFactor;
-    self.sHeight = self.xml && Number((_self$xml2 = self.xml) === null || _self$xml2 === void 0 ? void 0 : _self$xml2.getAttribute('height')) * layout.scaleFactor;
-    self.offsetX = self.xml && Number((_self$xml3 = self.xml) === null || _self$xml3 === void 0 ? void 0 : _self$xml3.getAttribute('left')) * layout.scaleFactor;
-    self.offsetY = self.xml && Number((_self$xml4 = self.xml) === null || _self$xml4 === void 0 ? void 0 : _self$xml4.getAttribute('top')) * layout.scaleFactor;
-    self.zIndex = self.xml && Number((_self$xml5 = self.xml) === null || _self$xml5 === void 0 ? void 0 : _self$xml5.getAttribute('zindex'));
-    var regionOptions = (_self$xml6 = self.xml) === null || _self$xml6 === void 0 ? void 0 : _self$xml6.getElementsByTagName('options');
+    var _this$xml,
+      _this$xml2,
+      _this$xml3,
+      _this$xml4,
+      _this$xml5,
+      _this$xml6,
+      _this = this;
+    var layout = this.layout,
+      options = this.options;
+    this.id = props.regionId;
+    this.options = _objectSpread2(_objectSpread2({}, platform), props.options);
+    this.containerName = "R-".concat(this.id, "-").concat(nextId(this.options));
+    this.xml = props.xml;
+    this.mediaObjects = [];
+    this.sWidth = this.xml && Number((_this$xml = this.xml) === null || _this$xml === void 0 ? void 0 : _this$xml.getAttribute('width')) * layout.scaleFactor;
+    this.sHeight = this.xml && Number((_this$xml2 = this.xml) === null || _this$xml2 === void 0 ? void 0 : _this$xml2.getAttribute('height')) * layout.scaleFactor;
+    this.offsetX = this.xml && Number((_this$xml3 = this.xml) === null || _this$xml3 === void 0 ? void 0 : _this$xml3.getAttribute('left')) * layout.scaleFactor;
+    this.offsetY = this.xml && Number((_this$xml4 = this.xml) === null || _this$xml4 === void 0 ? void 0 : _this$xml4.getAttribute('top')) * layout.scaleFactor;
+    this.zIndex = this.xml && Number((_this$xml5 = this.xml) === null || _this$xml5 === void 0 ? void 0 : _this$xml5.getAttribute('zindex'));
+    var regionOptions = (_this$xml6 = this.xml) === null || _this$xml6 === void 0 ? void 0 : _this$xml6.getElementsByTagName('options');
     if (regionOptions) {
       for (var _i = 0, _Array$from = Array.from(regionOptions); _i < _Array$from.length; _i++) {
         var _options = _Array$from[_i];
@@ -1584,30 +1589,30 @@ function Region(layout, xml, regionId, options, xlr) {
         var _regionOptions = _options.children;
         for (var _i2 = 0, _Array$from2 = Array.from(_regionOptions); _i2 < _Array$from2.length; _i2++) {
           var regionOption = _Array$from2[_i2];
-          self.options[regionOption.nodeName.toLowerCase()] = regionOption.textContent;
+          this.options[regionOption.nodeName.toLowerCase()] = regionOption.textContent;
         }
       }
     }
-    var $region = document.getElementById(self.containerName);
-    var $layout = document.getElementById("".concat(self.layout.containerName));
+    var $region = document.getElementById(this.containerName);
+    var $layout = document.getElementById("".concat(this.layout.containerName));
     if ($region === null) {
       $region = document.createElement('div');
-      $region.id = self.containerName;
+      $region.id = this.containerName;
     }
     $layout && $layout.appendChild($region);
     /* Scale the Layout Container */
     /* Add region styles */
-    $region.style.cssText = "\n            width: ".concat(self.sWidth, "px;\n            height: ").concat(self.sHeight, "px;\n            position: absolute;\n            left: ").concat(self.offsetX, "px;\n            top: ").concat(self.offsetY, "px;\n            z-index: ").concat(Math.round(self.zIndex), ";\n        ");
+    $region.style.cssText = "\n            width: ".concat(this.sWidth, "px;\n            height: ").concat(this.sHeight, "px;\n            position: absolute;\n            left: ").concat(this.offsetX, "px;\n            top: ").concat(this.offsetY, "px;\n            z-index: ").concat(Math.round(this.zIndex), ";\n        ");
     $region.className = 'region--item';
     /* Parse region media objects */
-    var regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));
-    self.totalMediaObjects = regionMediaItems.length;
+    var regionMediaItems = Array.from(this.xml.getElementsByTagName('media'));
+    this.totalMediaObjects = regionMediaItems.length;
     Array.from(regionMediaItems).forEach(function (mediaXml, indx) {
-      var mediaObj = Media(self, (mediaXml === null || mediaXml === void 0 ? void 0 : mediaXml.getAttribute('id')) || '', mediaXml, options, xlr);
+      var mediaObj = Media(_this, (mediaXml === null || mediaXml === void 0 ? void 0 : mediaXml.getAttribute('id')) || '', mediaXml, options, xlr);
       mediaObj.index = indx;
-      self.mediaObjects.push(mediaObj);
+      _this.mediaObjects.push(mediaObj);
     });
-    self.prepareMediaObjects();
+    this.prepareMediaObjects();
   };
   regionObject.finished = function () {
     var self = regionObject;
@@ -1618,32 +1623,31 @@ function Region(layout, xml, regionId, options, xlr) {
     self.layout.regionExpired();
   };
   regionObject.prepareMediaObjects = function () {
-    var self = regionObject;
     var nextMediaIndex;
-    if (self.mediaObjects.length > 0) {
-      if (self.curMedia) {
-        self.oldMedia = self.curMedia;
+    if (this.mediaObjects.length > 0) {
+      if (this.curMedia) {
+        this.oldMedia = this.curMedia;
       } else {
-        self.oldMedia = undefined;
+        this.oldMedia = undefined;
       }
-      if (self.currentMediaIndex >= self.mediaObjects.length) {
-        self.currentMediaIndex = 0;
+      if (this.currentMediaIndex >= this.mediaObjects.length) {
+        this.currentMediaIndex = 0;
       }
-      self.curMedia = self.mediaObjects[self.currentMediaIndex];
-      nextMediaIndex = self.currentMediaIndex + 1;
-      if (nextMediaIndex >= self.mediaObjects.length || !Boolean(self.mediaObjects[nextMediaIndex]) && self.mediaObjects.length === 1) {
+      this.curMedia = this.mediaObjects[this.currentMediaIndex];
+      nextMediaIndex = this.currentMediaIndex + 1;
+      if (nextMediaIndex >= this.mediaObjects.length || !Boolean(this.mediaObjects[nextMediaIndex]) && this.mediaObjects.length === 1) {
         nextMediaIndex = 0;
       }
-      if (Boolean(self.mediaObjects[nextMediaIndex])) {
-        self.nxtMedia = self.mediaObjects[nextMediaIndex];
+      if (Boolean(this.mediaObjects[nextMediaIndex])) {
+        this.nxtMedia = this.mediaObjects[nextMediaIndex];
       }
-      var $region = document.getElementById("".concat(self.containerName));
+      var $region = document.getElementById("".concat(this.containerName));
       // Append available media to region DOM
-      if (self.curMedia) {
-        $region && $region.insertBefore(self.curMedia.html, $region.lastElementChild);
+      if (this.curMedia) {
+        $region && $region.insertBefore(this.curMedia.html, $region.lastElementChild);
       }
-      if (self.nxtMedia) {
-        $region && $region.insertBefore(self.nxtMedia.html, $region.lastElementChild);
+      if (this.nxtMedia) {
+        $region && $region.insertBefore(this.nxtMedia.html, $region.lastElementChild);
       }
     }
   };
@@ -1978,12 +1982,12 @@ function Layout(data, options, xlr, layout) {
     }
   });
   var layoutObject = _objectSpread2(_objectSpread2({}, props.layout), {}, {
-    options: props.options,
-    emitter: emitter
+    options: props.options
   });
   layoutObject.on = function (event, callback) {
     return emitter.on(event, callback);
   };
+  layoutObject.emitter = emitter;
   layoutObject.run = function () {
     var layout = layoutObject;
     var $layoutContainer = document.getElementById("".concat(layout.containerName));
@@ -2006,9 +2010,8 @@ function Layout(data, options, xlr, layout) {
   };
   layoutObject.parseXlf = function () {
     var _layout$layoutNode, _layout$layoutNode2, _layout$layoutNode3, _layout$layoutNode4, _layout$layoutNode5, _layout$layoutNode6;
-    var layout = layoutObject;
-    var data = props.data,
-      options = props.options;
+    var layout = this;
+    var options = this.options;
     layout.containerName = "L" + layout.id + "-" + nextId(options);
     layout.regions = [];
     /* Create a hidden div to show the layout in */
@@ -2023,7 +2026,7 @@ function Layout(data, options, xlr, layout) {
       $layout.style.display = 'none';
       $layout.style.outline = 'red solid thin';
     }
-    layout.layoutNode = data;
+    layout.layoutNode = props.data;
     /* Calculate the screen size */
     layout.sw = ($screen === null || $screen === void 0 ? void 0 : $screen.offsetWidth) || 0;
     layout.sh = ($screen === null || $screen === void 0 ? void 0 : $screen.offsetHeight) || 0;

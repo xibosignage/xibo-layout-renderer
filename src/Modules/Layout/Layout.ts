@@ -248,12 +248,12 @@ export default function Layout(
     const layoutObject: ILayout = {
         ...props.layout,
         options: props.options,
-        emitter,
     };
 
     layoutObject.on = function<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
         return emitter.on(event, callback);
     };
+    layoutObject.emitter = emitter;
 
     layoutObject.run = function() {
         const layout = layoutObject;
@@ -281,8 +281,8 @@ export default function Layout(
     };
 
     layoutObject.parseXlf = function() {
-        const layout = layoutObject;
-        const {data, options} = props;
+        const layout = this;
+        const {options} = this;
         layout.containerName = "L" + layout.id + "-" + nextId(options);
         layout.regions = [];
 
@@ -302,7 +302,7 @@ export default function Layout(
             $layout.style.outline = 'red solid thin';
         }
 
-        layout.layoutNode = data;
+        layout.layoutNode = props.data;
 
         /* Calculate the screen size */
         layout.sw = $screen?.offsetWidth || 0;
