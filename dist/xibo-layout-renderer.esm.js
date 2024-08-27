@@ -1864,10 +1864,10 @@ function getXlf(_x) {
   return _getXlf.apply(this, arguments);
 }
 function _getXlf() {
-  _getXlf = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(layoutOptions) {
+  _getXlf = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(layoutOptions) {
     var apiHost, xlfUrl, fetchOptions, res;
-    return _regeneratorRuntime().wrap(function _callee5$(_context5) {
-      while (1) switch (_context5.prev = _context5.next) {
+    return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+      while (1) switch (_context4.prev = _context4.next) {
         case 0:
           apiHost = window.location.origin;
           xlfUrl = apiHost + layoutOptions.xlfUrl;
@@ -1884,19 +1884,19 @@ function _getXlf() {
           } else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
             xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
           }
-          _context5.next = 6;
+          _context4.next = 6;
           return fetch(xlfUrl);
         case 6:
-          res = _context5.sent;
-          _context5.next = 9;
+          res = _context4.sent;
+          _context4.next = 9;
           return res.text();
         case 9:
-          return _context5.abrupt("return", _context5.sent);
+          return _context4.abrupt("return", _context4.sent);
         case 10:
         case "end":
-          return _context5.stop();
+          return _context4.stop();
       }
-    }, _callee5);
+    }, _callee4);
   }));
   return _getXlf.apply(this, arguments);
 }
@@ -1911,12 +1911,6 @@ function getLayout(params) {
   var hasLayout = inputLayouts.length > 0;
   var currentLayoutIndex = currLayoutIndx;
   var nextLayoutIndex = currentLayoutIndex + 1;
-  console.log('getLayout:_nextLayout', _nextLayout);
-  console.log('getLayout:nextLayoutIndex', nextLayoutIndex);
-  console.log({
-    currentLayout: currentLayout,
-    nextLayout: nextLayout
-  });
   if (currentLayout === undefined && nextLayout === undefined) {
     var activeLayout;
     // Preview just got started
@@ -1941,10 +1935,6 @@ function getLayout(params) {
       _currentLayout = nextLayout;
       currentLayoutIndex = getIndexByLayoutId(inputLayouts, (_currentLayout2 = _currentLayout) === null || _currentLayout2 === void 0 ? void 0 : _currentLayout2.layoutId).index;
       nextLayoutIndex = currentLayoutIndex + 1;
-      console.log({
-        currentLayoutIndex: currentLayoutIndex,
-        nextLayoutIndex: nextLayoutIndex
-      });
       if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
         if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
           _nextLayout = params.xlr.layouts[nextLayoutIndex];
@@ -1956,9 +1946,6 @@ function getLayout(params) {
       if (_nextLayout === undefined) {
         _nextLayout = params.xlr.layouts[0];
       }
-      console.log({
-        _nextLayout: _nextLayout
-      });
     }
   }
   return {
@@ -1977,7 +1964,6 @@ function Layout(data, options, xlr, layout) {
   var emitter = createNanoEvents();
   emitter.on('start', function (layout) {
     layout.done = false;
-    console.debug('layoutRegions', layout.regions);
     console.debug('Layout start emitted > Layout ID > ', layout.id);
   });
   emitter.on('end', /*#__PURE__*/function () {
@@ -1996,20 +1982,13 @@ function Layout(data, options, xlr, layout) {
             if ($layout !== null) {
               $layout.remove();
             }
-            console.debug('Resetting layout . . .', layout.layoutId);
-            // await layout.resetLayout();
-            console.debug('Done resetting existing layout . . .', layout.layoutId);
             if (xlr.config.platform !== 'CMS') {
-              console.debug('Transitioning layout . . .', {
-                currLayout: xlr.currentLayout,
-                nxtLayout: xlr.nextLayout
-              });
               // Transition next layout to current layout and prepare next layout if exist
               xlr.prepareLayouts().then(function (parent) {
                 xlr.playSchedules(parent);
               });
             }
-          case 8:
+          case 6:
           case "end":
             return _context.stop();
         }
@@ -2049,7 +2028,7 @@ function Layout(data, options, xlr, layout) {
   layoutObject.parseXlf = function () {
     var _layout$layoutNode, _layout$layoutNode2, _layout$layoutNode3, _layout$layoutNode4, _layout$layoutNode5, _layout$layoutNode6;
     var layout = this;
-    var options = this.options;
+    var options = layout.options;
     layout.done = false;
     layout.allEnded = false;
     layout.allExpired = false;
@@ -2242,25 +2221,6 @@ function Layout(data, options, xlr, layout) {
       };
     }());
   };
-  layoutObject.resetLayout = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
-    return _regeneratorRuntime().wrap(function _callee4$(_context4) {
-      while (1) switch (_context4.prev = _context4.next) {
-        case 0:
-          layoutObject.allExpired = false;
-          layoutObject.allEnded = false;
-          _context4.next = 4;
-          return Promise.all(layoutObject.regions.map(function (layoutRegion) {
-            layoutRegion.ended = false;
-            layoutObject.regions[layoutRegion.index] = layoutRegion;
-          }));
-        case 4:
-          console.debug('Reset layout', layoutObject.layoutId);
-        case 5:
-        case "end":
-          return _context4.stop();
-      }
-    }, _callee4);
-  }));
   layoutObject.prepareLayout();
   return layoutObject;
 }

@@ -137,13 +137,6 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
     let currentLayoutIndex = currLayoutIndx;
     let nextLayoutIndex = currentLayoutIndex + 1;
 
-    console.log('getLayout:_nextLayout', _nextLayout);
-    console.log('getLayout:nextLayoutIndex', nextLayoutIndex);
-    console.log({
-        currentLayout,
-        nextLayout,
-    })
-
     if (currentLayout === undefined && nextLayout === undefined) {
         let activeLayout;
         // Preview just got started
@@ -172,11 +165,6 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
             currentLayoutIndex = getIndexByLayoutId(inputLayouts, _currentLayout?.layoutId).index as number;
             nextLayoutIndex = currentLayoutIndex + 1;
 
-            console.log({
-                currentLayoutIndex,
-                nextLayoutIndex,
-            })
-
             if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
                 if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
                     _nextLayout = params.xlr.layouts[nextLayoutIndex];
@@ -189,8 +177,6 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
             if (_nextLayout === undefined) {
                 _nextLayout = params.xlr.layouts[0];
             }
-
-            console.log({_nextLayout});
         }
     }
 
@@ -222,7 +208,6 @@ export default function Layout(
 
     emitter.on('start', (layout: ILayout) => {
         layout.done = false;
-        console.debug('layoutRegions', layout.regions);
         console.debug('Layout start emitted > Layout ID > ', layout.id);
     });
 
@@ -238,16 +223,7 @@ export default function Layout(
             $layout.remove();
         }
 
-        console.debug('Resetting layout . . .', layout.layoutId);
-        // await layout.resetLayout();
-
-        console.debug('Done resetting existing layout . . .', layout.layoutId);
-
         if (xlr.config.platform !== 'CMS') {
-            console.debug('Transitioning layout . . .', {
-                currLayout: xlr.currentLayout,
-                nxtLayout: xlr.nextLayout,
-            });
             // Transition next layout to current layout and prepare next layout if exist
             xlr.prepareLayouts().then((parent) => {
                 xlr.playSchedules(parent);
@@ -292,7 +268,7 @@ export default function Layout(
 
     layoutObject.parseXlf = function() {
         const layout = this;
-        const {options} = this;
+        const {options} = layout;
 
         layout.done = false;
         layout.allEnded = false;
@@ -466,22 +442,10 @@ export default function Layout(
                     var media = region.mediaObjects[j];
                     await media.stop();
                 }
-                // await region.reset();
             }
 
             resolve();
         });
-    };
-
-    layoutObject.resetLayout = async function() {
-        layoutObject.allExpired = false;
-        layoutObject.allEnded = false;
-        await Promise.all(layoutObject.regions.map((layoutRegion) => {
-            layoutRegion.ended = false;
-            layoutObject.regions[layoutRegion.index] = layoutRegion;
-        }));
-
-        console.debug('Reset layout', layoutObject.layoutId);
     };
 
     layoutObject.prepareLayout();
