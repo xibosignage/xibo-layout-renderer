@@ -21,12 +21,11 @@
 import Layout, { getLayout, getXlf, initRenderingDOM } from './Modules/Layout';
 import { platform } from './Modules/Platform';
 import {
-    GetLayoutType,
     ILayout, initialLayout, InputLayoutType, OptionsType,
 } from './Types/Layout';
 import { initialXlr, IXlr } from './Types/XLR';
 import SplashScreen, {PreviewSplashElement} from './Modules/SplashScreen';
-import {getIndexByLayoutId} from "./Modules/Generators/Generators";
+import {getIndexByLayoutId} from './Modules/Generators/Generators';
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -90,7 +89,7 @@ export default function XiboLayoutRenderer(
         }
     };
 
-    xlrObject.updateLayouts = function(inputLayouts: InputLayoutType[]) {
+    xlrObject.updateLoop = function(inputLayouts: InputLayoutType[]) {
         /**
          * @TODO
          * Case 1: If currentLayout in inputLayouts and in the same sequence,
@@ -104,60 +103,15 @@ export default function XiboLayoutRenderer(
          * Case 3: If currentLayout not in inputLayouts,
          * Then, replace everything and start from first layout in sequence.
          */
-        const self = this;
 
-        self.inputLayouts = inputLayouts;
+        this.inputLayouts = inputLayouts;
 
-        self.updateLoop().then((xlr) => {
-            xlr.playSchedules(xlr);
-        });
+        this.updateLayouts();
     };
 
-    xlrObject.updateLoop = async function() {
-        const xlrLayouts = getLayout({xlr: this});
-
-        this.currentLayoutId = xlrLayouts.current?.layoutId as ILayout['layoutId'];
-
-        const layoutsXlf = () => {
-            let xlf = [];
-
-            xlf.push(xlrLayouts.current);
-
-            if (xlrLayouts.current?.layoutId !== xlrLayouts.next?.layoutId) {
-                xlf.push(xlrLayouts.next);
-            }
-
-            return xlf.reduce((coll: Promise<ILayout>[], item) => {
-                return [
-                    ...coll,
-                    this.prepareLayoutXlf(item),
-                ];
-            }, []);
-        };
-
-        const layouts: ILayout[] = await Promise.all<Array<Promise<ILayout>>>(layoutsXlf());
-        console.log('updateLoop:layouts', layouts);
-        console.log('updateLoop:xlrLayouts', xlrLayouts);
-
-        return new Promise<IXlr>((resolve) => {
-            layouts.map((layoutItem) => {
-                if (!Boolean(this.layouts[layoutItem.index])) {
-                    this.layouts[layoutItem.index] = layoutItem;
-                }
-            });
-            this.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
-            this.currentLayout = this.layouts[this.currentLayoutIndex];
-
-            if (Boolean(layouts[1])) {
-                this.nextLayout = layouts[1];
-            } else {
-                // Use current layout as next layout if only one layout is available
-                this.nextLayout = this.layouts[0];
-            }
-
-            this.layouts[this.currentLayoutIndex] = this.currentLayout;
-
-            resolve(this);
+    xlrObject.updateLayouts = function() {
+        this.prepareLayouts().then(() => {
+            this.playSchedules(this);
         });
     };
 
