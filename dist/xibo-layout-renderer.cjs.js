@@ -1989,17 +1989,23 @@ function Layout(data, options, xlr, layout) {
             if ($layout !== null) {
               $layout.remove();
             }
-            _context.next = 6;
+            console.debug('Resetting layout . . .', layout.layoutId);
+            _context.next = 7;
             return layout.resetLayout();
-          case 6:
+          case 7:
             layout.done = true;
+            console.debug('Done resetting existing layout . . .', layout.layoutId);
             if (xlr.config.platform !== 'CMS') {
+              console.debug('Transitioning layout . . .', {
+                currLayout: xlr.currentLayout,
+                nxtLayout: xlr.nextLayout
+              });
               // Transition next layout to current layout and prepare next layout if exist
               xlr.prepareLayouts().then(function (parent) {
                 xlr.playSchedules(parent);
               });
             }
-          case 8:
+          case 10:
           case "end":
             return _context.stop();
         }
@@ -2229,9 +2235,7 @@ function Layout(data, options, xlr, layout) {
           this.allExpired = false;
           _context3.next = 4;
           return Promise.all(this.regions.map(function (layoutRegion) {
-            layoutRegion.complete = false;
             layoutRegion.ended = false;
-            layoutRegion.ending = false;
             _this.regions[layoutRegion.index] = layoutRegion;
             return true;
           }));

@@ -237,10 +237,16 @@ export default function Layout(
             $layout.remove();
         }
 
+        console.debug('Resetting layout . . .', layout.layoutId);
         await layout.resetLayout();
         layout.done = true;
+        console.debug('Done resetting existing layout . . .', layout.layoutId);
 
         if (xlr.config.platform !== 'CMS') {
+            console.debug('Transitioning layout . . .', {
+                currLayout: xlr.currentLayout,
+                nxtLayout: xlr.nextLayout,
+            });
             // Transition next layout to current layout and prepare next layout if exist
             xlr.prepareLayouts().then((parent) => {
                 xlr.playSchedules(parent);
@@ -466,9 +472,7 @@ export default function Layout(
         this.allExpired = false;
 
         await Promise.all(this.regions.map((layoutRegion) => {
-            layoutRegion.complete = false;
             layoutRegion.ended = false;
-            layoutRegion.ending = false;
             this.regions[layoutRegion.index] = layoutRegion;
 
             return true;
