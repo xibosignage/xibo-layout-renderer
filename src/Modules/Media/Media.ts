@@ -89,6 +89,7 @@ export default function Media(
         }
         console.debug('mediaTimer', mediaTimer);
         console.debug('mediaTimeCount', mediaTimeCount);
+        console.debug('mediaRegion', media.region);
 
         media.region.playNextMedia();
     });

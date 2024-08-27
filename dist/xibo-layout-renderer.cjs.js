@@ -1192,6 +1192,7 @@ function Media(region, mediaId, xml, options, xlr) {
     }
     console.debug('mediaTimer', mediaTimer);
     console.debug('mediaTimeCount', mediaTimeCount);
+    console.debug('mediaRegion', media.region);
     media.region.playNextMedia();
   });
   mediaObject.on = function (event, callback) {
@@ -1744,32 +1745,32 @@ function Region(layout, xml, regionId, options, xlr) {
     }
   };
   regionObject.playNextMedia = function () {
-    var _self$curMedia, _self$curMedia2, _self$curMedia3, _self$curMedia4;
-    var self = regionObject;
+    var _this$curMedia, _this$curMedia2, _this$curMedia3, _this$curMedia4;
     /* The current media has finished running */
-    if (self.ended) {
+    if (this.ended) {
       return;
     }
-    if (self.currentMediaIndex === self.mediaObjects.length - 1) {
-      self.finished();
-      if (self.layout.allEnded) {
+    if (this.currentMediaIndex === this.mediaObjects.length - 1) {
+      this.finished();
+      if (this.layout.allEnded) {
         return;
       }
     }
     // When the region has completed and when currentMedia is html
     // Then, preserve the currentMedia state
-    if (self.complete && ((_self$curMedia = self.curMedia) === null || _self$curMedia === void 0 ? void 0 : _self$curMedia.render) === 'html') {
+    if (this.complete && ((_this$curMedia = this.curMedia) === null || _this$curMedia === void 0 ? void 0 : _this$curMedia.render) === 'html') {
       return;
     }
     // When the region has completed and mediaObjects.length = 1
     // and curMedia.loop = false, then put the media on
     // its current state
-    if (self.complete && self.mediaObjects.length === 1 && ((_self$curMedia2 = self.curMedia) === null || _self$curMedia2 === void 0 ? void 0 : _self$curMedia2.render) !== 'html' && ((_self$curMedia3 = self.curMedia) === null || _self$curMedia3 === void 0 ? void 0 : _self$curMedia3.mediaType) === 'image' && !((_self$curMedia4 = self.curMedia) !== null && _self$curMedia4 !== void 0 && _self$curMedia4.loop)) {
+    if (this.complete && this.mediaObjects.length === 1 && ((_this$curMedia2 = this.curMedia) === null || _this$curMedia2 === void 0 ? void 0 : _this$curMedia2.render) !== 'html' && ((_this$curMedia3 = this.curMedia) === null || _this$curMedia3 === void 0 ? void 0 : _this$curMedia3.mediaType) === 'image' && !((_this$curMedia4 = this.curMedia) !== null && _this$curMedia4 !== void 0 && _this$curMedia4.loop)) {
       return;
     }
-    self.currentMediaIndex = self.currentMediaIndex + 1;
-    self.prepareMediaObjects();
-    self.transitionNodes(self.oldMedia, self.curMedia);
+    this.currentMediaIndex = this.currentMediaIndex + 1;
+    this.prepareMediaObjects();
+    console.debug('region::playNextMedia', this);
+    this.transitionNodes(this.oldMedia, this.curMedia);
   };
   regionObject.end = function () {
     var self = regionObject;

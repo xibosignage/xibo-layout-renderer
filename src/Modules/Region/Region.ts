@@ -270,25 +270,23 @@ export default function Region(
     };
 
     regionObject.playNextMedia = function() {
-        const self = regionObject;
-
         /* The current media has finished running */
-        if (self.ended) {
+        if (this.ended) {
             return;
         }
 
-        if (self.currentMediaIndex === self.mediaObjects.length - 1) {
-            self.finished();
+        if (this.currentMediaIndex === this.mediaObjects.length - 1) {
+            this.finished();
 
-            if (self.layout.allEnded) {
+            if (this.layout.allEnded) {
                 return;
             }
         }
 
         // When the region has completed and when currentMedia is html
         // Then, preserve the currentMedia state
-        if (self.complete &&
-            self.curMedia?.render === 'html'
+        if (this.complete &&
+            this.curMedia?.render === 'html'
         ) {
             return;
         }
@@ -296,18 +294,19 @@ export default function Region(
         // When the region has completed and mediaObjects.length = 1
         // and curMedia.loop = false, then put the media on
         // its current state
-        if (self.complete && self.mediaObjects.length === 1 &&
-            self.curMedia?.render !== 'html' &&
-            self.curMedia?.mediaType === 'image' &&
-            !self.curMedia?.loop
+        if (this.complete && this.mediaObjects.length === 1 &&
+            this.curMedia?.render !== 'html' &&
+            this.curMedia?.mediaType === 'image' &&
+            !this.curMedia?.loop
         ) {
             return;
         }
 
-        self.currentMediaIndex = self.currentMediaIndex + 1;
-        self.prepareMediaObjects();
+        this.currentMediaIndex = this.currentMediaIndex + 1;
+        this.prepareMediaObjects();
 
-        self.transitionNodes(self.oldMedia, self.curMedia);
+        console.debug('region::playNextMedia', this);
+        this.transitionNodes(this.oldMedia, this.curMedia);
     };
     
     regionObject.end = function() {
