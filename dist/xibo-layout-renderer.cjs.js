@@ -544,6 +544,9 @@ var initialLayout = {
   stopAllMedia: function stopAllMedia() {
     return Promise.resolve();
   },
+  resetLayout: function resetLayout() {
+    return Promise.resolve();
+  },
   emitter: {},
   index: -1
 };
@@ -1855,10 +1858,10 @@ function getXlf(_x) {
   return _getXlf.apply(this, arguments);
 }
 function _getXlf() {
-  _getXlf = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(layoutOptions) {
+  _getXlf = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(layoutOptions) {
     var apiHost, xlfUrl, fetchOptions, res;
-    return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-      while (1) switch (_context2.prev = _context2.next) {
+    return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+      while (1) switch (_context4.prev = _context4.next) {
         case 0:
           apiHost = window.location.origin;
           xlfUrl = apiHost + layoutOptions.xlfUrl;
@@ -1875,19 +1878,19 @@ function _getXlf() {
           } else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
             xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
           }
-          _context2.next = 6;
+          _context4.next = 6;
           return fetch(xlfUrl);
         case 6:
-          res = _context2.sent;
-          _context2.next = 9;
+          res = _context4.sent;
+          _context4.next = 9;
           return res.text();
         case 9:
-          return _context2.abrupt("return", _context2.sent);
+          return _context4.abrupt("return", _context4.sent);
         case 10:
         case "end":
-          return _context2.stop();
+          return _context4.stop();
       }
-    }, _callee2);
+    }, _callee4);
   }));
   return _getXlf.apply(this, arguments);
 }
@@ -1968,26 +1971,44 @@ function Layout(data, options, xlr, layout) {
   var emitter = createNanoEvents();
   emitter.on('start', function (layout) {
     layout.done = false;
+    console.debug('layoutRegions', layout.regions);
     console.debug('Layout start emitted > Layout ID > ', layout.id);
   });
-  emitter.on('end', function (layout) {
-    console.debug('Ending layout with ID of > ', layout.layoutId);
-    layout.done = true;
-    /* Remove layout that has ended */
-    var $layout = document.getElementById(layout.containerName);
-    console.debug({
-      $layout: $layout
-    });
-    if ($layout !== null) {
-      $layout.remove();
-    }
-    if (xlr.config.platform !== 'CMS') {
-      // Transition next layout to current layout and prepare next layout if exist
-      xlr.prepareLayouts().then(function (parent) {
-        xlr.playSchedules(parent);
-      });
-    }
-  });
+  emitter.on('end', /*#__PURE__*/function () {
+    var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(layout) {
+      var $layout;
+      return _regeneratorRuntime().wrap(function _callee$(_context) {
+        while (1) switch (_context.prev = _context.next) {
+          case 0:
+            console.debug('Ending layout with ID of > ', layout.layoutId);
+            /* Remove layout that has ended */
+            $layout = document.getElementById(layout.containerName);
+            console.debug({
+              $layout: $layout
+            });
+            if ($layout !== null) {
+              $layout.remove();
+            }
+            _context.next = 6;
+            return layout.resetLayout();
+          case 6:
+            layout.done = true;
+            if (xlr.config.platform !== 'CMS') {
+              // Transition next layout to current layout and prepare next layout if exist
+              xlr.prepareLayouts().then(function (parent) {
+                xlr.playSchedules(parent);
+              });
+            }
+          case 8:
+          case "end":
+            return _context.stop();
+        }
+      }, _callee);
+    }));
+    return function (_x2) {
+      return _ref.apply(this, arguments);
+    };
+  }());
   var layoutObject = _objectSpread2(_objectSpread2({}, props.layout), {}, {
     options: props.options
   });
@@ -2120,7 +2141,6 @@ function Layout(data, options, xlr, layout) {
     }
     if (self.allEnded) {
       self.stopAllMedia().then(function () {
-        var _self$emitter;
         console.debug('starting to end layout . . .');
         if (xlr.config.platform === 'CMS') {
           var $end = document.getElementById('play_ended');
@@ -2135,7 +2155,7 @@ function Layout(data, options, xlr, layout) {
             $end.style.display = 'block';
           }
         }
-        (_self$emitter = self.emitter) === null || _self$emitter === void 0 || _self$emitter.emit('end', self);
+        self.emitter.emit('end', self);
       });
     }
   };
@@ -2158,48 +2178,69 @@ function Layout(data, options, xlr, layout) {
   layoutObject.stopAllMedia = function () {
     console.debug('Stopping all media . . .');
     return new Promise( /*#__PURE__*/function () {
-      var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(resolve) {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(resolve) {
         var i, region, j, media;
-        return _regeneratorRuntime().wrap(function _callee$(_context) {
-          while (1) switch (_context.prev = _context.next) {
+        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
             case 0:
               i = 0;
             case 1:
               if (!(i < layoutObject.regions.length)) {
-                _context.next = 14;
+                _context2.next = 14;
                 break;
               }
               region = layoutObject.regions[i];
               j = 0;
             case 4:
               if (!(j < region.mediaObjects.length)) {
-                _context.next = 11;
+                _context2.next = 11;
                 break;
               }
               media = region.mediaObjects[j];
-              _context.next = 8;
+              _context2.next = 8;
               return media.stop();
             case 8:
               j++;
-              _context.next = 4;
+              _context2.next = 4;
               break;
             case 11:
               i++;
-              _context.next = 1;
+              _context2.next = 1;
               break;
             case 14:
               resolve();
             case 15:
             case "end":
-              return _context.stop();
+              return _context2.stop();
           }
-        }, _callee);
+        }, _callee2);
       }));
-      return function (_x2) {
-        return _ref.apply(this, arguments);
+      return function (_x3) {
+        return _ref2.apply(this, arguments);
       };
     }());
   };
+  layoutObject.resetLayout = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+    var _this = this;
+    return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+      while (1) switch (_context3.prev = _context3.next) {
+        case 0:
+          this.allEnded = false;
+          this.allExpired = false;
+          _context3.next = 4;
+          return Promise.all(this.regions.map(function (layoutRegion) {
+            layoutRegion.complete = false;
+            layoutRegion.ended = false;
+            layoutRegion.ending = false;
+            _this.regions[layoutRegion.index] = layoutRegion;
+            return true;
+          }));
+        case 4:
+        case "end":
+          return _context3.stop();
+      }
+    }, _callee3, this);
+  }));
   layoutObject.prepareLayout();
   return layoutObject;
 }

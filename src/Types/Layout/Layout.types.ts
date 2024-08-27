@@ -86,6 +86,7 @@ export interface ILayout {
     end(): void;
     regionEnded(): void;
     stopAllMedia(): Promise<void>;
+    resetLayout(): Promise<void>;
     index: number;
 }
 
@@ -134,6 +135,9 @@ export const initialLayout: ILayout = {
     regionEnded() {
     },
     stopAllMedia() {
+        return Promise.resolve();
+    },
+    resetLayout() {
         return Promise.resolve();
     },
     emitter: <Emitter<ILayoutEvents>>{},

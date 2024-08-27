@@ -222,12 +222,12 @@ export default function Layout(
 
     emitter.on('start', (layout: ILayout) => {
         layout.done = false;
+        console.debug('layoutRegions', layout.regions);
         console.debug('Layout start emitted > Layout ID > ', layout.id);
     });
 
-    emitter.on('end', (layout: ILayout) => {
+    emitter.on('end', async (layout: ILayout) => {
         console.debug('Ending layout with ID of > ', layout.layoutId);
-        layout.done = true;
         /* Remove layout that has ended */
         const $layout = document.getElementById(layout.containerName);
 
@@ -236,6 +236,9 @@ export default function Layout(
         if ($layout !== null) {
             $layout.remove();
         }
+
+        await layout.resetLayout();
+        layout.done = true;
 
         if (xlr.config.platform !== 'CMS') {
             // Transition next layout to current layout and prepare next layout if exist
@@ -428,7 +431,7 @@ export default function Layout(
                     }
                 }
                 
-                self.emitter?.emit('end', self);
+                self.emitter.emit('end', self);
             });
 
         }
@@ -456,6 +459,20 @@ export default function Layout(
 
             resolve();
         });
+    };
+
+    layoutObject.resetLayout = async function() {
+        this.allEnded = false;
+        this.allExpired = false;
+
+        await Promise.all(this.regions.map((layoutRegion) => {
+            layoutRegion.complete = false;
+            layoutRegion.ended = false;
+            layoutRegion.ending = false;
+            this.regions[layoutRegion.index] = layoutRegion;
+
+            return true;
+        }));
     };
 
     layoutObject.prepareLayout();

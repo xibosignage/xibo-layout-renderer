@@ -180,6 +180,7 @@ interface ILayout {
     end(): void;
     regionEnded(): void;
     stopAllMedia(): Promise<void>;
+    resetLayout(): Promise<void>;
     index: number;
 }
 declare const initialLayout: ILayout;
