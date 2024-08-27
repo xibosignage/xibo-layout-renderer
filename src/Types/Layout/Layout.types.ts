@@ -86,6 +86,7 @@ export interface ILayout {
     end(): void;
     regionEnded(): void;
     stopAllMedia(): Promise<void>;
+    index: number;
 }
 
 export const initialLayout: ILayout = {
@@ -136,6 +137,7 @@ export const initialLayout: ILayout = {
         return Promise.resolve();
     },
     emitter: <Emitter<ILayoutEvents>>{},
+    index: -1,
 };
 
 export type GetLayoutParamType = {

@@ -254,7 +254,6 @@ export default function Layout(
     layoutObject.on = function<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
         return emitter.on(event, callback);
     };
-    layoutObject.emitter = emitter;
 
     layoutObject.run = function() {
         const layout = layoutObject;
@@ -275,6 +274,10 @@ export default function Layout(
             // playLog(4, "debug", "Running region " + self.regions[i].id, false);
             layout.regions[i].run();
         }
+    };
+
+    layoutObject.prepareLayout = function(){
+        layoutObject.parseXlf();
     };
 
     layoutObject.parseXlf = function() {
@@ -378,10 +381,6 @@ export default function Layout(
             regionObj.index = indx;
             layout.regions.push(regionObj);
         });
-    };
-
-    layoutObject.prepareLayout = function(){
-        layoutObject.parseXlf();
     };
 
     layoutObject.regionExpired = function() {

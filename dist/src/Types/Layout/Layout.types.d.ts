@@ -62,6 +62,7 @@ export interface ILayout {
     end(): void;
     regionEnded(): void;
     stopAllMedia(): Promise<void>;
+    index: number;
 }
 export declare const initialLayout: ILayout;
 export type GetLayoutParamType = {

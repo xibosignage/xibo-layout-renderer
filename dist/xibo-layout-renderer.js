@@ -543,7 +543,8 @@ var XiboLayoutRenderer = (function (exports) {
     stopAllMedia: function stopAllMedia() {
       return Promise.resolve();
     },
-    emitter: {}
+    emitter: {},
+    index: -1
   };
 
   function nextId(options) {
@@ -1986,7 +1987,6 @@ var XiboLayoutRenderer = (function (exports) {
     layoutObject.on = function (event, callback) {
       return emitter.on(event, callback);
     };
-    layoutObject.emitter = emitter;
     layoutObject.run = function () {
       var layout = layoutObject;
       var $layoutContainer = document.getElementById("".concat(layout.containerName));
@@ -2003,6 +2003,9 @@ var XiboLayoutRenderer = (function (exports) {
         // playLog(4, "debug", "Running region " + self.regions[i].id, false);
         layout.regions[i].run();
       }
+    };
+    layoutObject.prepareLayout = function () {
+      layoutObject.parseXlf();
     };
     layoutObject.parseXlf = function () {
       var _layout$layoutNode, _layout$layoutNode2, _layout$layoutNode3, _layout$layoutNode4, _layout$layoutNode5, _layout$layoutNode6;
@@ -2078,9 +2081,6 @@ var XiboLayoutRenderer = (function (exports) {
         regionObj.index = indx;
         layout.regions.push(regionObj);
       });
-    };
-    layoutObject.prepareLayout = function () {
-      layoutObject.parseXlf();
     };
     layoutObject.regionExpired = function () {
       var self = layoutObject;
@@ -2386,11 +2386,15 @@ var XiboLayoutRenderer = (function (exports) {
             console.log('updateLoop:layouts', layouts);
             console.log('updateLoop:xlrLayouts', xlrLayouts);
             return _context.abrupt("return", new Promise(function (resolve) {
-              _this2.layouts = layouts;
+              layouts.map(function (layoutItem) {
+                if (!Boolean(_this2.layouts[layoutItem.index])) {
+                  _this2.layouts[layoutItem.index] = layoutItem;
+                }
+              });
               _this2.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
               _this2.currentLayout = _this2.layouts[_this2.currentLayoutIndex];
-              if (Boolean(_this2.layouts[1])) {
-                _this2.nextLayout = _this2.layouts[1];
+              if (Boolean(_this2.layouts[_this2.currentLayoutIndex + 1])) {
+                _this2.nextLayout = _this2.layouts[_this2.currentLayoutIndex + 1];
               } else {
                 // Use current layout as next layout if only one layout is available
                 _this2.nextLayout = _this2.layouts[0];
@@ -2434,11 +2438,15 @@ var XiboLayoutRenderer = (function (exports) {
             console.log('prepareLayouts::layouts', layouts);
             console.log('prepareLayouts::xlr>layouts', self.layouts);
             return _context2.abrupt("return", new Promise(function (resolve) {
-              self.layouts = layouts;
+              layouts.map(function (layoutItem) {
+                if (!Boolean(self.layouts[layoutItem.index])) {
+                  self.layouts[layoutItem.index] = layoutItem;
+                }
+              });
               self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
               self.currentLayout = self.layouts[self.currentLayoutIndex];
-              if (Boolean(self.layouts[1])) {
-                self.nextLayout = self.layouts[1];
+              if (Boolean(self.layouts[self.currentLayoutIndex + 1])) {
+                self.nextLayout = self.layouts[self.currentLayoutIndex + 1];
               } else {
                 // Use current layout as next layout if only one layout is available
                 self.nextLayout = self.layouts[0];
@@ -2454,6 +2462,7 @@ var XiboLayoutRenderer = (function (exports) {
     }));
     xlrObject.prepareLayoutXlf = /*#__PURE__*/function () {
       var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(inputLayout) {
+        var _this3 = this;
         var self, newOptions, layoutXlf, layoutXlfNode, parser;
         return _regeneratorRuntime().wrap(function _callee3$(_context3) {
           while (1) switch (_context3.prev = _context3.next) {
@@ -2486,6 +2495,7 @@ var XiboLayoutRenderer = (function (exports) {
                 xlrLayoutObj.id = Number(inputLayout.layoutId);
                 xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
                 xlrLayoutObj.options = newOptions;
+                xlrLayoutObj.index = getIndexByLayoutId(_this3.inputLayouts, xlrLayoutObj.layoutId).index;
                 resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
               }));
             case 14:

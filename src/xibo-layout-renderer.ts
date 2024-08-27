@@ -26,6 +26,7 @@ import {
 } from './Types/Layout';
 import { initialXlr, IXlr } from './Types/XLR';
 import SplashScreen, {PreviewSplashElement} from './Modules/SplashScreen';
+import {getIndexByLayoutId} from "./Modules/Generators/Generators";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -139,12 +140,16 @@ export default function XiboLayoutRenderer(
         console.log('updateLoop:xlrLayouts', xlrLayouts);
 
         return new Promise<IXlr>((resolve) => {
-            this.layouts = layouts;
+            layouts.map((layoutItem) => {
+                if (!Boolean(this.layouts[layoutItem.index])) {
+                    this.layouts[layoutItem.index] = layoutItem;
+                }
+            });
             this.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             this.currentLayout = this.layouts[this.currentLayoutIndex];
 
-            if (Boolean(this.layouts[1])) {
-                this.nextLayout = this.layouts[1];
+            if (Boolean(this.layouts[this.currentLayoutIndex + 1])) {
+                this.nextLayout = this.layouts[this.currentLayoutIndex + 1];
             } else {
                 // Use current layout as next layout if only one layout is available
                 this.nextLayout = this.layouts[0];
@@ -186,12 +191,16 @@ export default function XiboLayoutRenderer(
         console.log('prepareLayouts::xlr>layouts', self.layouts);
 
         return new Promise<IXlr>((resolve) => {
-            self.layouts = layouts as ILayout[];
+            layouts.map((layoutItem) => {
+                if (!Boolean(self.layouts[layoutItem.index])) {
+                    self.layouts[layoutItem.index] = layoutItem;
+                }
+            });
             self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             self.currentLayout = self.layouts[self.currentLayoutIndex];
 
-            if (Boolean(self.layouts[1])) {
-                self.nextLayout = self.layouts[1];
+            if (Boolean(self.layouts[self.currentLayoutIndex + 1])) {
+                self.nextLayout = self.layouts[self.currentLayoutIndex + 1];
             } else {
                 // Use current layout as next layout if only one layout is available
                 self.nextLayout = self.layouts[0];
@@ -239,6 +248,7 @@ export default function XiboLayoutRenderer(
             xlrLayoutObj.id = Number(inputLayout.layoutId);
             xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
             xlrLayoutObj.options = newOptions;
+            xlrLayoutObj.index = getIndexByLayoutId(this.inputLayouts, xlrLayoutObj.layoutId).index as number;
 
             resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
         });
