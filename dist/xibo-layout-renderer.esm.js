@@ -766,9 +766,7 @@ var initialRegion = {
     return {};
   },
   prepareMediaObjects: function prepareMediaObjects() {},
-  reset: function reset() {
-    return Promise.resolve();
-  }
+  reset: function reset() {}
 };
 
 var initialMedia = {
@@ -1662,6 +1660,8 @@ function Region(layout, xml, regionId, options, xlr) {
   };
   regionObject.run = function () {
     console.debug('Called Region::run > ', regionObject.id);
+    // Reset region states
+    regionObject.reset();
     if (regionObject.curMedia) {
       regionObject.transitionNodes(regionObject.oldMedia, regionObject.curMedia);
     }
@@ -1801,17 +1801,12 @@ function Region(layout, xml, regionId, options, xlr) {
     self.layout.regions[self.index] = self;
     self.layout.regionEnded();
   };
-  regionObject.reset = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-    return _regeneratorRuntime().wrap(function _callee$(_context) {
-      while (1) switch (_context.prev = _context.next) {
-        case 0:
-          regionObject.ended = false;
-        case 1:
-        case "end":
-          return _context.stop();
-      }
-    }, _callee);
-  }));
+  regionObject.reset = function () {
+    regionObject.ended = false;
+    regionObject.complete = false;
+    regionObject.ending = false;
+    console.debug('Resetting region states', regionObject);
+  };
   regionObject.on = function (event, callback) {
     return emitter.on(event, callback);
   };

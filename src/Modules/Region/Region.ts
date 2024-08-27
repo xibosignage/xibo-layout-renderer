@@ -183,6 +183,9 @@ export default function Region(
     regionObject.run = function() {
         console.debug('Called Region::run > ', regionObject.id);
 
+        // Reset region states
+        regionObject.reset();
+
         if (regionObject.curMedia) {
             regionObject.transitionNodes(regionObject.oldMedia, regionObject.curMedia);
         }
@@ -348,8 +351,11 @@ export default function Region(
         self.layout.regionEnded();
     };
 
-    regionObject.reset = async function() {
+    regionObject.reset = function() {
         regionObject.ended = false;
+        regionObject.complete = false;
+        regionObject.ending = false;
+        console.debug('Resetting region states', regionObject);
     };
 
     regionObject.on = function<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]) {

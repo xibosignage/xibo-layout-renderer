@@ -66,7 +66,7 @@ export interface IRegion {
     exitTransitionComplete(): void;
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe;
     prepareMediaObjects(): void;
-    reset(): Promise<void>;
+    reset(): void;
 }
 
 export const initialRegion: IRegion = {
@@ -115,6 +115,5 @@ export const initialRegion: IRegion = {
     prepareMediaObjects() {
     },
     reset() {
-        return Promise.resolve();
     }
 };
