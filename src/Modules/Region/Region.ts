@@ -56,6 +56,9 @@ export default function Region(
     regionObject.prepareRegion = function() {
         const self = regionObject;
         const {layout, options} = self;
+        self.complete = false;
+        self.ending = false;
+        self.ended = false;
         self.id = props.regionId;
         self.options = {...platform, ...props.options};
         self.containerName = `R-${self.id}-${nextId(self.options as OptionsType & IRegion["options"])}`;

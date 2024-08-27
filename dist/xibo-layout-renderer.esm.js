@@ -1575,6 +1575,9 @@ function Region(layout, xml, regionId, options, xlr) {
     var self = regionObject;
     var layout = self.layout,
       options = self.options;
+    self.complete = false;
+    self.ending = false;
+    self.ended = false;
     self.id = props.regionId;
     self.options = _objectSpread2(_objectSpread2({}, platform), props.options);
     self.containerName = "R-".concat(self.id, "-").concat(nextId(self.options));
@@ -2051,6 +2054,9 @@ function Layout(data, options, xlr, layout) {
     var _layout$layoutNode, _layout$layoutNode2, _layout$layoutNode3, _layout$layoutNode4, _layout$layoutNode5, _layout$layoutNode6;
     var layout = this;
     var options = this.options;
+    layout.done = false;
+    layout.allEnded = false;
+    layout.allExpired = false;
     layout.containerName = "L" + layout.id + "-" + nextId(options);
     layout.regions = [];
     /* Create a hidden div to show the layout in */
@@ -2206,7 +2212,7 @@ function Layout(data, options, xlr, layout) {
               i = 0;
             case 1:
               if (!(i < layoutObject.regions.length)) {
-                _context3.next = 16;
+                _context3.next = 14;
                 break;
               }
               region = layoutObject.regions[i];
@@ -2224,15 +2230,12 @@ function Layout(data, options, xlr, layout) {
               _context3.next = 4;
               break;
             case 11:
-              _context3.next = 13;
-              return region.reset();
-            case 13:
               i++;
               _context3.next = 1;
               break;
-            case 16:
+            case 14:
               resolve();
-            case 17:
+            case 15:
             case "end":
               return _context3.stop();
           }

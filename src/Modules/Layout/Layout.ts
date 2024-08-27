@@ -293,6 +293,10 @@ export default function Layout(
     layoutObject.parseXlf = function() {
         const layout = this;
         const {options} = this;
+
+        layout.done = false;
+        layout.allEnded = false;
+        layout.allExpired = false;
         layout.containerName = "L" + layout.id + "-" + nextId(options);
         layout.regions = [];
 
@@ -462,8 +466,7 @@ export default function Layout(
                     var media = region.mediaObjects[j];
                     await media.stop();
                 }
-
-                await region.reset();
+                // await region.reset();
             }
 
             resolve();
