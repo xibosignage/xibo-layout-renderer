@@ -701,7 +701,7 @@ function composeResourceUrlByPlatform(options, params) {
   var resourceUrl = params.regionOptions.getResourceUrl.replace(":regionId", params.regionId).replace(":id", params.mediaId) + '?preview=1&layoutPreview=1';
   if (options.platform === 'chromeOS') {
     var resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
-    if (!params.isGlobalContent) {
+    if (!params.isGlobalContent && !params.isImageOrVideo) {
       resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
     } else {
       // resourceUrl = composeResourceUrl(options.config, params);
@@ -1273,7 +1273,8 @@ function Media(region, mediaId, xml, options, xlr) {
       fileId: self.fileId,
       scaleFactor: self.region.layout.scaleFactor,
       uri: self.uri,
-      isGlobalContent: self.mediaType === 'global'
+      isGlobalContent: self.mediaType === 'global',
+      isImageOrVideo: self.mediaType === 'image' || self.mediaType === 'video'
     });
     if (self.mediaType === 'image' || self.mediaType === 'video') {
       resourceUrlParams.mediaType = self.mediaType;

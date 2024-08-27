@@ -187,6 +187,7 @@ export default function Media(
             scaleFactor: self.region.layout.scaleFactor,
             uri: self.uri,
             isGlobalContent: self.mediaType === 'global',
+            isImageOrVideo: self.mediaType === 'image' || self.mediaType === 'video',
         };
 
         if (self.mediaType === 'image' || self.mediaType === 'video') {
