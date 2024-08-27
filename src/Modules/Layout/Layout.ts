@@ -477,6 +477,8 @@ export default function Layout(
 
             return true;
         }));
+
+        console.debug('Reset layout', this.layoutId);
     };
 
     layoutObject.prepareLayout();

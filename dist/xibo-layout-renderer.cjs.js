@@ -2240,6 +2240,8 @@ function Layout(data, options, xlr, layout) {
             return true;
           }));
         case 4:
+          console.debug('Reset layout', this.layoutId);
+        case 5:
         case "end":
           return _context3.stop();
       }
