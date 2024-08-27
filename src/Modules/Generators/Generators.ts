@@ -115,7 +115,7 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
     if (options.platform === 'chromeOS') {
         const resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
 
-        if (!params.isGlobalContent && !params.isImageOrVideo) {
+        if (!params.isGlobalContent && params.isImageOrVideo) {
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
         } else {
             // resourceUrl = composeResourceUrl(options.config, params);

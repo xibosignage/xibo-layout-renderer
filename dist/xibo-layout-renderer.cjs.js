@@ -701,7 +701,7 @@ function composeResourceUrlByPlatform(options, params) {
   var resourceUrl = params.regionOptions.getResourceUrl.replace(":regionId", params.regionId).replace(":id", params.mediaId) + '?preview=1&layoutPreview=1';
   if (options.platform === 'chromeOS') {
     var resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
-    if (!params.isGlobalContent && !params.isImageOrVideo) {
+    if (!params.isGlobalContent && params.isImageOrVideo) {
       resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
     } else {
       // resourceUrl = composeResourceUrl(options.config, params);
