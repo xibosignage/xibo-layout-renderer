@@ -1189,6 +1189,8 @@ var XiboLayoutRenderer = (function (exports) {
         clearInterval(mediaTimer);
         mediaTimeCount = 0;
       }
+      console.debug('mediaTimer', mediaTimer);
+      console.debug('mediaTimeCount', mediaTimeCount);
       media.region.playNextMedia();
     });
     mediaObject.on = function (event, callback) {

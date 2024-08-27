@@ -87,6 +87,8 @@ export default function Media(
             clearInterval(mediaTimer);
             mediaTimeCount = 0;
         }
+        console.debug('mediaTimer', mediaTimer);
+        console.debug('mediaTimeCount', mediaTimeCount);
 
         media.region.playNextMedia();
     });
