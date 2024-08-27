@@ -1574,26 +1574,21 @@ var XiboLayoutRenderer = (function (exports) {
     var emitter = createNanoEvents();
     var regionObject = _objectSpread2(_objectSpread2({}, initialRegion), props);
     regionObject.prepareRegion = function () {
-      var _this$xml,
-        _this$xml2,
-        _this$xml3,
-        _this$xml4,
-        _this$xml5,
-        _this$xml6,
-        _this = this;
-      var layout = this.layout,
-        options = this.options;
-      this.id = props.regionId;
-      this.options = _objectSpread2(_objectSpread2({}, platform), props.options);
-      this.containerName = "R-".concat(this.id, "-").concat(nextId(this.options));
-      this.xml = props.xml;
-      this.mediaObjects = [];
-      this.sWidth = this.xml && Number((_this$xml = this.xml) === null || _this$xml === void 0 ? void 0 : _this$xml.getAttribute('width')) * layout.scaleFactor;
-      this.sHeight = this.xml && Number((_this$xml2 = this.xml) === null || _this$xml2 === void 0 ? void 0 : _this$xml2.getAttribute('height')) * layout.scaleFactor;
-      this.offsetX = this.xml && Number((_this$xml3 = this.xml) === null || _this$xml3 === void 0 ? void 0 : _this$xml3.getAttribute('left')) * layout.scaleFactor;
-      this.offsetY = this.xml && Number((_this$xml4 = this.xml) === null || _this$xml4 === void 0 ? void 0 : _this$xml4.getAttribute('top')) * layout.scaleFactor;
-      this.zIndex = this.xml && Number((_this$xml5 = this.xml) === null || _this$xml5 === void 0 ? void 0 : _this$xml5.getAttribute('zindex'));
-      var regionOptions = (_this$xml6 = this.xml) === null || _this$xml6 === void 0 ? void 0 : _this$xml6.getElementsByTagName('options');
+      var _self$xml, _self$xml2, _self$xml3, _self$xml4, _self$xml5, _self$xml6;
+      var self = regionObject;
+      var layout = self.layout,
+        options = self.options;
+      self.id = props.regionId;
+      self.options = _objectSpread2(_objectSpread2({}, platform), props.options);
+      self.containerName = "R-".concat(self.id, "-").concat(nextId(self.options));
+      self.xml = props.xml;
+      self.mediaObjects = [];
+      self.sWidth = self.xml && Number((_self$xml = self.xml) === null || _self$xml === void 0 ? void 0 : _self$xml.getAttribute('width')) * layout.scaleFactor;
+      self.sHeight = self.xml && Number((_self$xml2 = self.xml) === null || _self$xml2 === void 0 ? void 0 : _self$xml2.getAttribute('height')) * layout.scaleFactor;
+      self.offsetX = self.xml && Number((_self$xml3 = self.xml) === null || _self$xml3 === void 0 ? void 0 : _self$xml3.getAttribute('left')) * layout.scaleFactor;
+      self.offsetY = self.xml && Number((_self$xml4 = self.xml) === null || _self$xml4 === void 0 ? void 0 : _self$xml4.getAttribute('top')) * layout.scaleFactor;
+      self.zIndex = self.xml && Number((_self$xml5 = self.xml) === null || _self$xml5 === void 0 ? void 0 : _self$xml5.getAttribute('zindex'));
+      var regionOptions = (_self$xml6 = self.xml) === null || _self$xml6 === void 0 ? void 0 : _self$xml6.getElementsByTagName('options');
       if (regionOptions) {
         for (var _i = 0, _Array$from = Array.from(regionOptions); _i < _Array$from.length; _i++) {
           var _options = _Array$from[_i];
@@ -1601,30 +1596,30 @@ var XiboLayoutRenderer = (function (exports) {
           var _regionOptions = _options.children;
           for (var _i2 = 0, _Array$from2 = Array.from(_regionOptions); _i2 < _Array$from2.length; _i2++) {
             var regionOption = _Array$from2[_i2];
-            this.options[regionOption.nodeName.toLowerCase()] = regionOption.textContent;
+            self.options[regionOption.nodeName.toLowerCase()] = regionOption.textContent;
           }
         }
       }
-      var $region = document.getElementById(this.containerName);
-      var $layout = document.getElementById("".concat(this.layout.containerName));
+      var $region = document.getElementById(self.containerName);
+      var $layout = document.getElementById("".concat(self.layout.containerName));
       if ($region === null) {
         $region = document.createElement('div');
-        $region.id = this.containerName;
+        $region.id = self.containerName;
       }
       $layout && $layout.appendChild($region);
       /* Scale the Layout Container */
       /* Add region styles */
-      $region.style.cssText = "\n            width: ".concat(this.sWidth, "px;\n            height: ").concat(this.sHeight, "px;\n            position: absolute;\n            left: ").concat(this.offsetX, "px;\n            top: ").concat(this.offsetY, "px;\n            z-index: ").concat(Math.round(this.zIndex), ";\n        ");
+      $region.style.cssText = "\n            width: ".concat(self.sWidth, "px;\n            height: ").concat(self.sHeight, "px;\n            position: absolute;\n            left: ").concat(self.offsetX, "px;\n            top: ").concat(self.offsetY, "px;\n            z-index: ").concat(Math.round(self.zIndex), ";\n        ");
       $region.className = 'region--item';
       /* Parse region media objects */
-      var regionMediaItems = Array.from(this.xml.getElementsByTagName('media'));
-      this.totalMediaObjects = regionMediaItems.length;
+      var regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));
+      self.totalMediaObjects = regionMediaItems.length;
       Array.from(regionMediaItems).forEach(function (mediaXml, indx) {
-        var mediaObj = Media(_this, (mediaXml === null || mediaXml === void 0 ? void 0 : mediaXml.getAttribute('id')) || '', mediaXml, options, xlr);
+        var mediaObj = Media(self, (mediaXml === null || mediaXml === void 0 ? void 0 : mediaXml.getAttribute('id')) || '', mediaXml, options, xlr);
         mediaObj.index = indx;
-        _this.mediaObjects.push(mediaObj);
+        self.mediaObjects.push(mediaObj);
       });
-      this.prepareMediaObjects();
+      self.prepareMediaObjects();
     };
     regionObject.finished = function () {
       var self = regionObject;
@@ -1635,31 +1630,32 @@ var XiboLayoutRenderer = (function (exports) {
       self.layout.regionExpired();
     };
     regionObject.prepareMediaObjects = function () {
+      var self = regionObject;
       var nextMediaIndex;
-      if (this.mediaObjects.length > 0) {
-        if (this.curMedia) {
-          this.oldMedia = this.curMedia;
+      if (self.mediaObjects.length > 0) {
+        if (self.curMedia) {
+          self.oldMedia = self.curMedia;
         } else {
-          this.oldMedia = undefined;
+          self.oldMedia = undefined;
         }
-        if (this.currentMediaIndex >= this.mediaObjects.length) {
-          this.currentMediaIndex = 0;
+        if (self.currentMediaIndex >= self.mediaObjects.length) {
+          self.currentMediaIndex = 0;
         }
-        this.curMedia = this.mediaObjects[this.currentMediaIndex];
-        nextMediaIndex = this.currentMediaIndex + 1;
-        if (nextMediaIndex >= this.mediaObjects.length || !Boolean(this.mediaObjects[nextMediaIndex]) && this.mediaObjects.length === 1) {
+        self.curMedia = self.mediaObjects[self.currentMediaIndex];
+        nextMediaIndex = self.currentMediaIndex + 1;
+        if (nextMediaIndex >= self.mediaObjects.length || !Boolean(self.mediaObjects[nextMediaIndex]) && self.mediaObjects.length === 1) {
           nextMediaIndex = 0;
         }
-        if (Boolean(this.mediaObjects[nextMediaIndex])) {
-          this.nxtMedia = this.mediaObjects[nextMediaIndex];
+        if (Boolean(self.mediaObjects[nextMediaIndex])) {
+          self.nxtMedia = self.mediaObjects[nextMediaIndex];
         }
-        var $region = document.getElementById("".concat(this.containerName));
+        var $region = document.getElementById("".concat(self.containerName));
         // Append available media to region DOM
-        if (this.curMedia) {
-          $region && $region.insertBefore(this.curMedia.html, $region.lastElementChild);
+        if (self.curMedia) {
+          $region && $region.insertBefore(self.curMedia.html, $region.lastElementChild);
         }
-        if (this.nxtMedia) {
-          $region && $region.insertBefore(this.nxtMedia.html, $region.lastElementChild);
+        if (self.nxtMedia) {
+          $region && $region.insertBefore(self.nxtMedia.html, $region.lastElementChild);
         }
       }
     };
@@ -1750,32 +1746,33 @@ var XiboLayoutRenderer = (function (exports) {
       }
     };
     regionObject.playNextMedia = function () {
-      var _this$curMedia, _this$curMedia2, _this$curMedia3, _this$curMedia4;
+      var _self$curMedia, _self$curMedia2, _self$curMedia3, _self$curMedia4;
+      var self = regionObject;
       /* The current media has finished running */
-      if (this.ended) {
+      if (self.ended) {
         return;
       }
-      if (this.currentMediaIndex === this.mediaObjects.length - 1) {
-        this.finished();
-        if (this.layout.allEnded) {
+      if (self.currentMediaIndex === self.mediaObjects.length - 1) {
+        self.finished();
+        if (self.layout.allEnded) {
           return;
         }
       }
       // When the region has completed and when currentMedia is html
       // Then, preserve the currentMedia state
-      if (this.complete && ((_this$curMedia = this.curMedia) === null || _this$curMedia === void 0 ? void 0 : _this$curMedia.render) === 'html') {
+      if (self.complete && ((_self$curMedia = self.curMedia) === null || _self$curMedia === void 0 ? void 0 : _self$curMedia.render) === 'html') {
         return;
       }
       // When the region has completed and mediaObjects.length = 1
       // and curMedia.loop = false, then put the media on
       // its current state
-      if (this.complete && this.mediaObjects.length === 1 && ((_this$curMedia2 = this.curMedia) === null || _this$curMedia2 === void 0 ? void 0 : _this$curMedia2.render) !== 'html' && ((_this$curMedia3 = this.curMedia) === null || _this$curMedia3 === void 0 ? void 0 : _this$curMedia3.mediaType) === 'image' && !((_this$curMedia4 = this.curMedia) !== null && _this$curMedia4 !== void 0 && _this$curMedia4.loop)) {
+      if (self.complete && self.mediaObjects.length === 1 && ((_self$curMedia2 = self.curMedia) === null || _self$curMedia2 === void 0 ? void 0 : _self$curMedia2.render) !== 'html' && ((_self$curMedia3 = self.curMedia) === null || _self$curMedia3 === void 0 ? void 0 : _self$curMedia3.mediaType) === 'image' && !((_self$curMedia4 = self.curMedia) !== null && _self$curMedia4 !== void 0 && _self$curMedia4.loop)) {
         return;
       }
-      this.currentMediaIndex = this.currentMediaIndex + 1;
-      this.prepareMediaObjects();
-      console.debug('region::playNextMedia', this);
-      this.transitionNodes(this.oldMedia, this.curMedia);
+      self.currentMediaIndex = self.currentMediaIndex + 1;
+      self.prepareMediaObjects();
+      console.debug('region::playNextMedia', self);
+      self.transitionNodes(self.oldMedia, self.curMedia);
     };
     regionObject.end = function () {
       var self = regionObject;
@@ -1808,11 +1805,7 @@ var XiboLayoutRenderer = (function (exports) {
         while (1) switch (_context.prev = _context.next) {
           case 0:
             regionObject.ended = false;
-            regionObject.ending = false;
-            regionObject.complete = false;
-            regionObject.layout.allEnded = false;
-            regionObject.layout.allExpired = false;
-          case 5:
+          case 1:
           case "end":
             return _context.stop();
         }

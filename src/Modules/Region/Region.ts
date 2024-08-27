@@ -54,38 +54,39 @@ export default function Region(
     };
 
     regionObject.prepareRegion = function() {
-        const {layout, options} = this;
-        this.id = props.regionId;
-        this.options = {...platform, ...props.options};
-        this.containerName = `R-${this.id}-${nextId(this.options as OptionsType & IRegion["options"])}`;
-        this.xml = props.xml;
-        this.mediaObjects = [];
+        const self = regionObject;
+        const {layout, options} = self;
+        self.id = props.regionId;
+        self.options = {...platform, ...props.options};
+        self.containerName = `R-${self.id}-${nextId(self.options as OptionsType & IRegion["options"])}`;
+        self.xml = props.xml;
+        self.mediaObjects = [];
 
-        this.sWidth = (this.xml) && Number(this.xml?.getAttribute('width')) * layout.scaleFactor;
-        this.sHeight = (this.xml) && Number(this.xml?.getAttribute('height')) * layout.scaleFactor;
-        this.offsetX = (this.xml) && Number(this.xml?.getAttribute('left')) * layout.scaleFactor;
-        this.offsetY = (this.xml) && Number(this.xml?.getAttribute('top')) * layout.scaleFactor;
-        this.zIndex = (this.xml) && Number(this.xml?.getAttribute('zindex'));
+        self.sWidth = (self.xml) && Number(self.xml?.getAttribute('width')) * layout.scaleFactor;
+        self.sHeight = (self.xml) && Number(self.xml?.getAttribute('height')) * layout.scaleFactor;
+        self.offsetX = (self.xml) && Number(self.xml?.getAttribute('left')) * layout.scaleFactor;
+        self.offsetY = (self.xml) && Number(self.xml?.getAttribute('top')) * layout.scaleFactor;
+        self.zIndex = (self.xml) && Number(self.xml?.getAttribute('zindex'));
         
-        const regionOptions = this.xml?.getElementsByTagName('options');
+        const regionOptions = self.xml?.getElementsByTagName('options');
 
         if (regionOptions) {
             for (let _options of Array.from(regionOptions)) {
                 // Get options
                 const _regionOptions = _options.children;
                 for (let regionOption of Array.from(_regionOptions)) {
-                    this.options[regionOption.nodeName.toLowerCase()] = regionOption.textContent;
+                    self.options[regionOption.nodeName.toLowerCase()] = regionOption.textContent;
                 }
             }
         }
 
 
-        let $region = document.getElementById(this.containerName);
-        const $layout = document.getElementById(`${this.layout.containerName}`);
+        let $region = document.getElementById(self.containerName);
+        const $layout = document.getElementById(`${self.layout.containerName}`);
 
         if ($region === null) {
             $region = document.createElement('div');
-            $region.id = this.containerName;
+            $region.id = self.containerName;
         }
 
         ($layout) && $layout.appendChild($region);
@@ -93,22 +94,22 @@ export default function Region(
         /* Scale the Layout Container */
         /* Add region styles */
         $region.style.cssText = `
-            width: ${this.sWidth}px;
-            height: ${this.sHeight}px;
+            width: ${self.sWidth}px;
+            height: ${self.sHeight}px;
             position: absolute;
-            left: ${this.offsetX}px;
-            top: ${this.offsetY}px;
-            z-index: ${Math.round(this.zIndex)};
+            left: ${self.offsetX}px;
+            top: ${self.offsetY}px;
+            z-index: ${Math.round(self.zIndex)};
         `;
         $region.className = 'region--item';
 
         /* Parse region media objects */
-        const regionMediaItems = Array.from(this.xml.getElementsByTagName('media'));
-        this.totalMediaObjects = regionMediaItems.length;
+        const regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));
+        self.totalMediaObjects = regionMediaItems.length;
 
         Array.from(regionMediaItems).forEach((mediaXml, indx) => {
             const mediaObj = Media(
-                this,
+                self,
                 mediaXml?.getAttribute('id') || '',
                 mediaXml,
                 options as OptionsType & IRegion["options"],
@@ -116,10 +117,10 @@ export default function Region(
             );
 
             mediaObj.index = indx;
-            this.mediaObjects.push(mediaObj);
+            self.mediaObjects.push(mediaObj);
         });
 
-        this.prepareMediaObjects();
+        self.prepareMediaObjects();
     };
 
     regionObject.finished = function() {
@@ -132,45 +133,46 @@ export default function Region(
     };
 
     regionObject.prepareMediaObjects = function() {
+        const self = regionObject;
         let nextMediaIndex;
 
-        if (this.mediaObjects.length > 0) {
+        if (self.mediaObjects.length > 0) {
 
-            if (this.curMedia) {
-                this.oldMedia = this.curMedia;
+            if (self.curMedia) {
+                self.oldMedia = self.curMedia;
             } else {
-                this.oldMedia = undefined;
+                self.oldMedia = undefined;
             }
 
-            if (this.currentMediaIndex >= this.mediaObjects.length) {
-                this.currentMediaIndex = 0;
+            if (self.currentMediaIndex >= self.mediaObjects.length) {
+                self.currentMediaIndex = 0;
             }
 
-            this.curMedia = this.mediaObjects[this.currentMediaIndex];
+            self.curMedia = self.mediaObjects[self.currentMediaIndex];
 
-            nextMediaIndex = this.currentMediaIndex + 1;
+            nextMediaIndex = self.currentMediaIndex + 1;
 
-            if (nextMediaIndex >= this.mediaObjects.length ||
+            if (nextMediaIndex >= self.mediaObjects.length ||
                 (
-                    !Boolean(this.mediaObjects[nextMediaIndex]) &&
-                    this.mediaObjects.length === 1
+                    !Boolean(self.mediaObjects[nextMediaIndex]) &&
+                    self.mediaObjects.length === 1
                 )
             ) {
                 nextMediaIndex = 0;
             }
 
-            if (Boolean(this.mediaObjects[nextMediaIndex])) {
-                this.nxtMedia = this.mediaObjects[nextMediaIndex];
+            if (Boolean(self.mediaObjects[nextMediaIndex])) {
+                self.nxtMedia = self.mediaObjects[nextMediaIndex];
             }
 
-            const $region = document.getElementById(`${this.containerName}`);
+            const $region = document.getElementById(`${self.containerName}`);
             // Append available media to region DOM
-            if (this.curMedia) {
-                ($region) && $region.insertBefore(this.curMedia.html as Node, $region.lastElementChild);
+            if (self.curMedia) {
+                ($region) && $region.insertBefore(self.curMedia.html as Node, $region.lastElementChild);
             }
 
-            if (this.nxtMedia) {
-                ($region) && $region.insertBefore(this.nxtMedia.html as Node, $region.lastElementChild);
+            if (self.nxtMedia) {
+                ($region) && $region.insertBefore(self.nxtMedia.html as Node, $region.lastElementChild);
             }
         }
     };
@@ -270,23 +272,24 @@ export default function Region(
     };
 
     regionObject.playNextMedia = function() {
+        const self = regionObject;
         /* The current media has finished running */
-        if (this.ended) {
+        if (self.ended) {
             return;
         }
 
-        if (this.currentMediaIndex === this.mediaObjects.length - 1) {
-            this.finished();
+        if (self.currentMediaIndex === self.mediaObjects.length - 1) {
+            self.finished();
 
-            if (this.layout.allEnded) {
+            if (self.layout.allEnded) {
                 return;
             }
         }
 
         // When the region has completed and when currentMedia is html
         // Then, preserve the currentMedia state
-        if (this.complete &&
-            this.curMedia?.render === 'html'
+        if (self.complete &&
+            self.curMedia?.render === 'html'
         ) {
             return;
         }
@@ -294,19 +297,19 @@ export default function Region(
         // When the region has completed and mediaObjects.length = 1
         // and curMedia.loop = false, then put the media on
         // its current state
-        if (this.complete && this.mediaObjects.length === 1 &&
-            this.curMedia?.render !== 'html' &&
-            this.curMedia?.mediaType === 'image' &&
-            !this.curMedia?.loop
+        if (self.complete && self.mediaObjects.length === 1 &&
+            self.curMedia?.render !== 'html' &&
+            self.curMedia?.mediaType === 'image' &&
+            !self.curMedia?.loop
         ) {
             return;
         }
 
-        this.currentMediaIndex = this.currentMediaIndex + 1;
-        this.prepareMediaObjects();
+        self.currentMediaIndex = self.currentMediaIndex + 1;
+        self.prepareMediaObjects();
 
-        console.debug('region::playNextMedia', this);
-        this.transitionNodes(this.oldMedia, this.curMedia);
+        console.debug('region::playNextMedia', self);
+        self.transitionNodes(self.oldMedia, self.curMedia);
     };
     
     regionObject.end = function() {
@@ -344,11 +347,6 @@ export default function Region(
 
     regionObject.reset = async function() {
         regionObject.ended = false;
-        regionObject.ending = false;
-        regionObject.complete = false;
-
-        regionObject.layout.allEnded = false;
-        regionObject.layout.allExpired = false;
     };
 
     regionObject.on = function<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]) {
