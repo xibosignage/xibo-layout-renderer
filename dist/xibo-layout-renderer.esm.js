@@ -1979,6 +1979,7 @@ function Layout(data, options, xlr, layout) {
             console.debug('Ending layout with ID of > ', layout.layoutId);
             /* Remove layout that has ended */
             $layout = document.getElementById(layout.containerName);
+            layout.done = true;
             console.debug({
               $layout: $layout
             });
@@ -1986,12 +1987,7 @@ function Layout(data, options, xlr, layout) {
               $layout.remove();
             }
             console.debug('Resetting layout . . .', layout.layoutId);
-            _context.next = 7;
-            return layout.resetLayout();
-          case 7:
-            layout.done = true;
-            layout.allEnded = false;
-            layout.allExpired = false;
+            // await layout.resetLayout();
             console.debug('Done resetting existing layout . . .', layout.layoutId);
             if (xlr.config.platform !== 'CMS') {
               console.debug('Transitioning layout . . .', {
@@ -2003,7 +1999,7 @@ function Layout(data, options, xlr, layout) {
                 xlr.playSchedules(parent);
               });
             }
-          case 12:
+          case 8:
           case "end":
             return _context.stop();
         }

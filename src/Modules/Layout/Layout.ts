@@ -231,6 +231,7 @@ export default function Layout(
         /* Remove layout that has ended */
         const $layout = document.getElementById(layout.containerName);
 
+        layout.done = true;
         console.debug({$layout});
 
         if ($layout !== null) {
@@ -238,10 +239,8 @@ export default function Layout(
         }
 
         console.debug('Resetting layout . . .', layout.layoutId);
-        await layout.resetLayout();
-        layout.done = true;
-        layout.allEnded = false;
-        layout.allExpired = false;
+        // await layout.resetLayout();
+
         console.debug('Done resetting existing layout . . .', layout.layoutId);
 
         if (xlr.config.platform !== 'CMS') {

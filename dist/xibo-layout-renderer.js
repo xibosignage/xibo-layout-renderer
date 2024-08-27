@@ -1982,6 +1982,7 @@ var XiboLayoutRenderer = (function (exports) {
               console.debug('Ending layout with ID of > ', layout.layoutId);
               /* Remove layout that has ended */
               $layout = document.getElementById(layout.containerName);
+              layout.done = true;
               console.debug({
                 $layout: $layout
               });
@@ -1989,12 +1990,7 @@ var XiboLayoutRenderer = (function (exports) {
                 $layout.remove();
               }
               console.debug('Resetting layout . . .', layout.layoutId);
-              _context.next = 7;
-              return layout.resetLayout();
-            case 7:
-              layout.done = true;
-              layout.allEnded = false;
-              layout.allExpired = false;
+              // await layout.resetLayout();
               console.debug('Done resetting existing layout . . .', layout.layoutId);
               if (xlr.config.platform !== 'CMS') {
                 console.debug('Transitioning layout . . .', {
@@ -2006,7 +2002,7 @@ var XiboLayoutRenderer = (function (exports) {
                   xlr.playSchedules(parent);
                 });
               }
-            case 12:
+            case 8:
             case "end":
               return _context.stop();
           }
