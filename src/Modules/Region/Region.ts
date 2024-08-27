@@ -342,6 +342,15 @@ export default function Region(
         self.layout.regionEnded();
     };
 
+    regionObject.reset = async function() {
+        regionObject.ended = false;
+        regionObject.ending = false;
+        regionObject.complete = false;
+
+        regionObject.layout.allEnded = false;
+        regionObject.layout.allExpired = false;
+    };
+
     regionObject.on = function<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]) {
         return emitter.on(event, callback);
     };

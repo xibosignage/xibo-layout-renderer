@@ -768,7 +768,10 @@ var XiboLayoutRenderer = (function (exports) {
     on: function on(event, callback) {
       return {};
     },
-    prepareMediaObjects: function prepareMediaObjects() {}
+    prepareMediaObjects: function prepareMediaObjects() {},
+    reset: function reset() {
+      return Promise.resolve();
+    }
   };
 
   var initialMedia = {
@@ -1800,6 +1803,21 @@ var XiboLayoutRenderer = (function (exports) {
       self.layout.regions[self.index] = self;
       self.layout.regionEnded();
     };
+    regionObject.reset = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+      return _regeneratorRuntime().wrap(function _callee$(_context) {
+        while (1) switch (_context.prev = _context.next) {
+          case 0:
+            regionObject.ended = false;
+            regionObject.ending = false;
+            regionObject.complete = false;
+            regionObject.layout.allEnded = false;
+            regionObject.layout.allExpired = false;
+          case 5:
+          case "end":
+            return _context.stop();
+        }
+      }, _callee);
+    }));
     regionObject.on = function (event, callback) {
       return emitter.on(event, callback);
     };
@@ -1857,10 +1875,10 @@ var XiboLayoutRenderer = (function (exports) {
     return _getXlf.apply(this, arguments);
   }
   function _getXlf() {
-    _getXlf = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(layoutOptions) {
+    _getXlf = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(layoutOptions) {
       var apiHost, xlfUrl, fetchOptions, res;
-      return _regeneratorRuntime().wrap(function _callee4$(_context4) {
-        while (1) switch (_context4.prev = _context4.next) {
+      return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+        while (1) switch (_context5.prev = _context5.next) {
           case 0:
             apiHost = window.location.origin;
             xlfUrl = apiHost + layoutOptions.xlfUrl;
@@ -1877,19 +1895,19 @@ var XiboLayoutRenderer = (function (exports) {
             } else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
               xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
             }
-            _context4.next = 6;
+            _context5.next = 6;
             return fetch(xlfUrl);
           case 6:
-            res = _context4.sent;
-            _context4.next = 9;
+            res = _context5.sent;
+            _context5.next = 9;
             return res.text();
           case 9:
-            return _context4.abrupt("return", _context4.sent);
+            return _context5.abrupt("return", _context5.sent);
           case 10:
           case "end":
-            return _context4.stop();
+            return _context5.stop();
         }
-      }, _callee4);
+      }, _callee5);
     }));
     return _getXlf.apply(this, arguments);
   }
@@ -2143,23 +2161,32 @@ var XiboLayoutRenderer = (function (exports) {
         }
       }
       if (self.allEnded) {
-        self.stopAllMedia().then(function () {
-          console.debug('starting to end layout . . .');
-          if (xlr.config.platform === 'CMS') {
-            var $end = document.getElementById('play_ended');
-            var $preview = document.getElementById('screen_container');
-            if ($preview) {
-              while ($preview.firstChild) {
-                $preview.removeChild($preview.firstChild);
-              }
-              $preview.style.display = 'none';
+        self.stopAllMedia().then( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+          var $end, $preview;
+          return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+            while (1) switch (_context2.prev = _context2.next) {
+              case 0:
+                console.debug('starting to end layout . . .');
+                if (xlr.config.platform === 'CMS') {
+                  $end = document.getElementById('play_ended');
+                  $preview = document.getElementById('screen_container');
+                  if ($preview) {
+                    while ($preview.firstChild) {
+                      $preview.removeChild($preview.firstChild);
+                    }
+                    $preview.style.display = 'none';
+                  }
+                  if ($end) {
+                    $end.style.display = 'block';
+                  }
+                }
+                self.emitter.emit('end', self);
+              case 3:
+              case "end":
+                return _context2.stop();
             }
-            if ($end) {
-              $end.style.display = 'block';
-            }
-          }
-          self.emitter.emit('end', self);
-        });
+          }, _callee2);
+        })));
       }
     };
     layoutObject.end = function () {
@@ -2181,65 +2208,69 @@ var XiboLayoutRenderer = (function (exports) {
     layoutObject.stopAllMedia = function () {
       console.debug('Stopping all media . . .');
       return new Promise( /*#__PURE__*/function () {
-        var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(resolve) {
+        var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(resolve) {
           var i, region, j, media;
-          return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-            while (1) switch (_context2.prev = _context2.next) {
+          return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+            while (1) switch (_context3.prev = _context3.next) {
               case 0:
                 i = 0;
               case 1:
                 if (!(i < layoutObject.regions.length)) {
-                  _context2.next = 14;
+                  _context3.next = 16;
                   break;
                 }
                 region = layoutObject.regions[i];
                 j = 0;
               case 4:
                 if (!(j < region.mediaObjects.length)) {
-                  _context2.next = 11;
+                  _context3.next = 11;
                   break;
                 }
                 media = region.mediaObjects[j];
-                _context2.next = 8;
+                _context3.next = 8;
                 return media.stop();
               case 8:
                 j++;
-                _context2.next = 4;
+                _context3.next = 4;
                 break;
               case 11:
+                _context3.next = 13;
+                return region.reset();
+              case 13:
                 i++;
-                _context2.next = 1;
+                _context3.next = 1;
                 break;
-              case 14:
+              case 16:
                 resolve();
-              case 15:
+              case 17:
               case "end":
-                return _context2.stop();
+                return _context3.stop();
             }
-          }, _callee2);
+          }, _callee3);
         }));
         return function (_x3) {
-          return _ref2.apply(this, arguments);
+          return _ref3.apply(this, arguments);
         };
       }());
     };
-    layoutObject.resetLayout = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
-      var _this = this;
-      return _regeneratorRuntime().wrap(function _callee3$(_context3) {
-        while (1) switch (_context3.prev = _context3.next) {
+    layoutObject.resetLayout = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+      return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+        while (1) switch (_context4.prev = _context4.next) {
           case 0:
-            _context3.next = 2;
-            return Promise.all(this.regions.map(function (layoutRegion) {
+            layoutObject.allExpired = false;
+            layoutObject.allEnded = false;
+            _context4.next = 4;
+            return Promise.all(layoutObject.regions.map(function (layoutRegion) {
               layoutRegion.ended = false;
-              _this.regions[layoutRegion.index] = layoutRegion;
+              layoutObject.regions[layoutRegion.index] = layoutRegion;
             }));
-          case 2:
-            console.debug('Reset layout', this.layoutId);
-          case 3:
+          case 4:
+            console.debug('Reset layout', layoutObject.layoutId);
+          case 5:
           case "end":
-            return _context3.stop();
+            return _context4.stop();
         }
-      }, _callee3, this);
+      }, _callee4);
     }));
     layoutObject.prepareLayout();
     return layoutObject;

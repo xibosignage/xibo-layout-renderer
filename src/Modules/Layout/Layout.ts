@@ -419,7 +419,7 @@ export default function Layout(
         }
         
         if (self.allEnded) {
-            self.stopAllMedia().then(() => {
+            self.stopAllMedia().then(async () => {
                 console.debug('starting to end layout . . .');
                 if (xlr.config.platform === 'CMS') {
                     const $end = document.getElementById('play_ended');
@@ -462,6 +462,8 @@ export default function Layout(
                     var media = region.mediaObjects[j];
                     await media.stop();
                 }
+
+                await region.reset();
             }
 
             resolve();
@@ -469,12 +471,14 @@ export default function Layout(
     };
 
     layoutObject.resetLayout = async function() {
-        await Promise.all(this.regions.map((layoutRegion) => {
+        layoutObject.allExpired = false;
+        layoutObject.allEnded = false;
+        await Promise.all(layoutObject.regions.map((layoutRegion) => {
             layoutRegion.ended = false;
-            this.regions[layoutRegion.index] = layoutRegion;
+            layoutObject.regions[layoutRegion.index] = layoutRegion;
         }));
 
-        console.debug('Reset layout', this.layoutId);
+        console.debug('Reset layout', layoutObject.layoutId);
     };
 
     layoutObject.prepareLayout();
