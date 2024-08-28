@@ -159,6 +159,14 @@ export default function XiboLayoutRenderer(
                         this.layouts[oldNxtLayoutIndex] = tempOldNxtLayout;
                     }
                 }
+            } else {
+                // Check if newNxtLayout is not the same with nextLayout
+                // Then, replace nextLayout with new one
+                if (inputLayouts[nxtLayoutIndex].layoutId !== this.nextLayout?.layoutId) {
+                    const tempNewNxtLayout = {...initialLayout, ...inputLayouts[nxtLayoutIndex]};
+                    this.nextLayout = await this.prepareLayoutXlf(tempNewNxtLayout);
+                    this.layouts[nxtLayoutIndex] = this.nextLayout;
+                }
             }
         }
     };
