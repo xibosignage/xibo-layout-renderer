@@ -90,6 +90,10 @@ export default function XiboLayoutRenderer(
     };
 
     xlrObject.updateLoop = function(inputLayouts: InputLayoutType[]) {
+        this.updateLayouts(inputLayouts);
+    };
+
+    xlrObject.updateLayouts = async function(inputLayouts: InputLayoutType[]) {
         /**
          * @TODO
          * Case 1: If currentLayout in inputLayouts and in the same sequence,
@@ -104,15 +108,38 @@ export default function XiboLayoutRenderer(
          * Then, replace everything and start from first layout in sequence.
          */
 
-        this.inputLayouts = inputLayouts;
+        /** Case 1: When currentLayout is not in inputLayouts
+         * Then, replace everything and start from first layout
+         */
+        if (inputLayouts.filter((inputLayout) => inputLayout.layoutId === this.currentLayout?.layoutId).length === 0) {
+            this.inputLayouts = inputLayouts;
 
-        this.updateLayouts();
-    };
+            const xlr = await this.prepareLayouts();
+            this.playSchedules(xlr);
+        } else {
+            /** Case 2: When currentLayout is in inputLayouts, then continue playing
+             * Also check for nextLayout if in inputLayouts and same sequence, then don't change and continue playing.
+             * If not in inputLayouts, then replace and prepare nextLayout.
+             */
 
-    xlrObject.updateLayouts = function() {
-        this.prepareLayouts().then(() => {
-            this.playSchedules(this);
-        });
+            // 2.1 We don't have to do anything for currentLayout
+            // 2.2 Check for nextLayout
+            // Get nextLayout index
+            const currLayoutIndex = getIndexByLayoutId(inputLayouts, this.currentLayout?.layoutId).index as number;
+            const nxtLayoutIndex = getIndexByLayoutId(inputLayouts, this.nextLayout?.layoutId).index as number;
+
+            if (nxtLayoutIndex !== currLayoutIndex + 1) {
+                if (Boolean(this.layouts[nxtLayoutIndex])) {
+                    this.nextLayout = this.layouts[nxtLayoutIndex];
+                } else {
+                    const tempNxtLayout = {...initialLayout, ...inputLayouts[nxtLayoutIndex]};
+                    this.nextLayout = await this.prepareLayoutXlf(tempNxtLayout);
+                    this.layouts[nxtLayoutIndex] = this.nextLayout;
+                }
+
+                this.inputLayouts = inputLayouts;
+            }
+        }
     };
 
     xlrObject.prepareLayouts = async function() {

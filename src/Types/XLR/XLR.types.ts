@@ -43,7 +43,7 @@ export interface IXlr {
     playSchedules(xlr: IXlr): void;
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(): Promise<IXlr>;
-    updateLayouts(): void;
+    updateLayouts(inputLayouts: InputLayoutType[]): void;
     updateLoop(inputLayouts: InputLayoutType[]): void;
 }
 
@@ -68,7 +68,7 @@ export const initialXlr: IXlr = {
     prepareLayouts(): Promise<IXlr> {
         return Promise.resolve(<IXlr>{});
     },
-    updateLayouts() {
+    updateLayouts(inputLayouts: InputLayoutType[]) {
     },
     updateLoop(inputLayouts: InputLayoutType[]) {
     }

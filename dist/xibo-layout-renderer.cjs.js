@@ -1194,9 +1194,6 @@ function Media(region, mediaId, xml, options, xlr) {
       clearInterval(mediaTimer);
       mediaTimeCount = 0;
     }
-    console.debug('mediaTimer', mediaTimer);
-    console.debug('mediaTimeCount', mediaTimeCount);
-    console.debug('mediaRegion', media.region);
     media.region.playNextMedia();
   });
   mediaObject.on = function (event, callback) {
@@ -2253,7 +2250,7 @@ var initialXlr = {
   prepareLayouts: function prepareLayouts() {
     return Promise.resolve({});
   },
-  updateLayouts: function updateLayouts() {},
+  updateLayouts: function updateLayouts(inputLayouts) {},
   updateLoop: function updateLoop(inputLayouts) {}
 };
 
@@ -2368,33 +2365,75 @@ function XiboLayoutRenderer(inputLayouts, options) {
     }
   };
   xlrObject.updateLoop = function (inputLayouts) {
-    /**
-     * @TODO
-     * Case 1: If currentLayout in inputLayouts and in the same sequence,
-     * Then, continue playing currentLayout.
-     * Check nextLayout in inputLayouts. If in inputLayouts and same sequence, then don't change.
-     * If not in inputLayouts, then replace and prepare nextLayout.
-     *
-     * Case 2: If currentLayout in inputLayouts but not in the same sequence,
-     * Then, replace loop, prepare layouts and start currentLayout
-     *
-     * Case 3: If currentLayout not in inputLayouts,
-     * Then, replace everything and start from first layout in sequence.
-     */
-    this.inputLayouts = inputLayouts;
-    this.updateLayouts();
+    this.updateLayouts(inputLayouts);
   };
-  xlrObject.updateLayouts = function () {
-    var _this2 = this;
-    this.prepareLayouts().then(function () {
-      _this2.playSchedules(_this2);
-    });
-  };
-  xlrObject.prepareLayouts = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+  xlrObject.updateLayouts = /*#__PURE__*/function () {
+    var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(inputLayouts) {
+      var _this2 = this;
+      var xlr, _this$currentLayout, _this$nextLayout, currLayoutIndex, nxtLayoutIndex, tempNxtLayout;
+      return _regeneratorRuntime().wrap(function _callee$(_context) {
+        while (1) switch (_context.prev = _context.next) {
+          case 0:
+            if (!(inputLayouts.filter(function (inputLayout) {
+              var _this2$currentLayout;
+              return inputLayout.layoutId === ((_this2$currentLayout = _this2.currentLayout) === null || _this2$currentLayout === void 0 ? void 0 : _this2$currentLayout.layoutId);
+            }).length === 0)) {
+              _context.next = 8;
+              break;
+            }
+            this.inputLayouts = inputLayouts;
+            _context.next = 4;
+            return this.prepareLayouts();
+          case 4:
+            xlr = _context.sent;
+            this.playSchedules(xlr);
+            _context.next = 21;
+            break;
+          case 8:
+            /** Case 2: When currentLayout is in inputLayouts, then continue playing
+             * Also check for nextLayout if in inputLayouts and same sequence, then don't change and continue playing.
+             * If not in inputLayouts, then replace and prepare nextLayout.
+             */
+            // 2.1 We don't have to do anything for currentLayout
+            // 2.2 Check for nextLayout
+            // Get nextLayout index
+            currLayoutIndex = getIndexByLayoutId(inputLayouts, (_this$currentLayout = this.currentLayout) === null || _this$currentLayout === void 0 ? void 0 : _this$currentLayout.layoutId).index;
+            nxtLayoutIndex = getIndexByLayoutId(inputLayouts, (_this$nextLayout = this.nextLayout) === null || _this$nextLayout === void 0 ? void 0 : _this$nextLayout.layoutId).index;
+            if (!(nxtLayoutIndex !== currLayoutIndex + 1)) {
+              _context.next = 21;
+              break;
+            }
+            if (!Boolean(this.layouts[nxtLayoutIndex])) {
+              _context.next = 15;
+              break;
+            }
+            this.nextLayout = this.layouts[nxtLayoutIndex];
+            _context.next = 20;
+            break;
+          case 15:
+            tempNxtLayout = _objectSpread2(_objectSpread2({}, initialLayout), inputLayouts[nxtLayoutIndex]);
+            _context.next = 18;
+            return this.prepareLayoutXlf(tempNxtLayout);
+          case 18:
+            this.nextLayout = _context.sent;
+            this.layouts[nxtLayoutIndex] = this.nextLayout;
+          case 20:
+            this.inputLayouts = inputLayouts;
+          case 21:
+          case "end":
+            return _context.stop();
+        }
+      }, _callee, this);
+    }));
+    return function (_x) {
+      return _ref.apply(this, arguments);
+    };
+  }();
+  xlrObject.prepareLayouts = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
     var _xlrLayouts$current;
     var self, xlrLayouts, layoutsXlf, layouts;
-    return _regeneratorRuntime().wrap(function _callee$(_context) {
-      while (1) switch (_context.prev = _context.next) {
+    return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+      while (1) switch (_context2.prev = _context2.next) {
         case 0:
           self = this; // Get layouts
           xlrLayouts = getLayout({
@@ -2413,13 +2452,13 @@ function XiboLayoutRenderer(inputLayouts, options) {
               return [].concat(_toConsumableArray(coll), [self.prepareLayoutXlf(item)]);
             }, []);
           };
-          _context.next = 7;
+          _context2.next = 7;
           return Promise.all(layoutsXlf());
         case 7:
-          layouts = _context.sent;
+          layouts = _context2.sent;
           console.log('prepareLayouts::layouts', layouts);
           console.log('prepareLayouts::xlr>layouts', self.layouts);
-          return _context.abrupt("return", new Promise(function (resolve) {
+          return _context2.abrupt("return", new Promise(function (resolve) {
             layouts.map(function (layoutItem) {
               if (!Boolean(self.layouts[layoutItem.index])) {
                 self.layouts[layoutItem.index] = layoutItem;
@@ -2438,16 +2477,16 @@ function XiboLayoutRenderer(inputLayouts, options) {
           }));
         case 11:
         case "end":
-          return _context.stop();
+          return _context2.stop();
       }
-    }, _callee, this);
+    }, _callee2, this);
   }));
   xlrObject.prepareLayoutXlf = /*#__PURE__*/function () {
-    var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(inputLayout) {
+    var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(inputLayout) {
       var _this3 = this;
       var self, newOptions, layoutXlf, layoutXlfNode, parser;
-      return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-        while (1) switch (_context2.prev = _context2.next) {
+      return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+        while (1) switch (_context3.prev = _context3.next) {
           case 0:
             self = this; // Compose layout props first
             newOptions = Object.assign({}, platform);
@@ -2458,21 +2497,21 @@ function XiboLayoutRenderer(inputLayouts, options) {
               newOptions.xlfUrl = inputLayout.path;
             }
             if (!(inputLayout && inputLayout.layoutNode === null)) {
-              _context2.next = 12;
+              _context3.next = 12;
               break;
             }
-            _context2.next = 7;
+            _context3.next = 7;
             return getXlf(newOptions);
           case 7:
-            layoutXlf = _context2.sent;
+            layoutXlf = _context3.sent;
             parser = new window.DOMParser();
             layoutXlfNode = parser.parseFromString(layoutXlf, 'text/xml');
-            _context2.next = 13;
+            _context3.next = 13;
             break;
           case 12:
             layoutXlfNode = inputLayout && inputLayout.layoutNode;
           case 13:
-            return _context2.abrupt("return", new Promise(function (resolve) {
+            return _context3.abrupt("return", new Promise(function (resolve) {
               var xlrLayoutObj = initialLayout;
               xlrLayoutObj.id = Number(inputLayout.layoutId);
               xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
@@ -2482,12 +2521,12 @@ function XiboLayoutRenderer(inputLayouts, options) {
             }));
           case 14:
           case "end":
-            return _context2.stop();
+            return _context3.stop();
         }
-      }, _callee2, this);
+      }, _callee3, this);
     }));
-    return function (_x) {
-      return _ref2.apply(this, arguments);
+    return function (_x2) {
+      return _ref3.apply(this, arguments);
     };
   }();
   xlrObject.bootstrap();
