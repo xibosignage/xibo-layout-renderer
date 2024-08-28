@@ -2392,7 +2392,7 @@ var XiboLayoutRenderer = (function (exports) {
             case 4:
               xlr = _context.sent;
               this.playSchedules(xlr);
-              _context.next = 28;
+              _context.next = 29;
               break;
             case 8:
               /** Case 2: When currentLayout is in inputLayouts, then continue playing
@@ -2406,7 +2406,7 @@ var XiboLayoutRenderer = (function (exports) {
               nxtLayoutIndex = getIndexByLayoutId(inputLayouts, (_this$nextLayout = this.nextLayout) === null || _this$nextLayout === void 0 ? void 0 : _this$nextLayout.layoutId).index;
               newNxtLayoutIndex = currLayoutIndex + 1;
               if (!(nxtLayoutIndex !== newNxtLayoutIndex)) {
-                _context.next = 28;
+                _context.next = 29;
                 break;
               }
               tempOldNxtLayout = this.layouts[nxtLayoutIndex]; // Delete old nextLayout
@@ -2417,20 +2417,25 @@ var XiboLayoutRenderer = (function (exports) {
               }
               this.nextLayout = this.layouts[newNxtLayoutIndex];
               this.layouts[newNxtLayoutIndex] = this.nextLayout;
-              _context.next = 27;
+              _context.next = 28;
               break;
             case 19:
+              // Check if newNxtLayoutIndex is still within inputLayouts
+              if (newNxtLayoutIndex + 1 > inputLayouts.length) {
+                // Goes back to first layout in the sequence
+                newNxtLayoutIndex = 0;
+              }
               if (!Boolean(inputLayouts[newNxtLayoutIndex])) {
-                _context.next = 25;
+                _context.next = 26;
                 break;
               }
               tempNxtLayout = _objectSpread2(_objectSpread2({}, initialLayout), inputLayouts[newNxtLayoutIndex]);
-              _context.next = 23;
+              _context.next = 24;
               return this.prepareLayoutXlf(tempNxtLayout);
-            case 23:
+            case 24:
               this.nextLayout = _context.sent;
               this.layouts[newNxtLayoutIndex] = this.nextLayout;
-            case 25:
+            case 26:
               // Move old nextLayout to its index
               hasOldNxtLayout = inputLayouts.filter(function (_layout) {
                 return _layout.layoutId === (tempOldNxtLayout === null || tempOldNxtLayout === void 0 ? void 0 : tempOldNxtLayout.layoutId);
@@ -2439,9 +2444,9 @@ var XiboLayoutRenderer = (function (exports) {
                 oldNxtLayoutIndex = getIndexByLayoutId(inputLayouts, hasOldNxtLayout[0].layoutId).index;
                 this.layouts[oldNxtLayoutIndex] = tempOldNxtLayout;
               }
-            case 27:
-              this.inputLayouts = inputLayouts;
             case 28:
+              this.inputLayouts = inputLayouts;
+            case 29:
             case "end":
               return _context.stop();
           }

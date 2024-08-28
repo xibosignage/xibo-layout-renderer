@@ -127,7 +127,7 @@ export default function XiboLayoutRenderer(
             // Get nextLayout index
             const currLayoutIndex = getIndexByLayoutId(inputLayouts, this.currentLayout?.layoutId).index as number;
             const nxtLayoutIndex = getIndexByLayoutId(inputLayouts, this.nextLayout?.layoutId).index as number;
-            const newNxtLayoutIndex = currLayoutIndex + 1;
+            let newNxtLayoutIndex = currLayoutIndex + 1;
 
             if (nxtLayoutIndex !== newNxtLayoutIndex) {
                 const tempOldNxtLayout = this.layouts[nxtLayoutIndex];
@@ -138,6 +138,12 @@ export default function XiboLayoutRenderer(
                     this.nextLayout = this.layouts[newNxtLayoutIndex];
                     this.layouts[newNxtLayoutIndex] = this.nextLayout;
                 } else {
+                    // Check if newNxtLayoutIndex is still within inputLayouts
+                    if ((newNxtLayoutIndex + 1) > inputLayouts.length) {
+                        // Goes back to first layout in the sequence
+                        newNxtLayoutIndex = 0;
+                    }
+
                     if (Boolean(inputLayouts[newNxtLayoutIndex])) {
                         const tempNxtLayout = {...initialLayout, ...inputLayouts[newNxtLayoutIndex]};
                         this.nextLayout = await this.prepareLayoutXlf(tempNxtLayout);
