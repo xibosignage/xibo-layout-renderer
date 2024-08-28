@@ -2372,7 +2372,7 @@ function XiboLayoutRenderer(inputLayouts, options) {
   xlrObject.updateLayouts = /*#__PURE__*/function () {
     var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(inputLayouts) {
       var _this2 = this;
-      var xlr, _this$currentLayout, _this$nextLayout, currLayoutIndex, nxtLayoutIndex, tempNxtLayout;
+      var xlr, _this$currentLayout, _this$nextLayout, currLayoutIndex, nxtLayoutIndex, newNxtLayoutIndex, tempOldNxtLayout, tempNxtLayout, hasOldNxtLayout, oldNxtLayoutIndex;
       return _regeneratorRuntime().wrap(function _callee$(_context) {
         while (1) switch (_context.prev = _context.next) {
           case 0:
@@ -2389,7 +2389,7 @@ function XiboLayoutRenderer(inputLayouts, options) {
           case 4:
             xlr = _context.sent;
             this.playSchedules(xlr);
-            _context.next = 21;
+            _context.next = 28;
             break;
           case 8:
             /** Case 2: When currentLayout is in inputLayouts, then continue playing
@@ -2401,27 +2401,44 @@ function XiboLayoutRenderer(inputLayouts, options) {
             // Get nextLayout index
             currLayoutIndex = getIndexByLayoutId(inputLayouts, (_this$currentLayout = this.currentLayout) === null || _this$currentLayout === void 0 ? void 0 : _this$currentLayout.layoutId).index;
             nxtLayoutIndex = getIndexByLayoutId(inputLayouts, (_this$nextLayout = this.nextLayout) === null || _this$nextLayout === void 0 ? void 0 : _this$nextLayout.layoutId).index;
-            if (!(nxtLayoutIndex !== currLayoutIndex + 1)) {
-              _context.next = 21;
+            newNxtLayoutIndex = currLayoutIndex + 1;
+            if (!(nxtLayoutIndex !== newNxtLayoutIndex)) {
+              _context.next = 28;
               break;
             }
-            if (!Boolean(this.layouts[nxtLayoutIndex])) {
-              _context.next = 15;
+            tempOldNxtLayout = this.layouts[nxtLayoutIndex]; // Delete old nextLayout
+            delete this.layouts[nxtLayoutIndex];
+            if (!Boolean(this.layouts[newNxtLayoutIndex])) {
+              _context.next = 19;
               break;
             }
-            this.nextLayout = this.layouts[nxtLayoutIndex];
-            _context.next = 20;
+            this.nextLayout = this.layouts[newNxtLayoutIndex];
+            this.layouts[newNxtLayoutIndex] = this.nextLayout;
+            _context.next = 27;
             break;
-          case 15:
-            tempNxtLayout = _objectSpread2(_objectSpread2({}, initialLayout), inputLayouts[nxtLayoutIndex]);
-            _context.next = 18;
+          case 19:
+            if (!Boolean(inputLayouts[newNxtLayoutIndex])) {
+              _context.next = 25;
+              break;
+            }
+            tempNxtLayout = _objectSpread2(_objectSpread2({}, initialLayout), inputLayouts[newNxtLayoutIndex]);
+            _context.next = 23;
             return this.prepareLayoutXlf(tempNxtLayout);
-          case 18:
+          case 23:
             this.nextLayout = _context.sent;
-            this.layouts[nxtLayoutIndex] = this.nextLayout;
-          case 20:
+            this.layouts[newNxtLayoutIndex] = this.nextLayout;
+          case 25:
+            // Move old nextLayout to its index
+            hasOldNxtLayout = inputLayouts.filter(function (_layout) {
+              return _layout.layoutId === (tempOldNxtLayout === null || tempOldNxtLayout === void 0 ? void 0 : tempOldNxtLayout.layoutId);
+            });
+            if (hasOldNxtLayout.length === 1) {
+              oldNxtLayoutIndex = getIndexByLayoutId(inputLayouts, hasOldNxtLayout[0].layoutId).index;
+              this.layouts[oldNxtLayoutIndex] = tempOldNxtLayout;
+            }
+          case 27:
             this.inputLayouts = inputLayouts;
-          case 21:
+          case 28:
           case "end":
             return _context.stop();
         }

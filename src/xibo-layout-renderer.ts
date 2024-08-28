@@ -127,14 +127,32 @@ export default function XiboLayoutRenderer(
             // Get nextLayout index
             const currLayoutIndex = getIndexByLayoutId(inputLayouts, this.currentLayout?.layoutId).index as number;
             const nxtLayoutIndex = getIndexByLayoutId(inputLayouts, this.nextLayout?.layoutId).index as number;
+            const newNxtLayoutIndex = currLayoutIndex + 1;
 
-            if (nxtLayoutIndex !== currLayoutIndex + 1) {
-                if (Boolean(this.layouts[nxtLayoutIndex])) {
-                    this.nextLayout = this.layouts[nxtLayoutIndex];
+            if (nxtLayoutIndex !== newNxtLayoutIndex) {
+                const tempOldNxtLayout = this.layouts[nxtLayoutIndex];
+                // Delete old nextLayout
+                delete this.layouts[nxtLayoutIndex];
+
+                if (Boolean(this.layouts[newNxtLayoutIndex])) {
+                    this.nextLayout = this.layouts[newNxtLayoutIndex];
+                    this.layouts[newNxtLayoutIndex] = this.nextLayout;
                 } else {
-                    const tempNxtLayout = {...initialLayout, ...inputLayouts[nxtLayoutIndex]};
-                    this.nextLayout = await this.prepareLayoutXlf(tempNxtLayout);
-                    this.layouts[nxtLayoutIndex] = this.nextLayout;
+                    if (Boolean(inputLayouts[newNxtLayoutIndex])) {
+                        const tempNxtLayout = {...initialLayout, ...inputLayouts[newNxtLayoutIndex]};
+                        this.nextLayout = await this.prepareLayoutXlf(tempNxtLayout);
+                        this.layouts[newNxtLayoutIndex] = this.nextLayout;
+                    }
+
+                    // Move old nextLayout to its index
+                    let hasOldNxtLayout = inputLayouts
+                        .filter((_layout) => _layout.layoutId === tempOldNxtLayout?.layoutId);
+
+                    if (hasOldNxtLayout.length === 1) {
+                        const oldNxtLayoutIndex =
+                            getIndexByLayoutId(inputLayouts, hasOldNxtLayout[0].layoutId).index as number;
+                        this.layouts[oldNxtLayoutIndex] = tempOldNxtLayout;
+                    }
                 }
 
                 this.inputLayouts = inputLayouts;
