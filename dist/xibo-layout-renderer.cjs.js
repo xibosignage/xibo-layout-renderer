@@ -2380,6 +2380,23 @@ function XiboLayoutRenderer(inputLayouts, options) {
       return _regeneratorRuntime().wrap(function _callee$(_context) {
         while (1) switch (_context.prev = _context.next) {
           case 0:
+            /**
+             * @TODO
+             * Case 1: If currentLayout in inputLayouts and in the same sequence,
+             * Then, continue playing currentLayout.
+             * Check nextLayout in inputLayouts. If in inputLayouts and same sequence, then don't change.
+             * If not in inputLayouts, then replace and prepare nextLayout.
+             *
+             * Case 2: If currentLayout in inputLayouts but not in the same sequence,
+             * Then, replace loop, prepare layouts and start currentLayout
+             *
+             * Case 3: If currentLayout not in inputLayouts,
+             * Then, replace everything and start from first layout in sequence.
+             */
+            this.inputLayouts = inputLayouts;
+            /** Case 1: When currentLayout is not in inputLayouts
+             * Then, replace everything and start from first layout
+             */
             if (!(inputLayouts.filter(function (inputLayout) {
               var _this2$currentLayout;
               return inputLayout.layoutId === ((_this2$currentLayout = _this2.currentLayout) === null || _this2$currentLayout === void 0 ? void 0 : _this2$currentLayout.layoutId);
@@ -2387,13 +2404,12 @@ function XiboLayoutRenderer(inputLayouts, options) {
               _context.next = 8;
               break;
             }
-            this.inputLayouts = inputLayouts;
             _context.next = 4;
             return this.prepareLayouts();
           case 4:
             xlr = _context.sent;
             this.playSchedules(xlr);
-            _context.next = 29;
+            _context.next = 28;
             break;
           case 8:
             /** Case 2: When currentLayout is in inputLayouts, then continue playing
@@ -2407,7 +2423,7 @@ function XiboLayoutRenderer(inputLayouts, options) {
             nxtLayoutIndex = getIndexByLayoutId(inputLayouts, (_this$nextLayout = this.nextLayout) === null || _this$nextLayout === void 0 ? void 0 : _this$nextLayout.layoutId).index;
             newNxtLayoutIndex = currLayoutIndex + 1;
             if (!(nxtLayoutIndex !== newNxtLayoutIndex)) {
-              _context.next = 29;
+              _context.next = 28;
               break;
             }
             tempOldNxtLayout = this.layouts[nxtLayoutIndex]; // Delete old nextLayout
@@ -2446,8 +2462,6 @@ function XiboLayoutRenderer(inputLayouts, options) {
               this.layouts[oldNxtLayoutIndex] = tempOldNxtLayout;
             }
           case 28:
-            this.inputLayouts = inputLayouts;
-          case 29:
           case "end":
             return _context.stop();
         }

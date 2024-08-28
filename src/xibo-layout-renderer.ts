@@ -108,12 +108,11 @@ export default function XiboLayoutRenderer(
          * Then, replace everything and start from first layout in sequence.
          */
 
+        this.inputLayouts = inputLayouts;
         /** Case 1: When currentLayout is not in inputLayouts
          * Then, replace everything and start from first layout
          */
         if (inputLayouts.filter((inputLayout) => inputLayout.layoutId === this.currentLayout?.layoutId).length === 0) {
-            this.inputLayouts = inputLayouts;
-
             const xlr = await this.prepareLayouts();
             this.playSchedules(xlr);
         } else {
@@ -160,8 +159,6 @@ export default function XiboLayoutRenderer(
                         this.layouts[oldNxtLayoutIndex] = tempOldNxtLayout;
                     }
                 }
-
-                this.inputLayouts = inputLayouts;
             }
         }
     };
