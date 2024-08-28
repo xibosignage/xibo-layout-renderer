@@ -729,7 +729,13 @@ function getIndexByLayoutId(layoutsInput, layoutId) {
   if (layoutId === null || !layoutId) {
     return layoutIndexes;
   }
-  return layoutIndexes[layoutId];
+  if (Boolean(layoutIndexes[layoutId])) {
+    return layoutIndexes[layoutId];
+  }
+  // Defaults to 0
+  return {
+    index: 0
+  };
 }
 
 var initialRegion = {

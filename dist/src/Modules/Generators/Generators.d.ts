@@ -20,7 +20,9 @@ type LayoutIndexType = {
 };
 export declare function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: number | null): (InputLayoutType & {
     index: number;
-}) | LayoutIndexType;
+}) | LayoutIndexType | {
+    index: number;
+};
 export declare function isEmpty(input: any): boolean;
 export declare const splashScreenLayoutObj: InputLayoutType;
 export declare function splashScreenDOM(): HTMLImageElement;
