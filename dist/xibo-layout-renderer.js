@@ -712,18 +712,11 @@ var XiboLayoutRenderer = (function (exports) {
     return resourceUrl;
   }
   function composeResourceUrl(config, params) {
-    config && config.schemaVersion;
-    config && config.hardwareKey;
-    config && config.cmsKey;
+    var schemaVersion = config && config.schemaVersion;
+    var hardwareKey = config && config.hardwareKey;
+    var serverKey = config && config.cmsKey;
     var cmsUrl = config && config.cmsUrl;
-    return cmsUrl + '/chromeOS/resource' + '/' + params.layoutId + '/' + params.regionId + '/' + params.mediaId;
-    // return cmsUrl + '/pwa/getResource' +
-    //     '?v=' + schemaVersion +
-    //     '&serverKey=' + serverKey +
-    //     '&hardwareKey=' + hardwareKey +
-    //     '&layoutId=' + params.layoutId +
-    //     '&regionId=' + params.regionId +
-    //     '&mediaId=' + params.mediaId;
+    return cmsUrl + '/pwa/getResource' + '?v=' + schemaVersion + '&serverKey=' + serverKey + '&hardwareKey=' + hardwareKey + '&layoutId=' + params.layoutId + '&regionId=' + params.regionId + '&mediaId=' + params.mediaId;
   }
   function composeBgUrlByPlatform(platform, params) {
     var bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", params.layout.id) + '?preview=1&width=' + params.layout.sWidth + '&height=' + params.layout.sHeight + '&dynamic&proportional=0';
@@ -1302,7 +1295,11 @@ var XiboLayoutRenderer = (function (exports) {
       self.url = tmpUrl;
       // Loop if media has loop, or if region has loop and a single media
       self.loop = self.options['loop'] == '1' || self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1;
-      $mediaIframe.src = "".concat(tmpUrl, "&width=").concat(self.divWidth, "&height=").concat(self.divHeight);
+      if (self.render === 'html' || self.render === 'webpage') {
+        $mediaIframe.src = tmpUrl;
+      } else {
+        $mediaIframe.src = "".concat(tmpUrl, "&width=").concat(self.divWidth, "&height=").concat(self.divHeight);
+      }
       if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
         self.checkIframeStatus = true;
         self.iframe = $mediaIframe;

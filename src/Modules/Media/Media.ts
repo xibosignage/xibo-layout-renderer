@@ -206,7 +206,11 @@ export default function Media(
             self.options['loop'] == '1' ||
             (self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1);
 
-        $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
+        if (self.render === 'html' || self.render === 'webpage') {
+            $mediaIframe.src = tmpUrl;
+        } else {
+            $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
+        }
 
         if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
             self.checkIframeStatus = true;
