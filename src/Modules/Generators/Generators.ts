@@ -134,13 +134,18 @@ export function composeResourceUrl(config: OptionsType['config'], params: any) {
     const serverKey = (config) && config.cmsKey;
     const cmsUrl = (config) && config.cmsUrl;
 
-    return cmsUrl + '/pwa/getResource' +
-        '?v=' + schemaVersion +
-        '&serverKey=' + serverKey +
-        '&hardwareKey=' + hardwareKey +
-        '&layoutId=' + params.layoutId +
-        '&regionId=' + params.regionId +
-        '&mediaId=' + params.mediaId;
+    return cmsUrl + '/chromeOS/resource' +
+        '/' + params.layoutId +
+        '/' + params.regionId +
+        '/' + params.mediaId;
+
+    // return cmsUrl + '/pwa/getResource' +
+    //     '?v=' + schemaVersion +
+    //     '&serverKey=' + serverKey +
+    //     '&hardwareKey=' + hardwareKey +
+    //     '&layoutId=' + params.layoutId +
+    //     '&regionId=' + params.regionId +
+    //     '&mediaId=' + params.mediaId;
 }
 
 export function composeBgUrlByPlatform(

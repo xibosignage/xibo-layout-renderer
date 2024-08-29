@@ -709,11 +709,18 @@ function composeResourceUrlByPlatform(options, params) {
   return resourceUrl;
 }
 function composeResourceUrl(config, params) {
-  var schemaVersion = config && config.schemaVersion;
-  var hardwareKey = config && config.hardwareKey;
-  var serverKey = config && config.cmsKey;
+  config && config.schemaVersion;
+  config && config.hardwareKey;
+  config && config.cmsKey;
   var cmsUrl = config && config.cmsUrl;
-  return cmsUrl + '/pwa/getResource' + '?v=' + schemaVersion + '&serverKey=' + serverKey + '&hardwareKey=' + hardwareKey + '&layoutId=' + params.layoutId + '&regionId=' + params.regionId + '&mediaId=' + params.mediaId;
+  return cmsUrl + '/chromeOS/resource' + '/' + params.layoutId + '/' + params.regionId + '/' + params.mediaId;
+  // return cmsUrl + '/pwa/getResource' +
+  //     '?v=' + schemaVersion +
+  //     '&serverKey=' + serverKey +
+  //     '&hardwareKey=' + hardwareKey +
+  //     '&layoutId=' + params.layoutId +
+  //     '&regionId=' + params.regionId +
+  //     '&mediaId=' + params.mediaId;
 }
 function composeBgUrlByPlatform(platform, params) {
   var bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", params.layout.id) + '?preview=1&width=' + params.layout.sWidth + '&height=' + params.layout.sHeight + '&dynamic&proportional=0';
