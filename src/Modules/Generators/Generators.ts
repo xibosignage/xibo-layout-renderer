@@ -134,7 +134,7 @@ export function composeResourceUrl(config: OptionsType['config'], params: any) {
     const serverKey = (config) && config.cmsKey;
     const cmsUrl = (config) && config.cmsUrl;
 
-    return cmsUrl + '/chromeOS/getResource' +
+    return cmsUrl + '/pwa/getResource' +
         '?v=' + schemaVersion +
         '&serverKey=' + serverKey +
         '&hardwareKey=' + hardwareKey +

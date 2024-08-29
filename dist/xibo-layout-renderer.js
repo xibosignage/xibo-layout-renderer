@@ -711,6 +711,13 @@ var XiboLayoutRenderer = (function (exports) {
     }
     return resourceUrl;
   }
+  function composeResourceUrl(config, params) {
+    var schemaVersion = config && config.schemaVersion;
+    var hardwareKey = config && config.hardwareKey;
+    var serverKey = config && config.cmsKey;
+    var cmsUrl = config && config.cmsUrl;
+    return cmsUrl + '/pwa/getResource' + '?v=' + schemaVersion + '&serverKey=' + serverKey + '&hardwareKey=' + hardwareKey + '&layoutId=' + params.layoutId + '&regionId=' + params.regionId + '&mediaId=' + params.mediaId;
+  }
   function composeBgUrlByPlatform(platform, params) {
     var bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", params.layout.id) + '?preview=1&width=' + params.layout.sWidth + '&height=' + params.layout.sHeight + '&dynamic&proportional=0';
     if (platform === 'chromeOS') {
@@ -1279,7 +1286,12 @@ var XiboLayoutRenderer = (function (exports) {
       if (self.mediaType === 'image' || self.mediaType === 'video') {
         resourceUrlParams.mediaType = self.mediaType;
       }
-      var tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
+      var tmpUrl = '';
+      if (xlr.config.platform === 'CMS') {
+        tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
+      } else if (xlr.config.platform === 'chromeOS') {
+        tmpUrl = composeResourceUrl(xlr.config.config, resourceUrlParams);
+      }
       self.url = tmpUrl;
       // Loop if media has loop, or if region has loop and a single media
       self.loop = self.options['loop'] == '1' || self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1;
