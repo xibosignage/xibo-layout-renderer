@@ -15,7 +15,7 @@
     "url": "git+ssh://git@github.com/xibosignage/xibo-layout-renderer.git"
   },
   "files": [
-    "dist"
+    "dist/"
   ],
   "author": "Xibo Signage Ltd",
   "license": "LGPL-3.0",
