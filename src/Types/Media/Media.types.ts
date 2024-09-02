@@ -18,54 +18,57 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { DefaultEvents, Emitter, Unsubscribe } from 'nanoevents';
+import {Emitter, Unsubscribe} from 'nanoevents';
 import { IMediaEvents } from '../../Modules/Media/Media';
 import {initialRegion, IRegion} from '../Region';
+import {OptionsType} from '../Layout';
 
 export interface IMedia {
-    region: IRegion;
-    xml: null | Element;
-    id: string;
-    idCounter: number;
-    index: number;
-    containerName: string;
-    html: null | HTMLElement;
-    iframe: null | HTMLIFrameElement;
+    checkIframeStatus: boolean;
+    run(): void;
+    divHeight: number;
+    type: string;
+    timeoutId: ReturnType<typeof setTimeout>;
+    divWidth: number;
+    tempSrc: string;
+    duration: number;
     iframeName: string;
-    mediaType: string;
+    loadIframeOnRun: boolean;
+    xml: Element | null;
+    containerName: string;
+    ready: boolean;
+    loop: boolean;
+    options: OptionsType & {
+        [k: string]: any
+    };
+    useDuration: boolean;
+    html: HTMLElement | null;
+    id: string;
+    mediaId: string;
+    iframe: HTMLIFrameElement | null;
     render: string;
     attachedAudio: boolean;
-    singlePlay: boolean;
-    timeoutId: ReturnType<typeof setTimeout>;
-    ready: boolean;
-    checkIframeStatus: boolean;
-    loadIframeOnRun: boolean;
-    tempSrc: string;
-    finished: boolean;
-    schemaVersion: string;
-    type: string;
-    duration: number;
-    useDuration: boolean;
-    fileId: string;
-    uri: string;
-    options: {
-        [k: string]: any;
-    };
-    divWidth: number;
-    divHeight: number;
-    url: string | null;
-    loop: boolean;
-    emitter?: Emitter<DefaultEvents>;
-    run(): void;
-    init(): void;
-    stop(): Promise<void>;
     on<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]): Unsubscribe;
+    init(): void;
+    schemaVersion: string;
+    index: number;
+    mediaType: string;
+    finished: boolean;
+    uri: string;
+    url: string | null;
+    singlePlay: boolean;
+    stop(): Promise<void>;
+    idCounter: number;
+    region: IRegion;
+    fileId: string;
+    emitter: Emitter<IMediaEvents>;
 }
 
 export const initialMedia: IMedia = {
     region: initialRegion,
     xml: null,
     id: '',
+    mediaId: '',
     index: 0,
     idCounter: 0,
     containerName: '',
@@ -76,7 +79,7 @@ export const initialMedia: IMedia = {
     render: 'html',
     attachedAudio: false,
     singlePlay: false,
-    timeoutId: setTimeout(() => {}, 100),
+    timeoutId: setTimeout(() => {}, 0),
     ready: true,
     checkIframeStatus: false,
     loadIframeOnRun: false,
@@ -88,7 +91,7 @@ export const initialMedia: IMedia = {
     useDuration: Boolean(0),
     fileId: '',
     uri: '',
-    options: {},
+    options: <OptionsType>{},
     divWidth: 0,
     divHeight: 0,
     url: null,
@@ -101,4 +104,5 @@ export const initialMedia: IMedia = {
     on<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]): Unsubscribe {
         return <Unsubscribe>{};
     },
+    emitter: <Emitter<IMediaEvents>>{},
 }

@@ -1,5 +1,9 @@
-import { Emitter, DefaultEvents, Unsubscribe } from 'nanoevents';
+import { Unsubscribe, Emitter, DefaultEvents } from 'nanoevents';
 
+declare enum ELayoutType {
+    CURRENT = 0,
+    NEXT = 1
+}
 interface IXlr {
     inputLayouts: InputLayoutType[];
     config: OptionsType;
@@ -13,7 +17,10 @@ interface IXlr {
     playSchedules(xlr: IXlr): void;
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(): Promise<IXlr>;
+    updateLayouts(inputLayouts: InputLayoutType[]): void;
+    updateLoop(inputLayouts: InputLayoutType[]): void;
 }
+declare const initialXlr: IXlr;
 
 interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -21,44 +28,46 @@ interface IMediaEvents {
 }
 
 interface IMedia {
-    region: IRegion;
-    xml: null | Element;
-    id: string;
-    idCounter: number;
-    index: number;
-    containerName: string;
-    html: null | HTMLElement;
-    iframe: null | HTMLIFrameElement;
-    iframeName: string;
-    mediaType: string;
-    render: string;
-    attachedAudio: boolean;
-    singlePlay: boolean;
-    timeoutId: ReturnType<typeof setTimeout>;
-    ready: boolean;
     checkIframeStatus: boolean;
-    loadIframeOnRun: boolean;
-    tempSrc: string;
-    finished: boolean;
-    schemaVersion: string;
+    run(): void;
+    divHeight: number;
     type: string;
+    timeoutId: ReturnType<typeof setTimeout>;
+    divWidth: number;
+    tempSrc: string;
     duration: number;
-    useDuration: boolean;
-    fileId: string;
-    uri: string;
-    options: {
+    iframeName: string;
+    loadIframeOnRun: boolean;
+    xml: Element | null;
+    containerName: string;
+    ready: boolean;
+    loop: boolean;
+    options: OptionsType & {
         [k: string]: any;
     };
-    divWidth: number;
-    divHeight: number;
-    url: string | null;
-    loop: boolean;
-    emitter?: Emitter<DefaultEvents>;
-    run(): void;
-    init(): void;
-    stop(): Promise<void>;
+    useDuration: boolean;
+    html: HTMLElement | null;
+    id: string;
+    mediaId: string;
+    iframe: HTMLIFrameElement | null;
+    render: string;
+    attachedAudio: boolean;
     on<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]): Unsubscribe;
+    init(): void;
+    schemaVersion: string;
+    index: number;
+    mediaType: string;
+    finished: boolean;
+    uri: string;
+    url: string | null;
+    singlePlay: boolean;
+    stop(): Promise<void>;
+    idCounter: number;
+    region: IRegion;
+    fileId: string;
+    emitter: Emitter<IMediaEvents>;
 }
+declare const initialMedia: IMedia;
 
 interface IRegionEvents {
     start: (layout: IRegion) => void;
@@ -103,7 +112,9 @@ interface IRegion {
     exitTransitionComplete(): void;
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe;
     prepareMediaObjects(): void;
+    reset(): void;
 }
+declare const initialRegion: IRegion;
 
 interface ILayoutEvents {
     start: (layout: ILayout) => void;
@@ -164,14 +175,27 @@ interface ILayout {
     prepareLayout(): void;
     parseXlf(): void;
     run(): void;
-    emitter?: Emitter<DefaultEvents>;
+    emitter: Emitter<ILayoutEvents>;
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;
     regionEnded(): void;
     stopAllMedia(): Promise<void>;
+    resetLayout(): Promise<void>;
+    index: number;
 }
+declare const initialLayout: ILayout;
+type GetLayoutParamType = {
+    xlr: IXlr;
+    moveNext?: boolean;
+};
+type GetLayoutType = {
+    currentLayoutIndex: number;
+    inputLayouts: InputLayoutType[];
+    current: ILayout | undefined;
+    next: ILayout | undefined;
+};
 
 declare function XiboLayoutRenderer(inputLayouts: InputLayoutType[], options?: OptionsType): IXlr;
 
-export { XiboLayoutRenderer as default };
+export { ELayoutType, type GetLayoutParamType, type GetLayoutType, type ILayout, type IMedia, type IRegion, type IRegionEvents, type IXlr, type InputLayoutType, type OptionsType, XiboLayoutRenderer as default, initialLayout, initialMedia, initialRegion, initialXlr };

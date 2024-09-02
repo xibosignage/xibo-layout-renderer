@@ -206,17 +206,17 @@ export default function Layout(
     }
     const emitter = createNanoEvents<ILayoutEvents>();
 
-    emitter.on('start', (layout) => {
+    emitter.on('start', (layout: ILayout) => {
         layout.done = false;
         console.debug('Layout start emitted > Layout ID > ', layout.id);
     });
 
-    emitter.on('end', (layout) => {
+    emitter.on('end', async (layout: ILayout) => {
         console.debug('Ending layout with ID of > ', layout.layoutId);
-        layout.done = true;
         /* Remove layout that has ended */
         const $layout = document.getElementById(layout.containerName);
 
+        layout.done = true;
         console.debug({$layout});
 
         if ($layout !== null) {
@@ -234,12 +234,13 @@ export default function Layout(
     const layoutObject: ILayout = {
         ...props.layout,
         options: props.options,
-        emitter,
     };
 
     layoutObject.on = function<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
         return emitter.on(event, callback);
     };
+    layoutObject.emitter = emitter;
+
     layoutObject.run = function() {
         const layout = layoutObject;
         const $layoutContainer = document.getElementById(`${layout.containerName}`);
@@ -261,9 +262,17 @@ export default function Layout(
         }
     };
 
+    layoutObject.prepareLayout = function(){
+        layoutObject.parseXlf();
+    };
+
     layoutObject.parseXlf = function() {
-        const layout = layoutObject;
-        const {data, options} = props;
+        const layout = this;
+        const {options} = layout;
+
+        layout.done = false;
+        layout.allEnded = false;
+        layout.allExpired = false;
         layout.containerName = "L" + layout.id + "-" + nextId(options);
         layout.regions = [];
 
@@ -283,7 +292,7 @@ export default function Layout(
             $layout.style.outline = 'red solid thin';
         }
 
-        layout.layoutNode = data;
+        layout.layoutNode = props.data;
 
         /* Calculate the screen size */
         layout.sw = $screen?.offsetWidth || 0;
@@ -295,8 +304,8 @@ export default function Layout(
 
         /* Calculate Scale Factor */
         layout.scaleFactor = Math.min((layout.sw / layout.xw), (layout.sh / layout.xh));
-        layout.sWidth = Math.round(layout.xw * layout.scaleFactor);
-        layout.sHeight = Math.round(layout.xh * layout.scaleFactor);
+        layout.sWidth = layout.xw * layout.scaleFactor;
+        layout.sHeight = layout.xh * layout.scaleFactor;
         layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
         layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
 
@@ -364,10 +373,6 @@ export default function Layout(
         });
     };
 
-    layoutObject.prepareLayout = function() {
-        layoutObject.parseXlf();
-    };
-
     layoutObject.regionExpired = function() {
         const self = layoutObject;
         self.allExpired = true;
@@ -394,7 +399,7 @@ export default function Layout(
         }
         
         if (self.allEnded) {
-            self.stopAllMedia().then(() => {
+            self.stopAllMedia().then(async () => {
                 console.debug('starting to end layout . . .');
                 if (xlr.config.platform === 'CMS') {
                     const $end = document.getElementById('play_ended');
@@ -413,7 +418,7 @@ export default function Layout(
                     }
                 }
                 
-                self.emitter?.emit('end', self);
+                self.emitter.emit('end', self);
             });
 
         }

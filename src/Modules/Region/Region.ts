@@ -56,6 +56,9 @@ export default function Region(
     regionObject.prepareRegion = function() {
         const self = regionObject;
         const {layout, options} = self;
+        self.complete = false;
+        self.ending = false;
+        self.ended = false;
         self.id = props.regionId;
         self.options = {...platform, ...props.options};
         self.containerName = `R-${self.id}-${nextId(self.options as OptionsType & IRegion["options"])}`;
@@ -180,6 +183,9 @@ export default function Region(
     regionObject.run = function() {
         console.debug('Called Region::run > ', regionObject.id);
 
+        // Reset region states
+        regionObject.reset();
+
         if (regionObject.curMedia) {
             regionObject.transitionNodes(regionObject.oldMedia, regionObject.curMedia);
         }
@@ -273,7 +279,6 @@ export default function Region(
 
     regionObject.playNextMedia = function() {
         const self = regionObject;
-
         /* The current media has finished running */
         if (self.ended) {
             return;
@@ -309,6 +314,7 @@ export default function Region(
         self.currentMediaIndex = self.currentMediaIndex + 1;
         self.prepareMediaObjects();
 
+        console.debug('region::playNextMedia', self);
         self.transitionNodes(self.oldMedia, self.curMedia);
     };
     
@@ -343,6 +349,13 @@ export default function Region(
         self.ended = true;
         self.layout.regions[self.index] = self;
         self.layout.regionEnded();
+    };
+
+    regionObject.reset = function() {
+        regionObject.ended = false;
+        regionObject.complete = false;
+        regionObject.ending = false;
+        console.debug('Resetting region states', regionObject);
     };
 
     regionObject.on = function<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]) {

@@ -58,13 +58,14 @@ export default function Media(
         mediaTimer = setInterval(() => {
             mediaTimeCount++;
             if (mediaTimeCount > media.duration) {
-                media.emitter?.emit('end', media);
+                media.emitter.emit('end', media);
             }
         }, 1000);
+
         console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
 
-    emitter.on('start', function(media) {
+    emitter.on('start', function(media: IMedia) {
         if (media.mediaType === 'video') {
             VideoMedia(media).init();
 
@@ -90,6 +91,12 @@ export default function Media(
         media.region.playNextMedia();
     });
 
+    mediaObject.on = function<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]) {
+        return emitter.on(event, callback);
+    };
+
+    mediaObject.emitter = emitter;
+
     mediaObject.init = function() {
         const self = mediaObject;
         self.id = props.mediaId;
@@ -100,7 +107,7 @@ export default function Media(
         self.mediaType = self.xml?.getAttribute('type') || '';
         self.render = self.xml?.getAttribute('render') || '';
         self.duration = parseInt(self.xml?.getAttribute('duration') as string) || 0;
-        self.options = { ...props.options, mediaId };
+        self.options = { ...props.options };
 
         const $mediaIframe = document.createElement('iframe');
         const mediaOptions = self.xml?.getElementsByTagName('options');
@@ -176,13 +183,15 @@ export default function Media(
             fileId: self.fileId,
             scaleFactor: self.region.layout.scaleFactor,
             uri: self.uri,
+            isGlobalContent: self.mediaType === 'global',
+            isImageOrVideo: self.mediaType === 'image' || self.mediaType === 'video',
         };
 
         if (self.mediaType === 'image' || self.mediaType === 'video') {
             resourceUrlParams.mediaType = self.mediaType;
         }
 
-        const tmpUrl = composeResourceUrlByPlatform(xlr.config.platform, resourceUrlParams);
+        const tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
 
         self.url = tmpUrl;
 
@@ -299,7 +308,7 @@ export default function Media(
     };
 
     mediaObject.run = function() {
-        const self = mediaObject;
+        const self = this;
         let transInDuration = 1;
         let transInDirection: compassPoints = 'E';
 
@@ -335,11 +344,11 @@ export default function Media(
             let $media = document.getElementById($mediaId);
             const isCMS = xlr.config.platform === 'CMS';
 
-            if ($media === null) {
+            if (!$media) {
                 $media = getNewMedia();
             }
 
-            if ($media !== null) {
+            if ($media) {
                 $media.style.setProperty('display', 'block');
 
                 if (Boolean(self.options['transin'])) {
@@ -378,7 +387,7 @@ export default function Media(
                     });
                 }
 
-                self.emitter?.emit('start', self);
+                self.emitter.emit('start', self);
             }
         };
         const getNewMedia = (): HTMLElement | null => {
@@ -409,13 +418,6 @@ export default function Media(
             $media.remove();
         }
     };
-
-    
-    mediaObject.on = function<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]) {
-        return emitter.on(event, callback);
-    };
-
-    mediaObject.emitter = emitter;
 
     mediaObject.init();
 

@@ -44,5 +44,6 @@ export interface IRegion {
     exitTransitionComplete(): void;
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe;
     prepareMediaObjects(): void;
+    reset(): void;
 }
 export declare const initialRegion: IRegion;

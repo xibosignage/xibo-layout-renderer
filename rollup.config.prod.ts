@@ -1,6 +1,7 @@
 // rollup.config.prod.ts
 import type { InputOptions, OutputOptions, RollupOptions } from 'rollup';
 
+import {importMetaAssets} from "@web/rollup-plugin-import-meta-assets";
 import { nodeResolve as nodeResolvePlugin } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescriptPlugin from '@rollup/plugin-typescript';
@@ -8,6 +9,7 @@ import postCssPlugin from 'rollup-plugin-postcss';
 import babelPlugin from '@rollup/plugin-babel';
 import analyzerPlugin from 'rollup-plugin-analyzer';
 import terserPlugin from '@rollup/plugin-terser';
+import imagePlugin from '@rollup/plugin-image';
 import dtsPlugin from 'rollup-plugin-dts';
 import path from 'path';
 
@@ -35,9 +37,11 @@ const commonInputOptions: InputOptions = {
         }),
         typescriptPlugin(),
         postCssPlugin({
-          // all `*.css` files in src directory
-          extract: path.resolve('dist/styles.css'),
+            // all `*.css` files in src directory
+            extract: path.resolve('dist/styles.css'),
         }),
+        imagePlugin(),
+        importMetaAssets(),
         analyzerPlugin({
           summaryOnly: true,
         }),
@@ -55,6 +59,8 @@ const config: RollupOptions[] = [
             {
                 file: `${outputPath}${libName}.esm.js`,
                 format: 'esm',
+                exports: 'named',
+                sourcemap: true,
             }
         ],
     },
@@ -65,12 +71,14 @@ const config: RollupOptions[] = [
                 ...iifeCommonOutputOptions,
                 file: `${outputPath}${libName}.js`,
                 format: 'iife',
+                exports: 'named',
             },
             {
                 ...iifeCommonOutputOptions,
                 file: `${outputPath}${libName}.min.js`,
                 format: 'iife',
                 sourcemap: true,
+                exports: 'named',
                 plugins: [
                     terserPlugin(),
                 ],

@@ -106,22 +106,41 @@ export function audioFileType(str: string) {
     return undefined;
 }
 
-export function composeResourceUrlByPlatform(platform: OptionsType['platform'], params: any) {
+export function composeResourceUrlByPlatform(options: OptionsType, params: any) {
     let resourceUrl = params.regionOptions.getResourceUrl
         .replace(":regionId", params.regionId)
         .replace(":id", params.mediaId) +
         '?preview=1&layoutPreview=1';
 
-    if (platform === 'chromeOS') {
-        resourceUrl = params.cmsUrl +
-            '/chromeOS/resource/' +
-            params.fileId +
-            '?saveAs=' + params.uri;
+    if (options.platform === 'chromeOS') {
+        const resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
+
+        if (!params.isGlobalContent && params.isImageOrVideo) {
+            resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+        } else {
+            // resourceUrl = composeResourceUrl(options.config, params);
+            resourceUrl = params.cmsUrl + resourceUrl;
+        }
     } else if (!Boolean(params['mediaType'])) {
         resourceUrl += '&scale_override=' + params.scaleFactor;
     }
 
     return resourceUrl;
+}
+
+export function composeResourceUrl(config: OptionsType['config'], params: any) {
+    const schemaVersion = (config) && config.schemaVersion;
+    const hardwareKey = (config) && config.hardwareKey;
+    const serverKey = (config) && config.cmsKey;
+    const cmsUrl = (config) && config.cmsUrl;
+
+    return cmsUrl + '/chromeOS/getResource' +
+        '?v=' + schemaVersion +
+        '&serverKey=' + serverKey +
+        '&hardwareKey=' + hardwareKey +
+        '&layoutId=' + params.layoutId +
+        '&regionId=' + params.regionId +
+        '&mediaId=' + params.mediaId;
 }
 
 export function composeBgUrlByPlatform(
@@ -162,9 +181,32 @@ export function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: n
         return layoutIndexes;
     }
 
-    return layoutIndexes[layoutId];
+    if (Boolean(layoutIndexes[layoutId])) {
+        return layoutIndexes[layoutId];
+    }
+
+    // Defaults to 0
+    return {index: 0};
 }
 
 export function isEmpty(input: any) {
     return !Boolean(input) || String(input).length === 0;
+}
+
+export const splashScreenLayoutObj: InputLayoutType = {
+    layoutId: 0,
+    path: '',
+};
+
+export function splashScreenDOM() {
+    const mediaItem = document.querySelector('.media--item');
+    const newImg = document.createElement('img');
+
+    newImg.src = new URL('./logo.png', import.meta.url).href;
+
+    if (mediaItem !== null) {
+        mediaItem.insertBefore(newImg, mediaItem.lastElementChild);
+    }
+
+    return newImg;
 }

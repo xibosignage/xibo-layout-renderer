@@ -10,7 +10,8 @@ export declare function preloadMediaBlob(src: string, type: 'video' | 'audio' | 
 export declare function fetchJSON(url: string): Promise<any>;
 export declare function getFileExt(filename: string): string;
 export declare function audioFileType(str: string): string | undefined;
-export declare function composeResourceUrlByPlatform(platform: OptionsType['platform'], params: any): string;
+export declare function composeResourceUrlByPlatform(options: OptionsType, params: any): string;
+export declare function composeResourceUrl(config: OptionsType['config'], params: any): string;
 export declare function composeBgUrlByPlatform(platform: OptionsType['platform'], params: any): string;
 type LayoutIndexType = {
     [k: string]: InputLayoutType & {
@@ -19,6 +20,10 @@ type LayoutIndexType = {
 };
 export declare function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: number | null): (InputLayoutType & {
     index: number;
-}) | LayoutIndexType;
+}) | LayoutIndexType | {
+    index: number;
+};
 export declare function isEmpty(input: any): boolean;
+export declare const splashScreenLayoutObj: InputLayoutType;
+export declare function splashScreenDOM(): HTMLImageElement;
 export {};

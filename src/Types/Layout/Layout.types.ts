@@ -80,12 +80,14 @@ export interface ILayout {
     prepareLayout(): void;
     parseXlf(): void;
     run(): void;
-    emitter?: Emitter<DefaultEvents>;
+    emitter: Emitter<ILayoutEvents>;
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;
     regionEnded(): void;
     stopAllMedia(): Promise<void>;
+    resetLayout(): Promise<void>;
+    index: number;
 }
 
 export const initialLayout: ILayout = {
@@ -135,6 +137,11 @@ export const initialLayout: ILayout = {
     stopAllMedia() {
         return Promise.resolve();
     },
+    resetLayout() {
+        return Promise.resolve();
+    },
+    emitter: <Emitter<ILayoutEvents>>{},
+    index: -1,
 };
 
 export type GetLayoutParamType = {
