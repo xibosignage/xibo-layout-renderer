@@ -26,7 +26,7 @@ import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
 import VideoMedia from './VideoMedia';
 import AudioMedia from './AudioMedia';
-import {composeResourceUrl, composeResourceUrlByPlatform, getDataBlob} from '../Generators/Generators';
+import {composeResourceUrl, composeResourceUrlByPlatform, fetchText, getDataBlob} from '../Generators/Generators';
 import {IXlr} from '../../Types/XLR';
 
 export interface IMediaEvents {
@@ -142,7 +142,7 @@ export default function Media(
         $mediaIframe.id = self.iframeName;
         $mediaIframe.width = `${self.divWidth}px`;
         $mediaIframe.height = `${self.divHeight}px`;
-        $mediaIframe.style.cssText = `border: 0; visibility: hidden;`;
+        $mediaIframe.style.cssText = `border: 0;`;
 
         const $mediaId = getMediaId(self);
         let $media = document.getElementById($mediaId);
@@ -196,7 +196,7 @@ export default function Media(
         if (xlr.config.platform === 'CMS') {
             tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
         } else if (xlr.config.platform === 'chromeOS') {
-            tmpUrl = composeResourceUrl(xlr.config.config, resourceUrlParams);
+            tmpUrl = composeResourceUrl(xlr.config, resourceUrlParams);
         }
 
         self.url = tmpUrl;
@@ -207,17 +207,39 @@ export default function Media(
             (self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1);
 
         if (self.render === 'html' || self.render === 'webpage') {
-            $mediaIframe.src = tmpUrl;
+            $mediaIframe.src = self.url;
         } else {
-            $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
+            $mediaIframe.src = `${self.url}&width=${self.divWidth}&height=${self.divHeight}`;
         }
+
+        // Check/set iframe based widgets play status
+        // Populate mediaIframe content without using src attribute
+        // let iframeSrc = tmpUrl;
+        //
+        // if (self.render !== 'html' && self.render !== 'webpage') {
+        //     iframeSrc = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
+        // }
+        //
+        // if (self.render === 'html' || self.render === 'webpage') {
+        //     if (xlr.config.platform === 'CMS') {
+        //         $mediaIframe.src = iframeSrc;
+        //     } else if (xlr.config.platform === 'chromeOS') {
+        //         (async () => {
+        //             const mediaHtml = await fetchText(iframeSrc);
+        //
+        //             if ($mediaIframe) {
+        //                 $mediaIframe.contentDocument?.open();
+        //                 $mediaIframe.contentDocument?.write(mediaHtml);
+        //                 $mediaIframe.contentDocument?.close();
+        //             }
+        //         })();
+        //     }
+        // }
 
         if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
             self.checkIframeStatus = true;
             self.iframe = $mediaIframe;
         }  else if (self.mediaType === "image") {
-            // preload.addFiles(tmpUrl);
-            // $media.style.cssText = $media.style.cssText.concat(`background-image: url('${tmpUrl}');`);
             if (self.options['scaletype'] === 'stretch') {
                 $media.style.cssText = $media.style.cssText.concat(`background-size: 100% 100%;`);
             } else if (self.options['scaletype'] === 'fit') {
@@ -314,7 +336,6 @@ export default function Media(
 
         // Add html node to media for
         self.html = $media;
-        // Check/set iframe based widgets play status
     };
 
     mediaObject.run = function() {
@@ -388,13 +409,13 @@ export default function Media(
                     $media.appendChild(self.iframe as Node);
 
                     // On iframe load, set state as ready to play full preview
-                    (self.iframe) && self.iframe.addEventListener('load', function(){
-                        self.ready = true;
-                        if (self.iframe) {
-                            const iframeStyles = self.iframe.style.cssText;
-                            self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
-                        }
-                    });
+                    // (self.iframe) && self.iframe.addEventListener('load', function(){
+                    //     self.ready = true;
+                    //     if (self.iframe) {
+                    //         const iframeStyles = self.iframe.style.cssText;
+                    //         self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
+                    //     }
+                    // });
                 }
 
                 self.emitter.emit('start', self);

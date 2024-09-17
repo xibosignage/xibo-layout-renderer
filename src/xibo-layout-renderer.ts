@@ -49,7 +49,7 @@ export default function XiboLayoutRenderer(
         self.config = JSON.parse(JSON.stringify({...platform, ...props.options}));
 
         // Prepare rendering DOM
-        const previewCanvas = document.querySelector('.preview-canvas');
+        const previewCanvas = document.querySelector('#preview_canvas');
 
         initRenderingDOM(previewCanvas);
 
