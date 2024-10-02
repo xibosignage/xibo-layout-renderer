@@ -151,10 +151,6 @@ export function composeResourceUrl(options: OptionsType, params: any) {
     const cmsUrl = (options) && options.config?.cmsUrl;
     let consumer = '';
 
-    if (options.platform === 'chromeOS') {
-        consumer = '/chromeos';
-    }
-
     return cmsUrl + consumer + '/pwa/getResource' +
         '?v=' + schemaVersion +
         '&serverKey=' + serverKey +
