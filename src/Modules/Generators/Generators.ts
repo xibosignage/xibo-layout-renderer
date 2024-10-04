@@ -129,13 +129,10 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
         '?preview=1&layoutPreview=1';
 
     if (options.platform === 'chromeOS') {
-        const resourceEndpoint = params.cmsUrl + '/required-files/resource/';
+        const resourceEndpoint = '/required-files/resource/';
 
         if (!params.isGlobalContent && params.isImageOrVideo) {
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
-        } else {
-            // resourceUrl = composeResourceUrl(options.config, params);
-            resourceUrl = params.cmsUrl + resourceUrl;
         }
     } else if (!Boolean(params['mediaType'])) {
         resourceUrl += '&scale_override=' + params.scaleFactor;
@@ -148,10 +145,8 @@ export function composeResourceUrl(options: OptionsType, params: any) {
     const schemaVersion = (options) && options.config?.schemaVersion;
     const hardwareKey = (options) && options.config?.hardwareKey;
     const serverKey = (options) && options.config?.cmsKey;
-    const cmsUrl = (options) && options.config?.cmsUrl;
-    let consumer = '';
 
-    return cmsUrl + consumer + '/pwa/getResource' +
+    return '/pwa/getResource' +
         '?v=' + schemaVersion +
         '&serverKey=' + serverKey +
         '&hardwareKey=' + hardwareKey +
@@ -170,8 +165,7 @@ export function composeBgUrlByPlatform(
         '&dynamic&proportional=0';
 
     if (platform === 'chromeOS') {
-        bgImageUrl = params.cmsUrl +
-            '/required-files/resource/' + params.layout.id +
+        bgImageUrl = '/required-files/resource/' + params.layout.id +
             '?saveAs=' + params.layout.bgImage;
     }
 
