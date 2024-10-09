@@ -393,8 +393,7 @@ export default function Media(
                             `url(${!isCMS ? self.url : await getDataBlob(self.url)}`
                         );
                 } else if (self.mediaType === 'video' && self.url !== null) {
-                    ($media as HTMLVideoElement).src =
-                        isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
+                    ($media as HTMLVideoElement).src = await preloadMediaBlob(self.url, self.mediaType);
                 } else if (self.mediaType === 'audio' && self.url !== null) {
                     ($media as HTMLAudioElement).src =
                         isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
