@@ -1,5 +1,5 @@
 {
-  "name": "xibo-layout-renderer",
+  "name": "@xibosignage/xibo-layout-renderer",
   "version": "1.0.0",
   "description": "Xibo layout renderer is a shared library that performs rendering of given layout from sources (e.g. CMS Preview, Linux Player, etc.)",
   "main": "dist/xibo-layout-renderer.cjs.js",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/xibosignage/xibo-layout-renderer.git"
+    "url": "https://github.com/xibosignage/xibo-layout-renderer.git"
   },
   "files": [
     "xibo-layout-renderer.esm.js",
