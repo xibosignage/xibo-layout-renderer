@@ -1,0 +1,30 @@
+/* Style the Splash Screen */
+div.preview-splash {
+    height: 100%;
+    background-color: #000000;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 45%;
+}
+
+div.preview-loader {
+    height: 19px;
+    width: 220px;
+    position: relative;
+    margin:0 auto;
+    top: 75%;
+    background-color: #000000;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 100%;
+}
+
+div.preview-loaderCaption p {
+    position: absolute;
+    font-family: sans-serif;
+    color: #ffffff;
+    text-align:center;
+    top: 82%;
+    margin: 10px 0;
+    width: 100%;
+}

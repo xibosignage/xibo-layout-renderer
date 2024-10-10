@@ -18,14 +18,16 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { createNanoEvents } from "nanoevents";
-import {OptionsType} from "../../Types/Layout.types";
-import {IRegion} from "../../Types/Region.types";
-import {IMedia, initialMedia} from "../../Types/Media.types";
-import {fetchJSON, getMediaId, nextId, preloadMediaBlob} from "../Generators";
-import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from "../Transitions";
-import VideoMedia from "./VideoMedia";
-import AudioMedia from "./AudioMedia";
+import { createNanoEvents } from 'nanoevents';
+import { OptionsType } from '../../Types/Layout';
+import { IRegion } from '../../Types/Region';
+import { IMedia, initialMedia } from '../../Types/Media';
+import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
+import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
+import VideoMedia from './VideoMedia';
+import AudioMedia from './AudioMedia';
+import {composeResourceUrl, composeResourceUrlByPlatform, fetchText, getDataBlob} from '../Generators/Generators';
+import {IXlr} from '../../Types/XLR';
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -37,6 +39,7 @@ export default function Media(
     mediaId: string,
     xml: Element,
     options: OptionsType,
+    xlr: IXlr,
 ) {
     const props = {
         region: region,
@@ -55,13 +58,14 @@ export default function Media(
         mediaTimer = setInterval(() => {
             mediaTimeCount++;
             if (mediaTimeCount > media.duration) {
-                media.emitter?.emit('end', media);
+                media.emitter.emit('end', media);
             }
         }, 1000);
-        console.log('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
+
+        console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
 
-    emitter.on('start', function(media) {
+    emitter.on('start', function(media: IMedia) {
         if (media.mediaType === 'video') {
             VideoMedia(media).init();
 
@@ -87,16 +91,23 @@ export default function Media(
         media.region.playNextMedia();
     });
 
+    mediaObject.on = function<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]) {
+        return emitter.on(event, callback);
+    };
+
+    mediaObject.emitter = emitter;
+
     mediaObject.init = function() {
         const self = mediaObject;
         self.id = props.mediaId;
+        self.fileId = self.xml?.getAttribute('fileId') || '';
         self.idCounter = nextId(props.options);
         self.containerName = `M-${self.id}-${self.idCounter}`;
         self.iframeName = `${self.containerName}-iframe`;
         self.mediaType = self.xml?.getAttribute('type') || '';
         self.render = self.xml?.getAttribute('render') || '';
         self.duration = parseInt(self.xml?.getAttribute('duration') as string) || 0;
-        self.options = { ...props.options, mediaId };
+        self.options = { ...props.options };
 
         const $mediaIframe = document.createElement('iframe');
         const mediaOptions = self.xml?.getElementsByTagName('options');
@@ -109,6 +120,11 @@ export default function Media(
                     self.options[mediaOption.nodeName.toLowerCase()] = mediaOption.textContent;
                 }
             }
+        }
+
+        // Check for options.uri and add it to media
+        if (Boolean(self.options['uri'])) {
+            self.uri = self.options['uri'];
         }
 
         // Show in fullscreen?
@@ -126,7 +142,7 @@ export default function Media(
         $mediaIframe.id = self.iframeName;
         $mediaIframe.width = `${self.divWidth}px`;
         $mediaIframe.height = `${self.divHeight}px`;
-        $mediaIframe.style.cssText = `border: 0; visibility: hidden;`;
+        $mediaIframe.style.cssText = `border: 0;`;
 
         const $mediaId = getMediaId(self);
         let $media = document.getElementById($mediaId);
@@ -158,7 +174,30 @@ export default function Media(
 
         const $region = document.getElementById(`${self.region.containerName}`);
 
-        const tmpUrl = self.region.options.getResourceUrl.replace(":regionId", self.region.id).replace(":id", self.id) + '?preview=1&layoutPreview=1&scale_override=' + self.region.layout.scaleFactor;
+        const resourceUrlParams: any = {
+            ...xlr.config.config,
+            regionOptions: self.region.options,
+            layoutId: self.region.layout.layoutId,
+            regionId: self.region.id,
+            mediaId: self.id,
+            fileId: self.fileId,
+            scaleFactor: self.region.layout.scaleFactor,
+            uri: self.uri,
+            isGlobalContent: self.mediaType === 'global',
+            isImageOrVideo: self.mediaType === 'image' || self.mediaType === 'video',
+        };
+
+        if (self.mediaType === 'image' || self.mediaType === 'video') {
+            resourceUrlParams.mediaType = self.mediaType;
+        }
+
+        let tmpUrl = '';
+
+        if (xlr.config.platform === 'CMS') {
+            tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
+        } else if (xlr.config.platform === 'chromeOS') {
+            tmpUrl = composeResourceUrl(xlr.config, resourceUrlParams);
+        }
 
         self.url = tmpUrl;
 
@@ -167,14 +206,40 @@ export default function Media(
             self.options['loop'] == '1' ||
             (self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1);
 
-        $mediaIframe.src = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
+        if (self.render === 'html' || self.render === 'webpage') {
+            $mediaIframe.src = self.url;
+        } else {
+            $mediaIframe.src = `${self.url}&width=${self.divWidth}&height=${self.divHeight}`;
+        }
 
-        if (self.render === 'html' || self.mediaType === 'ticker') {
+        // Check/set iframe based widgets play status
+        // Populate mediaIframe content without using src attribute
+        // let iframeSrc = tmpUrl;
+        //
+        // if (self.render !== 'html' && self.render !== 'webpage') {
+        //     iframeSrc = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
+        // }
+        //
+        // if (self.render === 'html' || self.render === 'webpage') {
+        //     if (xlr.config.platform === 'CMS') {
+        //         $mediaIframe.src = iframeSrc;
+        //     } else if (xlr.config.platform === 'chromeOS') {
+        //         (async () => {
+        //             const mediaHtml = await fetchText(iframeSrc);
+        //
+        //             if ($mediaIframe) {
+        //                 $mediaIframe.contentDocument?.open();
+        //                 $mediaIframe.contentDocument?.write(mediaHtml);
+        //                 $mediaIframe.contentDocument?.close();
+        //             }
+        //         })();
+        //     }
+        // }
+
+        if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
             self.checkIframeStatus = true;
             self.iframe = $mediaIframe;
         }  else if (self.mediaType === "image") {
-            // preload.addFiles(tmpUrl);
-            $media.style.cssText = $media.style.cssText.concat(`background-image: url('${tmpUrl}');`);
             if (self.options['scaletype'] === 'stretch') {
                 $media.style.cssText = $media.style.cssText.concat(`background-size: 100% 100%;`);
             } else if (self.options['scaletype'] === 'fit') {
@@ -229,7 +294,7 @@ export default function Media(
 
                 (async () => {
                     let html = await fetchJSON(`${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`);
-                    console.log({html});
+                    console.debug({html});
                     const res = regex.exec(html);
 
                     if (res !== null) {
@@ -269,33 +334,12 @@ export default function Media(
          * to complete the 100s set duration
          */
 
-        // Add html node to media for 
-
+        // Add html node to media for
         self.html = $media;
-
-        // Check/set iframe based widgets play status
-        if(self.iframe && self.checkIframeStatus) {
-            // Set state as false ( for now )
-            self.ready = false;
-
-            // Append iframe
-            $media.innerHTML = '';
-            $media.appendChild(self.iframe as Node);
-
-            // On iframe load, set state as ready to play full preview
-            (self.iframe) && self.iframe.addEventListener('load', function(){
-                self.ready = true;
-                if (self.iframe) {
-                    const iframeStyles = self.iframe.style.cssText;
-                    self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
-                }
-            });
-        }
-
     };
 
     mediaObject.run = function() {
-        const self = mediaObject;
+        const self = this;
         let transInDuration = 1;
         let transInDirection: compassPoints = 'E';
 
@@ -329,25 +373,51 @@ export default function Media(
         const showCurrentMedia = async () => {
             let $mediaId = getMediaId(self);
             let $media = document.getElementById($mediaId);
+            const isCMS = xlr.config.platform === 'CMS';
 
-            if ($media === null) {
+            if (!$media) {
                 $media = getNewMedia();
             }
 
-            if ($media !== null) {
+            if ($media) {
                 $media.style.setProperty('display', 'block');
 
                 if (Boolean(self.options['transin'])) {
                     $media.animate(transIn.keyframes, transIn.timing);
                 }
 
-                if (self.mediaType === 'video' && self.url !== null) {
+                if (self.mediaType === 'image' && self.url !== null) {
+                    ($media as HTMLImageElement).style
+                        .setProperty(
+                            'background-image',
+                            `url(${!isCMS ? self.url : await getDataBlob(self.url)}`
+                        );
+                } else if (self.mediaType === 'video' && self.url !== null) {
                     ($media as HTMLVideoElement).src = await preloadMediaBlob(self.url, self.mediaType);
                 } else if (self.mediaType === 'audio' && self.url !== null) {
-                    ($media as HTMLAudioElement).src = await preloadMediaBlob(self.url, self.mediaType);
+                    ($media as HTMLAudioElement).src =
+                        isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
+                } else if ((self.render === 'html' || self.mediaType === 'webpage') &&
+                    self.iframe && self.checkIframeStatus
+                ) {
+                    // Set state as false ( for now )
+                    self.ready = false;
+
+                    // Append iframe
+                    $media.innerHTML = '';
+                    $media.appendChild(self.iframe as Node);
+
+                    // On iframe load, set state as ready to play full preview
+                    // (self.iframe) && self.iframe.addEventListener('load', function(){
+                    //     self.ready = true;
+                    //     if (self.iframe) {
+                    //         const iframeStyles = self.iframe.style.cssText;
+                    //         self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
+                    //     }
+                    // });
                 }
 
-                self.emitter?.emit('start', self);
+                self.emitter.emit('start', self);
             }
         };
         const getNewMedia = (): HTMLElement | null => {
@@ -378,13 +448,6 @@ export default function Media(
             $media.remove();
         }
     };
-
-    
-    mediaObject.on = function<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]) {
-        return emitter.on(event, callback);
-    };
-
-    mediaObject.emitter = emitter;
 
     mediaObject.init();
 
