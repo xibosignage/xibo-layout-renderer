@@ -10,7 +10,10 @@
     "build": "rimraf dist && rollup --config rollup.config.prod.ts --configPlugin @rollup/plugin-typescript",
     "dev": "rimraf dist && rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
   },
-  "repository": "git+https://github.com/xibosignage/xibo-layout-renderer.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xibosignage/xibo-layout-renderer.git"
+  },
   "files": [
     "dist/"
   ],
