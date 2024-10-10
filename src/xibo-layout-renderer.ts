@@ -49,7 +49,7 @@ export default function XiboLayoutRenderer(
         self.config = JSON.parse(JSON.stringify({...platform, ...props.options}));
 
         // Prepare rendering DOM
-        const previewCanvas = document.querySelector('.preview-canvas');
+        const previewCanvas = document.querySelector('#preview_canvas');
 
         initRenderingDOM(previewCanvas);
 
@@ -113,6 +113,11 @@ export default function XiboLayoutRenderer(
          * Then, replace everything and start from first layout
          */
         if (inputLayouts.filter((inputLayout) => inputLayout.layoutId === this.currentLayout?.layoutId).length === 0) {
+            // Unset currentLayout, nextLayout and layouts
+            this.layouts = [];
+            this.currentLayout = undefined;
+            this.nextLayout = undefined;
+
             const xlr = await this.prepareLayouts();
             this.playSchedules(xlr);
         } else {
@@ -183,7 +188,7 @@ export default function XiboLayoutRenderer(
         // Get layouts
         const xlrLayouts = getLayout({xlr: self});
 
-        console.log('prepareLayouts::xlrLayouts', xlrLayouts);
+        console.debug('prepareLayouts::xlrLayouts', xlrLayouts);
 
         self.currentLayoutId = xlrLayouts.current?.layoutId as ILayout['layoutId'];
 
@@ -204,8 +209,8 @@ export default function XiboLayoutRenderer(
             }, []);
         };
         const layouts = await Promise.all<Array<Promise<ILayout>>>(layoutsXlf());
-        console.log('prepareLayouts::layouts', layouts);
-        console.log('prepareLayouts::xlr>layouts', self.layouts);
+        console.debug('prepareLayouts::layouts', layouts);
+        console.debug('prepareLayouts::xlr>layouts', self.layouts);
 
         return new Promise<IXlr>((resolve) => {
             layouts.map((layoutItem) => {

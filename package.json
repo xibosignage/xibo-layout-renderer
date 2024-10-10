@@ -15,13 +15,7 @@
     "url": "git+ssh://git@github.com/xibosignage/xibo-layout-renderer.git"
   },
   "files": [
-    "xibo-layout-renderer.esm.js",
-    "xibo-layout-renderer.esm.js.map",
-    "xibo-layout-renderer.min.js",
-    "xibo-layout-renderer.min.js.map",
-    "xibo-layout-renderer.d.ts",
-    "styles.css",
-    "dist/assets"
+    "dist/"
   ],
   "author": "Xibo Signage Ltd",
   "license": "LGPL-3.0",

@@ -86,6 +86,22 @@ export async function fetchJSON(url: string) {
         });
 }
 
+export async function fetchText(url: string): Promise<string> {
+    return fetch(url)
+        .then(res => res.text())
+        .then((responseText) => {
+            if (String(responseText).length > 0) {
+                return responseText;
+            } else {
+                return '';
+            }
+        })
+        .catch(err => {
+            console.debug(err);
+            return err?.message;
+        });
+}
+
 export function getFileExt(filename: string) {
     const filenameArr = String(filename).split('.');
 
@@ -113,13 +129,10 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
         '?preview=1&layoutPreview=1';
 
     if (options.platform === 'chromeOS') {
-        const resourceEndpoint = params.cmsUrl + '/chromeOS/resource/';
+        const resourceEndpoint = '/required-files/resource/';
 
         if (!params.isGlobalContent && params.isImageOrVideo) {
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
-        } else {
-            // resourceUrl = composeResourceUrl(options.config, params);
-            resourceUrl = params.cmsUrl + resourceUrl;
         }
     } else if (!Boolean(params['mediaType'])) {
         resourceUrl += '&scale_override=' + params.scaleFactor;
@@ -128,13 +141,12 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
     return resourceUrl;
 }
 
-export function composeResourceUrl(config: OptionsType['config'], params: any) {
-    const schemaVersion = (config) && config.schemaVersion;
-    const hardwareKey = (config) && config.hardwareKey;
-    const serverKey = (config) && config.cmsKey;
-    const cmsUrl = (config) && config.cmsUrl;
+export function composeResourceUrl(options: OptionsType, params: any) {
+    const schemaVersion = (options) && options.config?.schemaVersion;
+    const hardwareKey = (options) && options.config?.hardwareKey;
+    const serverKey = (options) && options.config?.cmsKey;
 
-    return cmsUrl + '/chromeOS/getResource' +
+    return '/pwa/getResource' +
         '?v=' + schemaVersion +
         '&serverKey=' + serverKey +
         '&hardwareKey=' + hardwareKey +
@@ -153,8 +165,7 @@ export function composeBgUrlByPlatform(
         '&dynamic&proportional=0';
 
     if (platform === 'chromeOS') {
-        bgImageUrl = params.cmsUrl +
-            '/chromeOS/resource/' + params.layout.id +
+        bgImageUrl = '/required-files/resource/' + params.layout.id +
             '?saveAs=' + params.layout.bgImage;
     }
 
