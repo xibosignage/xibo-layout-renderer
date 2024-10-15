@@ -289,7 +289,9 @@ export default function Layout(
 
         if ($layout) {
             $layout.style.display = 'none';
-            $layout.style.outline = 'red solid thin';
+            if (xlr.config.platform === 'CMS') {
+                $layout.style.outline = 'red solid thin';
+            }
         }
 
         layout.layoutNode = props.data;
