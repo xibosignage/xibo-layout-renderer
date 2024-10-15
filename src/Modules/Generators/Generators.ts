@@ -155,6 +155,10 @@ export function composeResourceUrl(options: OptionsType, params: any) {
         '&mediaId=' + params.mediaId;
 }
 
+export function composeVideoUrl(params: any) {
+    return '/xmds.php?file=' + params.uri;
+}
+
 export function composeBgUrlByPlatform(
     platform: OptionsType['platform'],
     params: any

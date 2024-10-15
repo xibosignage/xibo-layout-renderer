@@ -26,7 +26,7 @@ import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
 import VideoMedia from './VideoMedia';
 import AudioMedia from './AudioMedia';
-import {composeResourceUrl, composeResourceUrlByPlatform, fetchText, getDataBlob} from '../Generators/Generators';
+import {composeResourceUrl, composeResourceUrlByPlatform, composeVideoUrl, fetchText, getDataBlob} from '../Generators/Generators';
 import {IXlr} from '../../Types/XLR';
 
 export interface IMediaEvents {
@@ -197,6 +197,10 @@ export default function Media(
             tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
         } else if (xlr.config.platform === 'chromeOS') {
             tmpUrl = composeResourceUrl(xlr.config, resourceUrlParams);
+
+            if (self.mediaType === 'video') {
+                tmpUrl = composeVideoUrl(resourceUrlParams);
+            }
         }
 
         self.url = tmpUrl;
