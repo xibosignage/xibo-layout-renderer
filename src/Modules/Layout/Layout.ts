@@ -372,6 +372,13 @@ export default function Layout(
             options,
         );
 
+        // Create drawer
+        const layoutDrawers = Array.from(layout?.layoutNode?.getElementsByTagName('drawer') || []);
+
+        Array.from(layoutDrawers).forEach((layoutDrawerXml) => {
+            layout.drawer = layoutDrawerXml;
+        });
+
         // Create regions
         const layoutRegions = Array.from(layout?.layoutNode?.getElementsByTagName('region') || []);
 

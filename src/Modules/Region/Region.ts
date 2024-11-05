@@ -33,6 +33,7 @@ import {
     transitionElement,
 } from '../Transitions';
 import {IXlr} from '../../Types/XLR';
+import { getAllAttributes } from '../Generators/Generators';
 
 export default function Region(
     layout: ILayout,
@@ -122,6 +123,32 @@ export default function Region(
 
             mediaObj.index = indx;
             self.mediaObjects.push(mediaObj);
+        });
+
+
+        // Add media to region for targetted actions
+        self.layout.actionController?.actions.forEach((action) => {
+            const attributes = getAllAttributes(action.xml);
+
+            if (attributes.target.value === 'region' &&
+                attributes.actionType.value === 'navWidget' &&
+                attributes.targetId.value == self.id
+            ) {
+                const drawerMediaItems = Array.from(self.layout.drawer?.getElementsByTagName('media') || []);
+                
+                drawerMediaItems.forEach((drawerMedia) => {
+                    if (drawerMedia.id === attributes.widgetId.value) {
+                        // Add drawer media to the region
+                        self.mediaObjectsActions.push(Media(
+                            self,
+                            drawerMedia?.getAttribute('id') || '',
+                            drawerMedia as Element,
+                            options as OptionsType & IRegion['options'],
+                            xlr,
+                        ));
+                    }
+                });
+            }
         });
 
         self.prepareMediaObjects();
