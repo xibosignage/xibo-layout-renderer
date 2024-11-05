@@ -73,7 +73,7 @@ export interface ILayout {
     regionMaxZIndex: number;
     ready: boolean;
     regionObjects: IRegion[];
-    drawer: String[];
+    drawer: Element | null;
     allExpired: boolean;
     regions: IRegion[];
     actions: Action[];
@@ -116,7 +116,7 @@ export const initialLayout: ILayout = {
     regionMaxZIndex: 0,
     ready: false,
     regionObjects: [],
-    drawer: [],
+    drawer: null,
     allExpired: false,
     regions: [],
     actions: [],
