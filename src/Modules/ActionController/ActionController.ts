@@ -19,7 +19,7 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 // import Moveable from 'moveable';
-import { ILayout, OptionsType } from '../../types';
+import { ILayout, IMedia, IRegion, OptionsType } from '../../types';
 import { getAllAttributes, nextId } from '../Generators/Generators';
 import './action-controller.css';
 
@@ -101,9 +101,9 @@ export default class ActionController {
                 // Copy element attributes
                 const attributes = getAllAttributes(newAction.xml);
 
-                Array.from(attributes).forEach(({name, value}) => {
-                    $newAction.setAttribute(`data-${name}`, value);
-                    $newAction.setAttribute(name, value);
+                Array.from(Object.keys(attributes)).forEach((attribKey) => {
+                    $newAction.setAttribute(`data-${attribKey}`, attributes[attribKey].value);
+                    $newAction.setAttribute(attribKey, attributes[attribKey].value);
                 });
 
                 // Build html for the new action
@@ -113,11 +113,10 @@ export default class ActionController {
                 html += '<span class="action-row-title">' + previewTranslations[$newAction.getAttribute('actiontype') || ''];
 
                 if ($newAction.getAttribute('actiontype') == 'navWidget') {
-                    html += ' <span title="' + previewTranslations.widgetId + '">[' + $newAction.getAttribute('widgetId') + ']</span>';
+                    html += ' <span title="' + previewTranslations.widgetId + '">[' + $newAction.getAttribute('widgetid') + ']</span>';
                 } else if ($newAction.getAttribute('actiontype') == 'navLayout') {
-                    html += ' <span title="' + previewTranslations.layoutCode + '">[' + $newAction.getAttribute('layoutCode') + ']</span>';
+                    html += ' <span title="' + previewTranslations.layoutCode + '">[' + $newAction.getAttribute('layoutcode') + ']</span>';
                 }
-
                 html += '</span>';
 
                 // Add target
@@ -132,7 +131,7 @@ export default class ActionController {
 
                 // Append new action to the controller
                 $newAction.classList.add('action');
-                $newAction.setAttribute('originalId', newAction.id);
+                $newAction.setAttribute('originalid', newAction.id);
                 $newAction.setAttribute('id', 'A-' + newAction.id + '-' + nextId(self.options as OptionsType));
                 $actionsContainer.insertBefore($newAction, $actionsContainer.lastElementChild);
             });
@@ -179,7 +178,7 @@ export default class ActionController {
             var url = options.layoutPreviewUrl.replace('[layoutCode]', layoutCode) + '?findByCode=1';
             window.open(url, '_blank');
         }
-    };
+    }
 
     /** Change media in region (next/previous) */
     nextMediaInRegion(regionId: string, actionType: string) {
@@ -193,7 +192,43 @@ export default class ActionController {
                 }
             }
         });
-    };
+    }
+
+    loadMediaInRegion(regionId: string, widgetId: string) {
+        const self = this;
+        // Find target region
+        let targetRegion: IRegion | undefined;
+        
+        self.parent.regions.forEach((regionObj) => {
+            if (regionObj.id === regionId) {
+                targetRegion = regionObj;
+            }
+        });
+
+        // Find media in actions
+        let targetMedia: IMedia | undefined;
+        if (targetRegion) {
+            targetRegion.mediaObjectsActions.forEach((media) => {
+                if (media.id === widgetId) {
+                    targetMedia = media;
+                }
+            });
+        }
+
+        // Mark media as temporary (removed after region stop playing or loops)
+        if (targetMedia) {
+            targetMedia.singlePlay = true;
+        }
+
+        // If region is empty, remove the background color and empty message
+        if (targetRegion?.mediaObjects.length === 0) {
+            targetRegion.complete = false;
+        }
+
+        // Create media in region and play it next
+        targetRegion?.mediaObjects.splice(targetRegion.currentMediaIndex + 1, 0, targetMedia as IMedia);
+        targetRegion?.playNextMedia();
+    }
 
     /** Run action based on action data */
     runAction(actionData: {[k: string]: any}, options: InactOptions) {
@@ -203,7 +238,7 @@ export default class ActionController {
         } else if((actionData.actiontype == 'previous' || actionData.actiontype == 'next') && actionData.target == 'region') {
             this.nextMediaInRegion(actionData.targetid, actionData.actiontype);
         } else if(actionData.actiontype == 'navWidget' && actionData.target == 'region') {
-            // loadMediaInRegion(actionData.targetId, actionData.widgetId);
+            this.loadMediaInRegion(actionData.targetid, actionData.widgetid);
         } else {
             // TODO Handle other action types ( later? )
             console.log(actionData.actiontype + ' > ' + actionData.target + '[' + actionData.targetid + ']');

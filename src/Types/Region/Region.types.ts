@@ -34,7 +34,7 @@ export interface IRegion {
     uniqueId: string;
     xml: null | Element;
     mediaObjects: IMedia[];
-    mediaObjectsActions: String[];
+    mediaObjectsActions: IMedia[];
     currentMedia: number;
     complete: boolean;
     containerName: string;

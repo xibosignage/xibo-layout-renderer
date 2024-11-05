@@ -228,15 +228,14 @@ export function splashScreenDOM() {
 
 export function getAllAttributes(elem: Element) {
     if (!elem || elem === null) {
-        return [];
+        return {};
     }
 
     return elem.getAttributeNames()
-        .reduce((obj, name) => ([
+        .reduce((obj, name) => ({
             ...obj,
-            {
-                name,
+            [name]: {
                 value: elem.getAttribute(name),
             },
-        ]), <{[k: string]: any}[]>[]);
+        }), <{[k: string]: any}>{});
 }
