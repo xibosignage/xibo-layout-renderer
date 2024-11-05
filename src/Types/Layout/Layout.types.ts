@@ -92,7 +92,7 @@ export interface ILayout {
     stopAllMedia(): Promise<void>;
     resetLayout(): Promise<void>;
     index: number;
-    interactiveActions: InteractiveActions | undefined;
+    actionController: InteractiveActions | undefined;
 }
 
 export const initialLayout: ILayout = {
@@ -147,7 +147,7 @@ export const initialLayout: ILayout = {
     },
     emitter: <Emitter<ILayoutEvents>>{},
     index: -1,
-    interactiveActions: undefined,
+    actionController: undefined,
 };
 
 export type GetLayoutParamType = {

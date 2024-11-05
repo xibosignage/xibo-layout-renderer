@@ -366,7 +366,7 @@ export default function Layout(
         });
 
         // Create interactive actions
-        layout.interactiveActions = new ActionController(
+        layout.actionController = new ActionController(
             layout,
             layout.actions,
             options,
@@ -387,6 +387,8 @@ export default function Layout(
             regionObj.index = indx;
             layout.regions.push(regionObj);
         });
+
+        layout.actionController.initTouchActions();
     };
 
     layoutObject.regionExpired = function() {
