@@ -31,6 +31,7 @@ export interface IRegion {
     layout: ILayout;
     id: string;
     regionId: string;
+    uniqueId: string;
     xml: null | Element;
     mediaObjects: IMedia[];
     mediaObjectsActions: String[];
@@ -58,6 +59,7 @@ export interface IRegion {
     emitter?: Emitter<DefaultEvents>;
     prepareRegion(): void;
     playNextMedia(): void;
+    playPreviousMedia(): void;
     transitionNodes(oldMedia: IMedia | undefined, newMedia: IMedia | undefined): void;
     finished(): void;
     run(): void;
@@ -73,6 +75,7 @@ export const initialRegion: IRegion = {
     layout: initialLayout,
     id: '',
     regionId: '',
+    uniqueId: '',
     xml: null,
     mediaObjects: [],
     mediaObjectsActions: [],
@@ -98,6 +101,8 @@ export const initialRegion: IRegion = {
     prepareRegion() {
     },
     playNextMedia() {
+    },
+    playPreviousMedia() {
     },
     transitionNodes() {
     },

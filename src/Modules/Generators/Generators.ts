@@ -225,3 +225,18 @@ export function splashScreenDOM() {
 
     return newImg;
 }
+
+export function getAllAttributes(elem: Element) {
+    if (!elem || elem === null) {
+        return [];
+    }
+
+    return elem.getAttributeNames()
+        .reduce((obj, name) => ([
+            ...obj,
+            {
+                name,
+                value: elem.getAttribute(name),
+            },
+        ]), <{[k: string]: any}[]>[]);
+}
