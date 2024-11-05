@@ -32,6 +32,7 @@ import { Region } from '../Region';
 
 import './layout.css';
 import {composeBgUrlByPlatform, getIndexByLayoutId} from '../Generators/Generators';
+import ActionController, { Action } from '../ActionController';
 
 const playAgainClickHandle = function(ev: { preventDefault: () => void; }) {
     ev.preventDefault();
@@ -358,6 +359,19 @@ export default function Layout(
             $layout.style.display = 'none';
         }
 
+        // Create actions
+        const layoutActions = Array.from(layout?.layoutNode?.getElementsByTagName('action') || []);
+        Array.from(layoutActions).forEach((actionXml, indx) => {
+            layout.actions.push(new Action(actionXml?.getAttribute('id') || '', actionXml));
+        });
+
+        // Create interactive actions
+        layout.actionController = new ActionController(
+            layout,
+            layout.actions,
+            options,
+        );
+
         // Create regions
         const layoutRegions = Array.from(layout?.layoutNode?.getElementsByTagName('region') || []);
 
@@ -373,6 +387,8 @@ export default function Layout(
             regionObj.index = indx;
             layout.regions.push(regionObj);
         });
+
+        layout.actionController.initTouchActions();
     };
 
     layoutObject.regionExpired = function() {

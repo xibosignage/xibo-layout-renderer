@@ -60,8 +60,9 @@ export default function Region(
         self.ending = false;
         self.ended = false;
         self.id = props.regionId;
+        self.uniqueId = `${nextId(self.options as OptionsType & IRegion["options"])}`;
         self.options = {...platform, ...props.options};
-        self.containerName = `R-${self.id}-${nextId(self.options as OptionsType & IRegion["options"])}`;
+        self.containerName = `R-${self.id}-${self.uniqueId}`;
         self.xml = props.xml;
         self.mediaObjects = [];
 
@@ -318,6 +319,22 @@ export default function Region(
         self.transitionNodes(self.oldMedia, self.curMedia);
     };
     
+    regionObject.playPreviousMedia = function() {
+        const self = regionObject;
+        self.currentMediaIndex = self.currentMediaIndex - 1;
+
+        if(self.currentMediaIndex < 0 || self.ended) {
+            self.currentMediaIndex = 0;
+            return;
+        }
+
+        self.prepareMediaObjects();
+
+        console.debug('region::playPreviousMedia', self);
+        /* Do the transition */
+        self.transitionNodes(self.oldMedia, self.curMedia);
+    };
+
     regionObject.end = function() {
         const self = regionObject;
         self.ending = true;

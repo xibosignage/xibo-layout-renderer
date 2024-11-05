@@ -18,11 +18,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {DefaultEvents, Emitter, Unsubscribe} from 'nanoevents';
+import {Emitter, Unsubscribe} from 'nanoevents';
 import {IRegion} from '../Region';
 import {platform} from '../../Modules/Platform';
 import {ILayoutEvents} from '../../Modules/Layout';
 import {IXlr} from '../XLR';
+import InteractiveActions, { Action } from '../../Modules/ActionController';
 
 export type InputLayoutType = {
     layoutId: number | null;
@@ -46,6 +47,9 @@ export type OptionsType = {
         cmsKey: string | null;
         hardwareKey: string | null;
     };
+    previewTranslations?: {
+        [k: string]: any;
+    }
 };
 
 export interface ILayout {
@@ -72,7 +76,7 @@ export interface ILayout {
     drawer: String[];
     allExpired: boolean;
     regions: IRegion[];
-    actions: String[];
+    actions: Action[];
     options: OptionsType;
     done: boolean;
     allEnded: boolean;
@@ -88,6 +92,7 @@ export interface ILayout {
     stopAllMedia(): Promise<void>;
     resetLayout(): Promise<void>;
     index: number;
+    actionController: InteractiveActions | undefined;
 }
 
 export const initialLayout: ILayout = {
@@ -142,6 +147,7 @@ export const initialLayout: ILayout = {
     },
     emitter: <Emitter<ILayoutEvents>>{},
     index: -1,
+    actionController: undefined,
 };
 
 export type GetLayoutParamType = {
