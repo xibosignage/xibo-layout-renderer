@@ -129,7 +129,6 @@ export default function Region(
         // Add media to region for targetted actions
         self.layout.actionController?.actions.forEach((action) => {
             const attributes = getAllAttributes(action.xml);
-            console.log({attributes});
 
             if (attributes.target.value === 'region' &&
                 attributes.actionType.value === 'navWidget' &&
