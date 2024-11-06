@@ -103,3 +103,6 @@ div.action-controller .action:not([triggerType="webhook"]) {
     -ms-user-select: none;
     user-select: none;
 }
+iframe {
+    pointer-events: none;
+}
