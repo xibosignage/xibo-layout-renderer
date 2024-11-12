@@ -62,7 +62,9 @@ export async function getDataBlob(src: string) {
         }));
 }
 
-export async function preloadMediaBlob(src: string, type: 'video' | 'audio' | 'image') {
+export type MediaTypes = 'video' | 'audio' | 'image';
+
+export async function preloadMediaBlob(src: string, type: MediaTypes) {
     const res = await fetch(src, {mode: 'no-cors'});
     let blob: Blob | MediaSource = new Blob();
 
@@ -117,6 +119,20 @@ export function audioFileType(str: string) {
 
     if (Boolean(validAudioTypes[str as 'mp3' | 'wav' | 'ogg'])) {
         return validAudioTypes[str as 'mp3' | 'wav' | 'ogg'];
+    }
+
+    return undefined;
+}
+
+export function videoFileType(str: string) {
+    const validVideoTypes = {
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+        'wmv': 'video/x-ms-wmv',
+    };
+
+    if (Boolean(validVideoTypes[str as 'mp4' | 'webm' | 'wmv'])) {
+        return validVideoTypes[str as 'mp4' | 'webm' | 'wmv'];
     }
 
     return undefined;

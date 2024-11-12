@@ -19,15 +19,19 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { createNanoEvents } from 'nanoevents';
+import videojs from 'video.js';
+
 import { OptionsType } from '../../Types/Layout';
 import { IRegion } from '../../Types/Region';
 import { IMedia, initialMedia } from '../../Types/Media';
 import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
-import VideoMedia from './VideoMedia';
+import VideoMedia, { composeVideoSource } from './VideoMedia';
 import AudioMedia from './AudioMedia';
 import {composeResourceUrl, composeResourceUrlByPlatform, composeVideoUrl, fetchText, getDataBlob} from '../Generators/Generators';
 import {IXlr} from '../../Types/XLR';
+
+import 'video.js/dist/video-js.min.css';
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -67,7 +71,7 @@ export default function Media(
 
     emitter.on('start', function(media: IMedia) {
         if (media.mediaType === 'video') {
-            VideoMedia(media).init();
+            VideoMedia(media, xlr).init();
 
             if (media.duration > 0) {
                 startMediaTimer(media);
@@ -216,30 +220,6 @@ export default function Media(
             $mediaIframe.src = `${self.url}&width=${self.divWidth}&height=${self.divHeight}`;
         }
 
-        // Check/set iframe based widgets play status
-        // Populate mediaIframe content without using src attribute
-        // let iframeSrc = tmpUrl;
-        //
-        // if (self.render !== 'html' && self.render !== 'webpage') {
-        //     iframeSrc = `${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`;
-        // }
-        //
-        // if (self.render === 'html' || self.render === 'webpage') {
-        //     if (xlr.config.platform === 'CMS') {
-        //         $mediaIframe.src = iframeSrc;
-        //     } else if (xlr.config.platform === 'chromeOS') {
-        //         (async () => {
-        //             const mediaHtml = await fetchText(iframeSrc);
-        //
-        //             if ($mediaIframe) {
-        //                 $mediaIframe.contentDocument?.open();
-        //                 $mediaIframe.contentDocument?.write(mediaHtml);
-        //                 $mediaIframe.contentDocument?.close();
-        //             }
-        //         })();
-        //     }
-        // }
-
         if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
             self.checkIframeStatus = true;
             self.iframe = $mediaIframe;
@@ -257,19 +237,14 @@ export default function Media(
         } else if (self.mediaType === 'video') {
             const $videoMedia = $media as HTMLVideoElement;
 
-            $videoMedia.preload = 'auto';
             $videoMedia.textContent = 'Unsupported Video';
-
-            if (Boolean(self.options['mute'])) {
-                $videoMedia.muted = self.options.mute === '1';
-            }
 
             if (Boolean(self.options['scaletype'])) {
                 if (self.options.scaletype === 'stretch') {
                     $videoMedia.style.objectFit = 'fill';
                 }
             }
-            $videoMedia.playsInline = true;
+            $videoMedia.classList.add('video-js', 'vjs-default-skin');
 
             if (self.loop) {
                 $videoMedia.loop = true;
@@ -397,7 +372,19 @@ export default function Media(
                             `url(${!isCMS ? self.url : await getDataBlob(self.url)}`
                         );
                 } else if (self.mediaType === 'video' && self.url !== null) {
-                    ($media as HTMLVideoElement).src = await preloadMediaBlob(self.url, self.mediaType);
+                    $media = await composeVideoSource($media as HTMLVideoElement, self) as HTMLVideoElement;
+
+                    let isMuted = false;
+                    if (Boolean(self.options['mute'])) {
+                        isMuted = self.options.mute === '1';
+                    }
+
+                    videojs($media, {
+                        controls: false,
+                        preload: 'auto',
+                        autoplay: false,
+                        muted: isMuted,
+                    });
                 } else if (self.mediaType === 'audio' && self.url !== null) {
                     ($media as HTMLAudioElement).src =
                         isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
