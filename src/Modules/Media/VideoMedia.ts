@@ -27,7 +27,7 @@ import { IMedia } from '../../Types/Media';
 import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType, getFileExt } from '../Generators';
 import { IXlr } from '../../types';
 
-let xiboIC: unknown;
+let xiboIC: any;
 if ('xiboIC' in window) {
     xiboIC = window.xiboIC;
 }
@@ -74,26 +74,29 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                 });
                 vjsPlayer?.on('error', (err: any) => {
                     console.debug(`Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
-                    // End media after 5 seconds
-                    setTimeout(() => {
-                        console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended . . .`);
-                        media.emitter.emit('end', media);
-                        vjsPlayer.dispose();
+                    if (xlr.config.platform === 'chromeOS') {
+                        // Immediately expire media and report a fault
+                        xiboIC.expireNow({targetId: media.id});
+                        xiboIC.reportFault({
+                          code: '5002',
+                          reason: 'Video file source not supported',
+                        }, {targetId: media.id});
 
-                        if (xlr.config.platform === 'chromeOS') {
-                            console.log({xiboIC});
-                            // xiboIC.expireNow({targetId: xiboICTargetId});
-                            // xiboIC.reportFault({
-                            //   code: '5001',
-                            //   reason: 'No Data',
-                            // }, {targetId: xiboICTargetId});
-                        }
-                    }, 5000);
+                        // media.emitter.emit('end', media);
+                        vjsPlayer.dispose();
+                    } else {
+                        // End media after 5 seconds
+                        setTimeout(() => {
+                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended . . .`);
+                            media.emitter.emit('end', media);
+                            vjsPlayer.dispose();
+                        }, 5000);
+                    }
                 });
     
                 if (media.duration === 0) {
                     vjsPlayer?.on('durationchange', () => {
-                        console.debug('Showing Media ' + media.id + ' for ' + $videoMedia.duration + 's of Region ' + media.region.regionId);
+                        console.debug('Showing Media ' + media.id + ' for ' + vjsPlayer.duration() + 's of Region ' + media.region.regionId);
                     });
 
                     vjsPlayer?.on('ended', function() {
