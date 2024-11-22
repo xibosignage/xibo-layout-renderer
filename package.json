@@ -32,11 +32,9 @@
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
-    "@types/jquery": "^3.5.32",
     "@types/node": "^20.12.12",
     "@web/rollup-plugin-import-meta-assets": "^2.2.1",
     "axios": "^1.6.8",
-    "jquery": "^3.7.1",
     "nanoevents": "^9.0.0",
     "path": "^0.12.7",
     "rimraf": "^5.0.5",
@@ -46,7 +44,6 @@
     "rollup-plugin-postcss": "^4.0.2",
     "tslib": "^2.6.2",
     "typescript": "^5.4.3",
-    "video.js": "^8.19.1",
-    "xibo-interactive-control": "git+https://github.com/xibosignage/xibo-interactive-control.git#44ad744a5a2a0af9e7fcdb828dbdbeff45cc40f0"
+    "video.js": "^8.19.1"
   }
 }

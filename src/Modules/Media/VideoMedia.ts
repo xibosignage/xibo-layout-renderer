@@ -18,19 +18,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import '../../Lib/jquery-globals';
-
 import videojs from 'video.js';
-import 'xibo-interactive-control/dist/xibo-interactive-control.min.js';
 
 import { IMedia } from '../../Types/Media';
 import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType, getFileExt } from '../Generators';
 import { IXlr } from '../../types';
-
-let xiboIC: any;
-if ('xiboIC' in window) {
-    xiboIC = window.xiboIC;
-}
+import PwaSW from '../../Lib/pwa-sw';
 
 export async function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
     const videoSrc = await preloadMediaBlob(media.url as string, media.mediaType as MediaTypes);
@@ -72,18 +65,25 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                 vjsPlayer?.on('playing', () => {
                     console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
                 });
-                vjsPlayer?.on('error', (err: any) => {
+                vjsPlayer?.on('error', async (err: any) => {
                     console.debug(`Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
                     if (xlr.config.platform === 'chromeOS') {
                         // Immediately expire media and report a fault
-                        xiboIC.expireNow({targetId: media.id});
-                        xiboIC.reportFault({
-                          code: '5002',
-                          reason: 'Video file source not supported',
-                        }, {targetId: media.id});
+                        const playerSW = PwaSW();
+                        const hasSW = await playerSW.getSW();
 
-                        // media.emitter.emit('end', media);
-                        vjsPlayer.dispose();
+                        if (hasSW) {
+                            playerSW.postMsg({
+                                type: 'MEDIA_FAULT',
+                                code: '5002',
+                                reason: 'Video file source not supported',
+                                targetId: media.id
+                            }).then(() => {
+                                // Expire the media and dispose the video
+                                media.emitter.emit('end', media);
+                                vjsPlayer.dispose();
+                            });
+                        }
                     } else {
                         // End media after 5 seconds
                         setTimeout(() => {
