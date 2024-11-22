@@ -21,18 +21,23 @@
 import videojs from 'video.js';
 
 import { IMedia } from '../../Types/Media';
-import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType, getFileExt } from '../Generators';
+import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType, getFileExt, setExpiry } from '../Generators';
 import { IXlr } from '../../types';
 import PwaSW from '../../Lib/pwa-sw';
 
 export async function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
     const videoSrc = await preloadMediaBlob(media.url as string, media.mediaType as MediaTypes);
-    const $videoSource = document.createElement('source');
+    const vidType = videoFileType(getFileExt(media.uri)) as string;
 
-    $videoSource.src = videoSrc;
-    $videoSource.type = videoFileType(getFileExt(media.uri)) as string;
-
-    $media.insertBefore($videoSource, $media.lastElementChild);
+    // Only add one source per type
+    if ($media.querySelectorAll(`source[type="${vidType}"]`).length === 0) {
+        const $videoSource = document.createElement('source');
+    
+        $videoSource.src = videoSrc;
+        $videoSource.type = vidType;
+    
+        $media.insertBefore($videoSource, $media.lastElementChild);    
+    }
 
     return $media;
 }
@@ -77,11 +82,16 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                                 type: 'MEDIA_FAULT',
                                 code: '5002',
                                 reason: 'Video file source not supported',
-                                targetId: media.id
+                                mediaId: media.id,
+                                regionId: media.region.id,
+                                layoutId: media.region.layout.id,
+                                date: new Date().toJSON(),
+                                // Temporary setting
+                                expiry: setExpiry(7), 
                             }).then(() => {
                                 // Expire the media and dispose the video
-                                media.emitter.emit('end', media);
                                 vjsPlayer.dispose();
+                                media.emitter.emit('end', media);
                             });
                         }
                     } else {

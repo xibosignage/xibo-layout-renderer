@@ -8,4 +8,5 @@ export {
     audioFileType,
     MediaTypes,
     videoFileType,
+    setExpiry,
 } from './Generators';

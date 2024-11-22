@@ -255,3 +255,14 @@ export function getAllAttributes(elem: Element) {
             },
         }), <{[k: string]: any}>{});
 }
+
+/**
+ * Create expiration day based on current date
+ * @param numDays Number of days as expiry
+ * @returns JSON string format of date
+ */
+export function setExpiry(numDays: number) {
+    const today = new Date();
+
+    return new Date(today.setHours(24 * numDays || 1)).toJSON();
+}

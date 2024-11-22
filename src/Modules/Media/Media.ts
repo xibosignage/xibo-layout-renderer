@@ -384,6 +384,7 @@ export default function Media(
                         preload: 'auto',
                         autoplay: false,
                         muted: isMuted,
+                        errorDisplay: xlr.config.platform !== 'chromeOS',
                     });
                 } else if (self.mediaType === 'audio' && self.url !== null) {
                     ($media as HTMLAudioElement).src =
