@@ -18,50 +18,102 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { IMedia } from '../../Types/Media';
-import { capitalizeStr, getMediaId } from '../Generators';
+import videojs from 'video.js';
 
-export default function VideoMedia(media: IMedia) {
+import { IMedia } from '../../Types/Media';
+import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType, getFileExt, setExpiry } from '../Generators';
+import { IXlr } from '../../types';
+import PwaSW from '../../Lib/pwa-sw';
+
+export async function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
+    const videoSrc = await preloadMediaBlob(media.url as string, media.mediaType as MediaTypes);
+    const vidType = videoFileType(getFileExt(media.uri)) as string;
+
+    // Only add one source per type
+    if ($media.querySelectorAll(`source[type="${vidType}"]`).length === 0) {
+        const $videoSource = document.createElement('source');
+    
+        $videoSource.src = videoSrc;
+        $videoSource.type = vidType;
+    
+        $media.insertBefore($videoSource, $media.lastElementChild);    
+    }
+
+    return $media;
+}
+
+export default function VideoMedia(media: IMedia, xlr: IXlr) {
     const videoMediaObject = {
         init() {
             const $videoMedia = document.getElementById(getMediaId(media)) as HTMLVideoElement;
 
             if ($videoMedia) {
-                $videoMedia.onloadstart = () => {
+                const vjsPlayer = videojs.getPlayer($videoMedia);
+
+                vjsPlayer?.on('loadstart', () => {
                     console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
-                };
-                $videoMedia.onloadeddata = () => {
+                });
+                vjsPlayer?.on('loadstart', () => {
                     if ($videoMedia.readyState >= 2) {
                         console.debug(`${capitalizeStr(media.mediaType)} data for media > ${media.id} has been fully loaded . . .`);
                     }
-                };
-                $videoMedia.oncanplay = () => {
+                });
+                vjsPlayer?.on('canplay', () => {
                     console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
-        
-                    const videoPlayPromise = $videoMedia.play();
-        
-                    if (videoPlayPromise !== undefined) {
-                        videoPlayPromise.then(() => {
-                            console.debug('autoplay started . . .');
-                            // Autoplay restarted
-                        }).catch(error => {
-                            $videoMedia.muted = true;
-                            $videoMedia.play();
-                        });
-                    }
-                };
-                $videoMedia.onplaying = () => {
-                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
-                };
 
+                    // Autoplay restarted
+                    console.debug('autoplay started . . .');
+                    
+                    vjsPlayer.muted(true);
+                    vjsPlayer.play();
+                });
+                vjsPlayer?.on('playing', () => {
+                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+                });
+                vjsPlayer?.on('error', async (err: any) => {
+                    console.debug(`Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
+                    if (xlr.config.platform === 'chromeOS') {
+                        // Immediately expire media and report a fault
+                        const playerSW = PwaSW();
+                        const hasSW = await playerSW.getSW();
+
+                        if (hasSW) {
+                            playerSW.postMsg({
+                                type: 'MEDIA_FAULT',
+                                code: '5002',
+                                reason: 'Video file source not supported',
+                                mediaId: media.id,
+                                regionId: media.region.id,
+                                layoutId: media.region.layout.id,
+                                date: new Date().toJSON(),
+                                // Temporary setting
+                                expiry: setExpiry(7), 
+                            }).finally(() => {
+                                // Expire the media and dispose the video
+                                vjsPlayer.dispose();
+                                media.emitter.emit('end', media);
+                            });
+                        }
+                    } else {
+                        // End media after 5 seconds
+                        setTimeout(() => {
+                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended . . .`);
+                            media.emitter.emit('end', media);
+                            vjsPlayer.dispose();
+                        }, 5000);
+                    }
+                });
+    
                 if (media.duration === 0) {
-                    $videoMedia.ondurationchange = () => {
-                        console.debug('Showing Media ' + media.id + ' for ' + $videoMedia.duration + 's of Region ' + media.region.regionId);
-                    };
-                    $videoMedia.onended = () => {
+                    vjsPlayer?.on('durationchange', () => {
+                        console.debug('Showing Media ' + media.id + ' for ' + vjsPlayer.duration() + 's of Region ' + media.region.regionId);
+                    });
+
+                    vjsPlayer?.on('ended', function() {
                         console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
                         media.emitter?.emit('end', media);
-                    };
+                        vjsPlayer.dispose();
+                    });
                 }
             }
         }

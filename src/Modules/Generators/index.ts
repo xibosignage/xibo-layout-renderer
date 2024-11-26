@@ -6,4 +6,7 @@ export {
     fetchJSON,
     capitalizeStr,
     audioFileType,
+    MediaTypes,
+    videoFileType,
+    setExpiry,
 } from './Generators';
