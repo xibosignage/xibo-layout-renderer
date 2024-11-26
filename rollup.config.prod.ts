@@ -17,6 +17,7 @@ const libName = 'xibo-layout-renderer';
 const outputPath = 'dist/';
 const commonInputOptions: InputOptions = {
     input: 'src/index.ts',
+    external: ['xibo-interactive-control', 'jquery'],
     plugins: [
         nodeResolvePlugin({
             preferBuiltins: true,
@@ -61,6 +62,9 @@ const config: RollupOptions[] = [
                 format: 'esm',
                 exports: 'named',
                 sourcemap: true,
+                globals: {
+                    'jquery': '$',
+                },
             }
         ],
     },
@@ -72,6 +76,9 @@ const config: RollupOptions[] = [
                 file: `${outputPath}${libName}.js`,
                 format: 'iife',
                 exports: 'named',
+                globals: {
+                    'jquery': '$',
+                },
             },
             {
                 ...iifeCommonOutputOptions,
@@ -82,6 +89,9 @@ const config: RollupOptions[] = [
                 plugins: [
                     terserPlugin(),
                 ],
+                globals: {
+                    'jquery': '$',
+                },
             }
         ],
     },

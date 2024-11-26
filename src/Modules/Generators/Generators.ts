@@ -62,7 +62,9 @@ export async function getDataBlob(src: string) {
         }));
 }
 
-export async function preloadMediaBlob(src: string, type: 'video' | 'audio' | 'image') {
+export type MediaTypes = 'video' | 'audio' | 'image';
+
+export async function preloadMediaBlob(src: string, type: MediaTypes) {
     const res = await fetch(src, {mode: 'no-cors'});
     let blob: Blob | MediaSource = new Blob();
 
@@ -122,6 +124,20 @@ export function audioFileType(str: string) {
     return undefined;
 }
 
+export function videoFileType(str: string) {
+    const validVideoTypes = {
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+        'wmv': 'video/x-ms-wmv',
+    };
+
+    if (Boolean(validVideoTypes[str as 'mp4' | 'webm' | 'wmv'])) {
+        return validVideoTypes[str as 'mp4' | 'webm' | 'wmv'];
+    }
+
+    return undefined;
+}
+
 export function composeResourceUrlByPlatform(options: OptionsType, params: any) {
     let resourceUrl = params.regionOptions.getResourceUrl
         .replace(":regionId", params.regionId)
@@ -155,7 +171,7 @@ export function composeResourceUrl(options: OptionsType, params: any) {
         '&mediaId=' + params.mediaId;
 }
 
-export function composeVideoUrl(params: any) {
+export function composeMediaUrl(params: any) {
     return '/xmds.php?file=' + params.uri;
 }
 
@@ -238,4 +254,15 @@ export function getAllAttributes(elem: Element) {
                 value: elem.getAttribute(name),
             },
         }), <{[k: string]: any}>{});
+}
+
+/**
+ * Create expiration day based on current date
+ * @param numDays Number of days as expiry
+ * @returns JSON string format of date
+ */
+export function setExpiry(numDays: number) {
+    const today = new Date();
+
+    return new Date(today.setHours(24 * numDays || 1)).toJSON();
 }
