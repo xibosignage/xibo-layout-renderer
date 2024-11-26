@@ -88,7 +88,7 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                                 date: new Date().toJSON(),
                                 // Temporary setting
                                 expiry: setExpiry(7), 
-                            }).then(() => {
+                            }).finally(() => {
                                 // Expire the media and dispose the video
                                 vjsPlayer.dispose();
                                 media.emitter.emit('end', media);

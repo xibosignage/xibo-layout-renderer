@@ -171,7 +171,7 @@ export function composeResourceUrl(options: OptionsType, params: any) {
         '&mediaId=' + params.mediaId;
 }
 
-export function composeVideoUrl(params: any) {
+export function composeMediaUrl(params: any) {
     return '/xmds.php?file=' + params.uri;
 }
 

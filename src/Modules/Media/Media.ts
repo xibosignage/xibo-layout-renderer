@@ -28,7 +28,7 @@ import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
 import VideoMedia, { composeVideoSource } from './VideoMedia';
 import AudioMedia from './AudioMedia';
-import {composeResourceUrl, composeResourceUrlByPlatform, composeVideoUrl, fetchText, getDataBlob} from '../Generators/Generators';
+import {composeResourceUrl, composeResourceUrlByPlatform, composeMediaUrl, fetchText, getDataBlob} from '../Generators/Generators';
 import {IXlr} from '../../Types/XLR';
 
 import 'video.js/dist/video-js.min.css';
@@ -202,8 +202,8 @@ export default function Media(
         } else if (xlr.config.platform === 'chromeOS') {
             tmpUrl = composeResourceUrl(xlr.config, resourceUrlParams);
 
-            if (self.mediaType === 'video') {
-                tmpUrl = composeVideoUrl(resourceUrlParams);
+            if (self.mediaType === 'image' || self.mediaType === 'video') {
+                tmpUrl = composeMediaUrl(resourceUrlParams);
             }
         }
 
@@ -369,7 +369,9 @@ export default function Media(
                     ($media as HTMLImageElement).style
                         .setProperty(
                             'background-image',
-                            `url(${!isCMS ? self.url : await getDataBlob(self.url)}`
+                            `url(${!isCMS
+                                ? self.url
+                                : await getDataBlob(self.url)}`
                         );
                 } else if (self.mediaType === 'video' && self.url !== null) {
                     $media = await composeVideoSource($media as HTMLVideoElement, self) as HTMLVideoElement;
