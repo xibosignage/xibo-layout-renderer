@@ -66,7 +66,7 @@ export default function XiboLayoutRenderer(
             const self = this;
 
             // Check if only have splash screen from inputLayouts
-            if (self.inputLayouts.length === 1 && self.inputLayouts[0].layoutId === 0) {
+            if (self.inputLayouts.length === 1 && self.inputLayouts[0].layoutId === '0') {
                 resolve(self);
             } else {
                 self.prepareLayouts().then((xlr) => {
@@ -267,8 +267,8 @@ export default function XiboLayoutRenderer(
         return new Promise<ILayout>((resolve) => {
             const xlrLayoutObj = initialLayout;
 
-            xlrLayoutObj.id = Number(inputLayout.layoutId);
-            xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
+            xlrLayoutObj.id = inputLayout.layoutId;
+            xlrLayoutObj.layoutId = inputLayout.layoutId;
             xlrLayoutObj.options = newOptions;
             xlrLayoutObj.index = getIndexByLayoutId(this.inputLayouts, xlrLayoutObj.layoutId).index as number;
 

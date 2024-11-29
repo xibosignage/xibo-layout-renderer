@@ -198,7 +198,7 @@ type LayoutIndexType = {
     }
 }
 
-export function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: number | null) {
+export function getIndexByLayoutId(layoutsInput: InputLayoutType[], layoutId?: string) {
     let layoutIndexes = layoutsInput.reduce((a: LayoutIndexType, b, indx) => {
         a[Number(b.layoutId)] = {
             ...b,
@@ -225,7 +225,7 @@ export function isEmpty(input: any) {
 }
 
 export const splashScreenLayoutObj: InputLayoutType = {
-    layoutId: 0,
+    layoutId: '0',
     path: '',
 };
 
