@@ -26,7 +26,7 @@ import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
 
 export type InputLayoutType = {
-    layoutId: string;
+    layoutId: number | null;
     path?: string;
 };
 
@@ -53,8 +53,8 @@ export type OptionsType = {
 };
 
 export interface ILayout {
-    id: string;
-    layoutId: string;
+    id: number | null;
+    layoutId: number | null;
     sw: number | null;
     sh: number | null;
     xw: number | null;
@@ -96,8 +96,8 @@ export interface ILayout {
 }
 
 export const initialLayout: ILayout = {
-    id: '',
-    layoutId: '',
+    id: null,
+    layoutId: null,
     sw: 0,
     sh: 0,
     xw: 0,
