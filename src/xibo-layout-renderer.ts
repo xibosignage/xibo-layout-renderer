@@ -18,14 +18,17 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { createNanoEvents } from 'nanoevents';
+
 import Layout, { getLayout, getXlf, initRenderingDOM } from './Modules/Layout';
 import { platform } from './Modules/Platform';
 import {
     ILayout, initialLayout, InputLayoutType, OptionsType,
 } from './Types/Layout';
-import { initialXlr, IXlr } from './Types/XLR';
+import { ELayoutType, initialXlr, IXlr } from './Types/XLR';
 import SplashScreen, {PreviewSplashElement} from './Modules/SplashScreen';
 import {getIndexByLayoutId} from './Modules/Generators/Generators';
+import { IXlrEvents } from './Types/XLR/XLR.types';
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -39,8 +42,24 @@ export default function XiboLayoutRenderer(
     const xlrObject: IXlr = {
         ...initialXlr,
     };
+    const emitter = createNanoEvents<IXlrEvents>();
 
+    xlrObject.emitter = emitter;
 
+    xlrObject.emitter.on('layoutChange', async (layoutId: number) => {
+        let targetLayout: { layout: ILayout; pos: ELayoutType } | undefined;
+
+        if (layoutId === xlrObject.nextLayout?.layoutId) {
+            targetLayout = {
+                layout: xlrObject.nextLayout,
+                pos: ELayoutType.NEXT
+            };
+        }
+
+        if (targetLayout?.layout && targetLayout?.pos) {
+            xlrObject.nextLayout = await xlrObject.prepareLayoutXlf(xlrObject.nextLayout);
+        }
+    });
     xlrObject.bootstrap = function() {
         // Place to set configurations and initialize required props
         const self = this;

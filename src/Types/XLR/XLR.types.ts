@@ -20,6 +20,7 @@
  */
 import {ILayout, InputLayoutType, OptionsType} from '../Layout';
 import {platform} from '../../Modules/Platform';
+import { Emitter } from 'nanoevents';
 
 export type PrepareLayoutsType = {
     moveNext?: boolean;
@@ -30,6 +31,10 @@ export enum ELayoutType {
     NEXT,
 }
 
+export type IXlrEvents = {
+    layoutChange: (layoutId: number) => void;
+};
+
 export interface IXlr {
     inputLayouts: InputLayoutType[],
     config: OptionsType,
@@ -38,6 +43,7 @@ export interface IXlr {
     currentLayoutId: number | null;
     currentLayout: ILayout | undefined;
     nextLayout: ILayout | undefined;
+    emitter: Emitter<IXlrEvents>;
     bootstrap(): void;
     init(): Promise<IXlr>;
     playSchedules(xlr: IXlr): void;
@@ -55,6 +61,7 @@ export const initialXlr: IXlr = {
     currentLayoutId: null,
     currentLayout: undefined,
     nextLayout: undefined,
+    emitter: <Emitter<IXlrEvents>>{},
     bootstrap() {
     },
     init() {
