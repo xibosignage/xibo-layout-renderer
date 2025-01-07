@@ -268,7 +268,7 @@ export default function XiboLayoutRenderer(
         ) {
             newOptions.xlfUrl =
                 newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
-        } else if (self.config.platform === 'chromeOS') {
+        } else if (self.config.platform === 'chromeOS' && inputLayout !== undefined) {
             newOptions.xlfUrl = inputLayout.path as string;
         }
 
