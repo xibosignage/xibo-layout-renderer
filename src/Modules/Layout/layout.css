@@ -35,6 +35,9 @@ div.preview-canvas, div.player-preview, div.screen-preview {
 }
 
 /* Styles override */
+#player_container {
+    overflow: hidden;
+}
 .preview-player {
     display: none;
 }
