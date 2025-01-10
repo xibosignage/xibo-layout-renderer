@@ -19,6 +19,7 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import videojs from 'video.js';
+import {format} from "date-fns";
 
 import { IMedia } from '../../Types/Media';
 import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType, getFileExt, setExpiry } from '../Generators';
@@ -43,7 +44,7 @@ export async function composeVideoSource($media: HTMLVideoElement, media: IMedia
 }
 
 export default function VideoMedia(media: IMedia, xlr: IXlr) {
-    const videoMediaObject = {
+    return {
         init() {
             const $videoMedia = document.getElementById(getMediaId(media)) as HTMLVideoElement;
 
@@ -80,14 +81,14 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                         if (hasSW) {
                             playerSW.postMsg({
                                 type: 'MEDIA_FAULT',
-                                code: '5002',
+                                code: 5002,
                                 reason: 'Video file source not supported',
                                 mediaId: media.id,
                                 regionId: media.region.id,
                                 layoutId: media.region.layout.id,
-                                date: new Date().toJSON(),
+                                date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
                                 // Temporary setting
-                                expiry: setExpiry(7), 
+                                expires: format(new Date(setExpiry(7)), 'yyyy-MM-dd HH:mm:ss'),
                             }).finally(() => {
                                 // Expire the media and dispose the video
                                 vjsPlayer.dispose();
@@ -118,6 +119,4 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
             }
         }
     }
-
-    return videoMediaObject;
 }
