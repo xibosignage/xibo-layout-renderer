@@ -55,6 +55,7 @@ export type OptionsType = {
 export interface ILayout {
     id: number | null;
     layoutId: number | null;
+    scheduleId?: number;
     sw: number | null;
     sh: number | null;
     xw: number | null;
@@ -93,6 +94,7 @@ export interface ILayout {
     resetLayout(): Promise<void>;
     index: number;
     actionController: InteractiveActions | undefined;
+    enableStat: boolean;
 }
 
 export const initialLayout: ILayout = {
@@ -148,6 +150,7 @@ export const initialLayout: ILayout = {
     emitter: <Emitter<ILayoutEvents>>{},
     index: -1,
     actionController: undefined,
+    enableStat: false,
 };
 
 export type GetLayoutParamType = {
