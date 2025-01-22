@@ -288,6 +288,7 @@ export default function XiboLayoutRenderer(
 
             xlrLayoutObj.id = Number(inputLayout.layoutId);
             xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
+            xlrLayoutObj.scheduleId = inputLayout?.scheduleId || undefined;
             xlrLayoutObj.options = newOptions;
             xlrLayoutObj.index = getIndexByLayoutId(this.inputLayouts, xlrLayoutObj.layoutId).index as number;
 
