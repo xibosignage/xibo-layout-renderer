@@ -58,6 +58,8 @@ export default function Media(
         ...initialMedia,
         ...props,
     };
+    const statsBC = new BroadcastChannel('statsBC');
+
     const startMediaTimer = (media: IMedia) => {
         mediaTimer = setInterval(() => {
             mediaTimeCount++;
@@ -84,12 +86,35 @@ export default function Media(
         } else {
             startMediaTimer(media);
         }
+
+        // Check if stats are enabled for the layout
+        if (media.enableStat) {
+            statsBC.postMessage({
+                action: 'START_STAT',
+                mediaId: parseInt(media.id),
+                layoutId: media.region.layout.id,
+                scheduleId: media.region.layout.scheduleId,
+                type: 'media',
+            });
+        }
     });
 
     emitter.on('end', function(media) {
         if (mediaTimer) {
             clearInterval(mediaTimer);
             mediaTimeCount = 0;
+
+        }
+
+        // Check if stats are enabled for the layout
+        if (media.enableStat) {
+            statsBC.postMessage({
+                action: 'END_STAT',
+                mediaId: parseInt(media.id),
+                layoutId: media.region.layout.id,
+                scheduleId: media.region.layout.scheduleId,
+                type: 'media',
+            });
         }
 
         media.region.playNextMedia();
@@ -111,6 +136,7 @@ export default function Media(
         self.mediaType = self.xml?.getAttribute('type') || '';
         self.render = self.xml?.getAttribute('render') || '';
         self.duration = parseInt(self.xml?.getAttribute('duration') as string) || 0;
+        self.enableStat = Boolean(self.xml?.getAttribute('enableStat') || false);
         self.options = { ...props.options };
 
         const $mediaIframe = document.createElement('iframe');

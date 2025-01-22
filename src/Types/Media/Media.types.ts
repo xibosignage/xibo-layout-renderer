@@ -62,6 +62,7 @@ export interface IMedia {
     region: IRegion;
     fileId: string;
     emitter: Emitter<IMediaEvents>;
+    enableStat: boolean;
 }
 
 export const initialMedia: IMedia = {
@@ -105,4 +106,5 @@ export const initialMedia: IMedia = {
         return <Unsubscribe>{};
     },
     emitter: <Emitter<IMediaEvents>>{},
+    enableStat: false,
 }

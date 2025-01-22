@@ -206,10 +206,21 @@ export default function Layout(
         layout: layout || initialLayout,
     }
     const emitter = createNanoEvents<ILayoutEvents>();
+    const statsBC = new BroadcastChannel('statsBC');
 
     emitter.on('start', (layout: ILayout) => {
         layout.done = false;
         console.debug('Layout start emitted > Layout ID > ', layout.id);
+
+        // Check if stats are enabled for the layout
+        if (layout.enableStat) {
+            statsBC.postMessage({
+                action: 'START_STAT',
+                layoutId: layout.id,
+                scheduleId: layout.scheduleId,
+                type: 'layout',
+            });
+        }
     });
 
     emitter.on('end', async (layout: ILayout) => {
@@ -222,6 +233,16 @@ export default function Layout(
 
         if ($layout !== null) {
             $layout.remove();
+        }
+
+        // Check if stats are enabled for the layout
+        if (layout.enableStat) {
+            statsBC.postMessage({
+                action: 'END_STAT',
+                layoutId: layout.id,
+                scheduleId: layout.scheduleId,
+                type: 'layout',
+            });
         }
 
         if (xlr.config.platform !== 'CMS') {
@@ -304,6 +325,7 @@ export default function Layout(
         layout.xw = Number(layout.layoutNode?.firstElementChild?.getAttribute('width'));
         layout.xh = Number(layout.layoutNode?.firstElementChild?.getAttribute('height'));
         layout.zIndex = Number(layout.layoutNode?.firstElementChild?.getAttribute('zindex')) || 0;
+        layout.enableStat = Boolean(layout.layoutNode?.firstElementChild?.getAttribute('enableStat') || false);
 
         /* Calculate Scale Factor */
         layout.scaleFactor = Math.min((layout.sw / layout.xw), (layout.sh / layout.xh));
