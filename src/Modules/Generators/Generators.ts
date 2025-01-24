@@ -185,8 +185,7 @@ export function composeBgUrlByPlatform(
         '&dynamic&proportional=0';
 
     if (platform === 'chromeOS') {
-        bgImageUrl = '/required-files/resource/' + params.layout.id +
-            '?saveAs=' + params.layout.bgImage;
+        bgImageUrl = composeMediaUrl({uri: params.layout.bgImage});
     }
 
     return bgImageUrl;
