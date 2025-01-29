@@ -228,7 +228,7 @@ export default function Media(
         } else if (xlr.config.platform === 'chromeOS') {
             tmpUrl = composeResourceUrl(xlr.config, resourceUrlParams);
 
-            if (self.mediaType === 'image' || self.mediaType === 'video') {
+            if (self.mediaType === 'image' || self.mediaType === 'video' || self.mediaType === 'audio') {
                 tmpUrl = composeMediaUrl(resourceUrlParams);
             }
         }
@@ -407,12 +407,15 @@ export default function Media(
                         isMuted = self.options.mute === '1';
                     }
 
+                    self.muted = isMuted;
+
                     videojs($media, {
                         controls: false,
                         preload: 'auto',
                         autoplay: false,
                         muted: isMuted,
                         errorDisplay: xlr.config.platform !== 'chromeOS',
+                        restoreEl: $media,
                     });
                 } else if (self.mediaType === 'audio' && self.url !== null) {
                     ($media as HTMLAudioElement).src =
