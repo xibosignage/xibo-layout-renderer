@@ -63,6 +63,7 @@ export interface IMedia {
     fileId: string;
     emitter: Emitter<IMediaEvents>;
     enableStat: boolean;
+    muted?: boolean;
 }
 
 export const initialMedia: IMedia = {
@@ -107,4 +108,5 @@ export const initialMedia: IMedia = {
     },
     emitter: <Emitter<IMediaEvents>>{},
     enableStat: false,
+    muted: false,
 }
