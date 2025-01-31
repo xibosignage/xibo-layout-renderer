@@ -26,6 +26,8 @@ import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType,
 import { IXlr } from '../../types';
 import PwaSW from '../../Lib/pwa-sw';
 
+import './media.css';
+
 export function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
     // const videoSrc = await preloadMediaBlob(media.url as string, media.mediaType as MediaTypes);
     const vidType = videoFileType(getFileExt(media.uri)) as string;

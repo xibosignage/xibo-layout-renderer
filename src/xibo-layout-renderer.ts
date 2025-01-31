@@ -233,9 +233,7 @@ export default function XiboLayoutRenderer(
 
         return new Promise<IXlr>((resolve) => {
             layouts.map((layoutItem) => {
-                if (!Boolean(self.layouts[layoutItem.index])) {
-                    self.layouts[layoutItem.index] = layoutItem;
-                }
+                self.layouts[layoutItem.index] = layoutItem;
             });
             self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
             self.currentLayout = self.layouts[self.currentLayoutIndex];
