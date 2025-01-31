@@ -409,17 +409,14 @@ export default function Media(
                         );
                 } else if (self.mediaType === 'video' && self.url !== null) {
                     // Initialize video.js
-                    videojs($media, {
+                    self.player = videojs($media, {
                         controls: false,
                         preload: 'auto',
                         autoplay: false,
-                        muted: self.muted,
+                        muted: false,
                         errorDisplay: xlr.config.platform !== 'chromeOS',
-                        restoreEl: $media,
                         loop: self.loop,
                     });
-
-                    self.player = videojs($media);
                 } else if (self.mediaType === 'audio' && self.url !== null) {
                     ($media as HTMLAudioElement).src =
                         isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;

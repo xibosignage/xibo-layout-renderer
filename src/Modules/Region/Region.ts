@@ -60,6 +60,9 @@ export default function Region(
         self.complete = false;
         self.ending = false;
         self.ended = false;
+        self.curMedia = undefined;
+        self.nxtMedia = undefined;
+        self.currentMediaIndex = 0;
         self.id = props.regionId;
         self.uniqueId = `${nextId(self.options as OptionsType & IRegion["options"])}`;
         self.options = {...platform, ...props.options};
