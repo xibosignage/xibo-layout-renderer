@@ -26,18 +26,18 @@ import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType,
 import { IXlr } from '../../types';
 import PwaSW from '../../Lib/pwa-sw';
 
-export async function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
-    const videoSrc = await preloadMediaBlob(media.url as string, media.mediaType as MediaTypes);
+export function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
+    // const videoSrc = await preloadMediaBlob(media.url as string, media.mediaType as MediaTypes);
     const vidType = videoFileType(getFileExt(media.uri)) as string;
 
     // Only add one source per type
     if ($media.querySelectorAll(`source[type="${vidType}"]`).length === 0) {
         const $videoSource = document.createElement('source');
     
-        $videoSource.src = videoSrc;
+        $videoSource.src = media.url as string;
         $videoSource.type = vidType;
     
-        $media.insertBefore($videoSource, $media.lastElementChild);    
+        $media.insertBefore($videoSource, $media.lastElementChild);
     }
 
     return $media;
@@ -46,87 +46,88 @@ export async function composeVideoSource($media: HTMLVideoElement, media: IMedia
 export default function VideoMedia(media: IMedia, xlr: IXlr) {
     return {
         init: function () {
-            const $videoMedia = document.getElementById(getMediaId(media)) as HTMLVideoElement;
-            if ($videoMedia) {
-                const vjsPlayer = videojs.getPlayer($videoMedia);
+            const vjsPlayer = media.player;
 
-                if (vjsPlayer !== undefined) {
-                    const playerReportFault = async function(msg: string) {
-                        // Immediately expire media and report a fault
-                        const playerSW = PwaSW();
-                        const hasSW = await playerSW.getSW();
+            if (vjsPlayer !== undefined) {
+                const playerReportFault = async function(msg: string) {
+                    // Immediately expire media and report a fault
+                    const playerSW = PwaSW();
+                    const hasSW = await playerSW.getSW();
 
-                        if (hasSW) {
-                            playerSW.postMsg({
-                                type: 'MEDIA_FAULT',
-                                code: 5002,
-                                reason: msg,
-                                mediaId: media.id,
-                                regionId: media.region.id,
-                                layoutId: media.region.layout.id,
-                                date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-                                // Temporary setting
-                                expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
-                            }).finally(() => {
-                                // Expire the media and dispose the video
-                                vjsPlayer.dispose();
-                                media.emitter.emit('end', media);
-                            });
-                        }
-                    }
-
-                    vjsPlayer.on('loadstart', () => {
-                        console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
-                    });
-                    vjsPlayer.on('canplay', () => {
-                        console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
-                    });
-                    vjsPlayer.ready(function() {
-                        let promise = vjsPlayer.play();
-
-                        if (promise !== undefined) {
-                            promise.then(function() {
-                                // Autoplay restarted
-                                console.debug('autoplay started . . .');
-                                vjsPlayer.muted(true);
-                            }).catch(async function(error) {
-                                console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} autoplay error`);
-                                if (xlr.config.platform === 'chromeOS') {
-                                    await playerReportFault('Media autoplay error');
-                                }
-                            });
-                        }
-                    });
-                    vjsPlayer.on('playing', () => {
-                        console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
-                        vjsPlayer.muted(media.muted);
-                    });
-                    vjsPlayer.on('error', async (err: any) => {
-                        console.debug(`Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
-                        if (xlr.config.platform === 'chromeOS') {
-                            await playerReportFault('Video file source not supported');
-                        } else {
-                            // End media after 5 seconds
-                            setTimeout(() => {
-                                console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended . . .`);
-                                media.emitter.emit('end', media);
-                                vjsPlayer.dispose();
-                            }, 5000);
-                        }
-                    });
-
-                    if (media.duration === 0) {
-                        vjsPlayer.on('durationchange', () => {
-                            console.debug('Showing Media ' + media.id + ' for ' + vjsPlayer.duration() + 's of Region ' + media.region.regionId);
-                        });
-
-                        vjsPlayer.on('ended', function () {
-                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                    if (hasSW) {
+                        playerSW.postMsg({
+                            type: 'MEDIA_FAULT',
+                            code: 5002,
+                            reason: msg,
+                            mediaId: media.id,
+                            regionId: media.region.id,
+                            layoutId: media.region.layout.id,
+                            date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+                            // Temporary setting
+                            expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
+                        }).finally(() => {
+                            // Expire the media and dispose the video
                             vjsPlayer.dispose();
-                            media.emitter?.emit('end', media);
+                            media.emitter.emit('end', media);
                         });
                     }
                 }
+
+                vjsPlayer.on('loadstart', () => {
+                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
+                });
+                vjsPlayer.on('canplay', () => {
+                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
+                });
+                vjsPlayer.on('ready', function() {
+                    vjsPlayer.muted(true);
+                    let promise = vjsPlayer.play();
+
+                    if (promise !== undefined) {
+                        promise.then(function() {
+                            // Autoplay restarted
+                            console.debug('autoplay started . . .');
+                        }).catch(async function(error) {
+                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} autoplay error`);
+                            if (xlr.config.platform === 'chromeOS') {
+                                await playerReportFault('Media autoplay error');
+                            }
+                        });
+                    }
+                });
+                vjsPlayer.on('playing', () => {
+                    console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+                    vjsPlayer.muted(media.muted);
+                });
+                vjsPlayer.on('error', async (err: any) => {
+                    console.debug(`Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
+                    if (xlr.config.platform === 'chromeOS') {
+                        await playerReportFault('Video file source not supported');
+                    } else {
+                        // End media after 5 seconds
+                        setTimeout(() => {
+                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended . . .`);
+                            media.emitter.emit('end', media);
+                            vjsPlayer.dispose();
+                        }, 5000);
+                    }
+                });
+
+                vjsPlayer.on('ended', function () {
+                    console.debug(`VideoMedia: onended: ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                    media.emitter?.emit('end', media);
+                    vjsPlayer.dispose();
+                });
+
+                vjsPlayer.on('durationchange', () => {
+                    if (media.duration === 0 && vjsPlayer.duration() !== undefined) {
+                        media.duration = vjsPlayer.duration() as number;
+                    } else if (media.duration > 0) {
+                        vjsPlayer.duration(media.duration);
+                    }
+
+                    console.debug('VIDEOJS: ondurationchange: Showing Media ' + media.id + ' for ' + vjsPlayer.duration() + 's of Region ' + media.region.regionId);
+                });
             }
         }
     }

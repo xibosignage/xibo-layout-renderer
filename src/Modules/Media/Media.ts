@@ -64,11 +64,12 @@ export default function Media(
         mediaTimer = setInterval(() => {
             mediaTimeCount++;
             if (mediaTimeCount > media.duration) {
+                console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
                 media.emitter.emit('end', media);
             }
         }, 1000);
 
-        console.debug('Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
+        console.debug('startMediaTimer: Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
 
     emitter.on('start', function(media: IMedia) {
@@ -261,20 +262,27 @@ export default function Media(
                 $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
             }
         } else if (self.mediaType === 'video') {
-            const $videoMedia = $media as HTMLVideoElement;
+            const $videoMedia = composeVideoSource($media as HTMLVideoElement, self);
 
-            $videoMedia.textContent = 'Unsupported Video';
+            let isMuted = false;
+            if (Boolean(self.options['mute'])) {
+                isMuted = self.options.mute === '1';
+            }
 
             if (Boolean(self.options['scaletype'])) {
                 if (self.options.scaletype === 'stretch') {
                     $videoMedia.style.objectFit = 'fill';
                 }
             }
+
             $videoMedia.classList.add('video-js', 'vjs-default-skin');
 
             if (self.loop) {
+                self.loop = true;
                 $videoMedia.loop = true;
             }
+
+            self.muted = isMuted;
 
             $media = $videoMedia;
         } else if (self.mediaType === 'audio') {
@@ -400,23 +408,18 @@ export default function Media(
                                 : await getDataBlob(self.url)}`
                         );
                 } else if (self.mediaType === 'video' && self.url !== null) {
-                    $media = await composeVideoSource($media as HTMLVideoElement, self) as HTMLVideoElement;
-
-                    let isMuted = false;
-                    if (Boolean(self.options['mute'])) {
-                        isMuted = self.options.mute === '1';
-                    }
-
-                    self.muted = isMuted;
-
+                    // Initialize video.js
                     videojs($media, {
                         controls: false,
                         preload: 'auto',
                         autoplay: false,
-                        muted: isMuted,
+                        muted: self.muted,
                         errorDisplay: xlr.config.platform !== 'chromeOS',
                         restoreEl: $media,
+                        loop: self.loop,
                     });
+
+                    self.player = videojs($media);
                 } else if (self.mediaType === 'audio' && self.url !== null) {
                     ($media as HTMLAudioElement).src =
                         isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
