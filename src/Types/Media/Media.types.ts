@@ -19,6 +19,7 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {Emitter, Unsubscribe} from 'nanoevents';
+import Player from "video.js/dist/types/player";
 import { IMediaEvents } from '../../Modules/Media/Media';
 import {initialRegion, IRegion} from '../Region';
 import {OptionsType} from '../Layout';
@@ -64,6 +65,7 @@ export interface IMedia {
     emitter: Emitter<IMediaEvents>;
     enableStat: boolean;
     muted?: boolean;
+    player?: Player;
 }
 
 export const initialMedia: IMedia = {
@@ -109,4 +111,5 @@ export const initialMedia: IMedia = {
     emitter: <Emitter<IMediaEvents>>{},
     enableStat: false,
     muted: false,
+    player: undefined,
 }

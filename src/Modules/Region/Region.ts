@@ -159,7 +159,7 @@ export default function Region(
         console.debug('Region::finished called . . . ', self.id);
         // Mark as complete
         self.complete = true;
-        self.layout.regions[regionObject.index] = regionObject;
+        self.layout.regions[regionObject.index] = self;
         self.layout.regionExpired();
     };
 
@@ -333,7 +333,8 @@ export default function Region(
         // its current state
         if (self.complete && self.mediaObjects.length === 1 &&
             self.curMedia?.render !== 'html' &&
-            self.curMedia?.mediaType === 'image' &&
+            (self.curMedia?.mediaType === 'image' ||
+            self.curMedia?.mediaType === 'video') &&
             !self.curMedia?.loop
         ) {
             return;
