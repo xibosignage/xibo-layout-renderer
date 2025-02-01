@@ -89,42 +89,38 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                 });
                 vjsPlayer.on('ready', function() {
                     vjsPlayer.muted(true);
-                    let promise = vjsPlayer.play();
 
-                    if (promise !== undefined) {
-                        // Race promise with a 0.5s play and a 5s skip
-                        Promise.race([
-                            promise,
-                            new Promise((resolve, reject) => setTimeout(async () => {
-                                console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Trying to force play after 0.5 seconds`);
-                                // Try to force play here
-                                try {
-                                    await vjsPlayer.play();
-                                    // Resolve if play works
-                                    resolve(true);
-                                } catch (error) {
-                                    // Reject race if play fails
-                                    reject('Force play failed');
-                                }
-                            }, 500)),
-                            new Promise((_, reject) => setTimeout(() => reject('Timeout'), 5000))
-                        ])
-                        .then(() => {
-                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay started`);
-                        })
-                        .catch(async (error) => {
-                            if (error === 'Timeout') {
-                                console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Promise not resolved within 5 seconds. Move to next media`);
-                                vjsPlayer.dispose();
-                                media.emitter?.emit('end', media);
-                            } else {
-                                console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
-                                if (xlr.config.platform === 'chromeOS') {
-                                    await playerReportFault('Media autoplay error');
-                                }
+                    // Race promise between a 0.5s play and a 5s skip
+                    Promise.race([
+                        new Promise((resolve, reject) => setTimeout(async () => {
+                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Trying to force play after 0.1 seconds`);
+                            // Try to force play here
+                            try {
+                                await vjsPlayer.play();
+                                // Resolve if play works
+                                resolve(true);
+                            } catch (error) {
+                                // Reject race if play fails
+                                reject('Play failed');
                             }
-                        });
-                    }
+                        }, 100)),
+                        new Promise((_, reject) => setTimeout(() => reject('Timeout'), 5000))
+                    ])
+                    .then(() => {
+                        console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay started`);
+                    })
+                    .catch(async (error) => {
+                        if (error === 'Timeout') {
+                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Promise not resolved within 5 seconds. Move to next media`);
+                            vjsPlayer.dispose();
+                            media.emitter?.emit('end', media);
+                        } else {
+                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
+                            if (xlr.config.platform === 'chromeOS') {
+                                await playerReportFault('Media autoplay error');
+                            }
+                        }
+                    });
                 });
                 vjsPlayer.on('playing', () => {
                     console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
