@@ -100,7 +100,7 @@ export default function Media(
         }
     });
 
-    emitter.on('end', function(media) {
+    emitter.on('end', function(media: IMedia) {
         if (mediaTimer) {
             clearInterval(mediaTimer);
             mediaTimeCount = 0;
