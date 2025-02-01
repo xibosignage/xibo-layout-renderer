@@ -56,6 +56,12 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                     const playerSW = PwaSW();
                     const hasSW = await playerSW.getSW();
 
+                    const endVideo = function() {
+                        // Expire the media and dispose the video
+                        vjsPlayer.dispose();
+                        media.emitter.emit('end', media);
+                    };
+
                     if (hasSW) {
                         playerSW.postMsg({
                             type: 'MEDIA_FAULT',
@@ -68,10 +74,10 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                             // Temporary setting
                             expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
                         }).finally(() => {
-                            // Expire the media and dispose the video
-                            vjsPlayer.dispose();
-                            media.emitter.emit('end', media);
+                            endVideo();
                         });
+                    } else {
+                        endVideo();
                     }
                 }
 
@@ -86,13 +92,29 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                     let promise = vjsPlayer.play();
 
                     if (promise !== undefined) {
-                        promise.then(function() {
-                            // Autoplay restarted
-                            console.debug('autoplay started . . .');
-                        }).catch(async function(error) {
-                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} autoplay error`);
-                            if (xlr.config.platform === 'chromeOS') {
-                                await playerReportFault('Media autoplay error');
+                        // Race promise with a 0.5s play and a 5s skip
+                        Promise.race([
+                            promise,
+                            new Promise((resolve, reject) => setTimeout(() => {
+                                console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Trying to force play after 0.5 seconds`);
+                                // Try to force play here
+                                vjsPlayer.play();
+                            }, 500)),
+                            new Promise((resolve, reject) => setTimeout(() => reject('Timeout'), 5000))
+                        ])
+                        .then(() => {
+                            console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay started`);
+                        })
+                        .catch(async (error) => {
+                            if (error === 'Timeout') {
+                                console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Promise not resolved within 5 seconds. Move to next media`);
+                                vjsPlayer.dispose();
+                                media.emitter?.emit('end', media);
+                            } else {
+                                console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error`);
+                                if (xlr.config.platform === 'chromeOS') {
+                                    await playerReportFault('Media autoplay error');
+                                }
                             }
                         });
                     }
