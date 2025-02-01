@@ -95,12 +95,19 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                         // Race promise with a 0.5s play and a 5s skip
                         Promise.race([
                             promise,
-                            new Promise((resolve, reject) => setTimeout(() => {
+                            new Promise((resolve, reject) => setTimeout(async () => {
                                 console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Trying to force play after 0.5 seconds`);
                                 // Try to force play here
-                                vjsPlayer.play();
+                                try {
+                                    await vjsPlayer.play();
+                                    // Resolve if play works
+                                    resolve(true);
+                                } catch (error) {
+                                    // Reject race if play fails
+                                    reject('Force play failed');
+                                }
                             }, 500)),
-                            new Promise((resolve, reject) => setTimeout(() => reject('Timeout'), 5000))
+                            new Promise((_, reject) => setTimeout(() => reject('Timeout'), 5000))
                         ])
                         .then(() => {
                             console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay started`);
@@ -111,7 +118,7 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                                 vjsPlayer.dispose();
                                 media.emitter?.emit('end', media);
                             } else {
-                                console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error`);
+                                console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
                                 if (xlr.config.platform === 'chromeOS') {
                                     await playerReportFault('Media autoplay error');
                                 }
