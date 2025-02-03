@@ -24,11 +24,20 @@ import videojs from 'video.js';
 import { OptionsType } from '../../Types/Layout';
 import { IRegion } from '../../Types/Region';
 import { IMedia, initialMedia } from '../../Types/Media';
-import { fetchJSON, getMediaId, nextId, preloadMediaBlob } from '../Generators';
+import {
+    capitalizeStr,
+    fetchJSON,
+    getMediaId,
+    nextId,
+    preloadMediaBlob,
+    composeResourceUrl,
+    composeResourceUrlByPlatform,
+    composeMediaUrl,
+    getDataBlob,
+} from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
 import VideoMedia, { composeVideoSource } from './VideoMedia';
 import AudioMedia from './AudioMedia';
-import {composeResourceUrl, composeResourceUrlByPlatform, composeMediaUrl, fetchText, getDataBlob} from '../Generators/Generators';
 import {IXlr} from '../../Types/XLR';
 
 import 'video.js/dist/video-js.min.css';
@@ -66,6 +75,12 @@ export default function Media(
             if (mediaTimeCount > media.duration) {
                 console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
                 media.emitter.emit('end', media);
+
+                if (media.mediaType === 'video') {
+                    // Dispose the video media
+                    console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media ${media.id} has been stopped.`);
+                    VideoMedia(media, xlr).stop(true);
+                }
             }
         }, 1000);
 
@@ -104,7 +119,6 @@ export default function Media(
         if (mediaTimer) {
             clearInterval(mediaTimer);
             mediaTimeCount = 0;
-
         }
 
         // Check if stats are enabled for the layout

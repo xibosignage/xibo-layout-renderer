@@ -46,7 +46,7 @@ export function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
 }
 
 export default function VideoMedia(media: IMedia, xlr: IXlr) {
-    return {
+    const videoMediaInstance = {
         init: function () {
             const vjsPlayer = media.player;
 
@@ -55,12 +55,6 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                     // Immediately expire media and report a fault
                     const playerSW = PwaSW();
                     const hasSW = await playerSW.getSW();
-
-                    const endVideo = function() {
-                        // Expire the media and dispose the video
-                        vjsPlayer.dispose();
-                        media.emitter.emit('end', media);
-                    };
 
                     if (hasSW) {
                         playerSW.postMsg({
@@ -74,10 +68,10 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                             // Temporary setting
                             expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
                         }).finally(() => {
-                            endVideo();
+                            videoMediaInstance.stop();
                         });
                     } else {
-                        endVideo();
+                        videoMediaInstance.stop();
                     }
                 }
 
@@ -112,8 +106,7 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                     .catch(async (error) => {
                         if (error === 'Timeout') {
                             console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Promise not resolved within 5 seconds. Move to next media`);
-                            vjsPlayer.dispose();
-                            media.emitter?.emit('end', media);
+                            videoMediaInstance.stop();
                         } else {
                             console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
                             if (xlr.config.platform === 'chromeOS') {
@@ -134,28 +127,36 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                         // End media after 5 seconds
                         setTimeout(() => {
                             console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended . . .`);
-                            media.emitter.emit('end', media);
-                            vjsPlayer.dispose();
+                            videoMediaInstance.stop();
                         }, 5000);
                     }
                 });
 
-                vjsPlayer.on('ended', function () {
-                    console.debug(`VideoMedia: onended: ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    media.emitter?.emit('end', media);
-                    vjsPlayer.dispose();
-                });
+                if (media.duration === 0) {
+                    vjsPlayer.on('ended', function () {
+                        console.debug(`VideoMedia: onended: ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                        videoMediaInstance.stop();
+                    });
 
-                vjsPlayer.on('durationchange', () => {
-                    if (media.duration === 0 && vjsPlayer.duration() !== undefined) {
-                        media.duration = vjsPlayer.duration() as number;
-                    } else if (media.duration > 0) {
-                        vjsPlayer.duration(media.duration);
-                    }
-
-                    console.debug('VIDEOJS: ondurationchange: Showing Media ' + media.id + ' for ' + vjsPlayer.duration() + 's of Region ' + media.region.regionId);
-                });
+                    vjsPlayer.on('durationchange', () => {
+                        console.debug('VIDEOJS: ondurationchange: Showing Media ' + media.id + ' for ' + vjsPlayer.duration() + 's of Region ' + media.region.regionId);
+                    });
+                }
             }
-        }
-    }
+        },
+        stop: function(disposeOnly = false) {
+            const vjsPlayer = media.player;
+
+            // Expire the media and dispose the video
+            if (vjsPlayer !== undefined) {
+                if (!disposeOnly) {
+                    media.emitter.emit('end', media);
+                }
+
+                vjsPlayer.dispose();
+            }
+        },
+    };
+
+    return videoMediaInstance;
 }
