@@ -78,7 +78,7 @@ export default function Media(
 
                 if (media.mediaType === 'video') {
                     // Dispose the video media
-                    console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media ${media.id} has been stopped.`);
+                    console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
                     VideoMedia(media, xlr).stop(true);
                 }
             }
@@ -89,7 +89,9 @@ export default function Media(
 
     emitter.on('start', function(media: IMedia) {
         if (media.mediaType === 'video') {
-            VideoMedia(media, xlr).init();
+            const videoMedia = VideoMedia(media, xlr);
+
+            videoMedia.init();
 
             if (media.duration > 0) {
                 startMediaTimer(media);
