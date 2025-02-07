@@ -429,7 +429,7 @@ export default function Media(
                         controls: false,
                         preload: 'auto',
                         autoplay: false,
-                        muted: self.muted,
+                        muted: true,
                         errorDisplay: xlr.config.platform !== 'chromeOS',
                         loop: self.loop,
                     });

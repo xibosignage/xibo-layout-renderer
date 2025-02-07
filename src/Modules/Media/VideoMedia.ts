@@ -98,12 +98,13 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                     console.debug('VideoMedia: playing: Showing Media ' +
                         media.id + ' for ' + this.duration + 's of Region ' + media.region.regionId);
                     console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
-                    vjsPlayer.muted(media.muted);
                 });
 
                 // @NOTE: When video is paused due to fail in unmuting the video
                 // and video has media.duration = 0, the video will stay paused and the video cycle won't end
                 // @TODO: Add timer when video is paused due to unmuting fail and duration that is equal to 0
+                // @NOTE: The pause issue when unmuting the video is mainly on a browser level.
+                // Please visit https://developer.chrome.com/blog/autoplay/ for more info.
 
                 vjsPlayer.on('ready', () => {
                     vjsPlayer.muted(true);
@@ -114,6 +115,9 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                             console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Trying to force play after 0.1 seconds`);
                             // Try to force play here
                             try {
+                                // Set video mute/unmute based on setting once playing
+                                vjsPlayer.muted(media.muted);
+
                                 await vjsPlayer.play();
                                 // Resolve if play works
                                 resolve(true);
