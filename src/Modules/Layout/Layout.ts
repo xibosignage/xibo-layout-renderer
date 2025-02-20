@@ -258,6 +258,8 @@ export default function Layout(
         options: props.options,
     };
 
+    layoutObject.xlr = xlr;
+
     layoutObject.on = function<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
         return emitter.on(event, callback);
     };
@@ -297,6 +299,7 @@ export default function Layout(
         layout.allExpired = false;
         layout.containerName = "L" + layout.id + "-" + nextId(options);
         layout.regions = [];
+        layout.actions = [];
 
         /* Create a hidden div to show the layout in */
         let $layout = document.getElementById(layout.containerName);
@@ -493,6 +496,10 @@ export default function Layout(
 
             resolve();
         });
+    };
+
+    layoutObject.finishAllRegions = function() {
+        return Promise.all(layoutObject.regions.map(region => region.finished()));
     };
 
     layoutObject.prepareLayout();

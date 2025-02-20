@@ -22,6 +22,8 @@
 import { ILayout, IMedia, IRegion, OptionsType } from '../../types';
 import { getAllAttributes, nextId } from '../Generators/Generators';
 import './action-controller.css';
+import {PreviewTranslations} from "../../Lib/translations";
+import Layout from "../Layout";
 
 export class Action {
     readonly id: string;
@@ -51,50 +53,83 @@ export default class ActionController {
     readonly parent: ILayout;
     readonly actions: Action[];
     readonly options: InactOptions;
+    readonly $container: HTMLElement | null;
     readonly $actionController: ActionsWrapper;
     readonly $actionListContainer: Element | null;
+    $actionControllerTitle: HTMLElement | null;
+    $actionsContainer: HTMLElement | null;
     translations: any = {};
 
     constructor(parent: ILayout, actions: Action[], options: InactOptions) {
         this.parent = parent;
         this.actions = actions;
         this.options = options;
-        this.$actionController = document.createElement('div', { is: 'action-controller' });
         this.$actionListContainer = null;
+        this.$container = document.getElementById(this.parent.containerName);
+        this.$actionControllerTitle = null;
+        this.$actionsContainer = null;
+
+        if (this.$container && this.$container.getElementsByClassName('action-controller')[0]) {
+            this.$actionController = this.$container.getElementsByClassName('action-controller')[0] as ActionsWrapper;
+        } else {
+            this.$actionController = document.createElement('div', { is: 'action-controller' });
+        }
 
         this.init();
     }
 
     init() {
         const self = this;
-        let previewTranslations: any = {};
+        let _previewTranslations: any = {};
+
+        self.translations = PreviewTranslations;
 
         // get preview translations
         if ('previewTranslations' in window) {
-            previewTranslations = window['previewTranslations'];
-            self.translations = previewTranslations;
+            _previewTranslations = window['previewTranslations'];
+            self.translations = _previewTranslations;
         }
     
         const $container = document.getElementById(this.parent.containerName);
-        const $actionTitle = document.createElement('div');
-        const $actionsContainer = document.createElement('div');
 
-        $actionTitle.classList.add('action-controller-title');
-        $actionTitle.innerHTML = `
-            <button class="toggle"></button>
-            <span class="title">${previewTranslations.actionControllerTitle}</span>
-        `;
+        this.$actionController.innerHTML = '';
 
-        $actionsContainer.classList.add('actions-container');
+        if (this.$actionController &&
+            this.$actionController.getElementsByClassName('action-controller-title').length > 0
+        ) {
+            this.$actionControllerTitle = this.$actionController.getElementsByClassName('action-controller-title')[0] as HTMLElement;
+        } else {
+            this.$actionControllerTitle = document.createElement('div');
+            this.$actionControllerTitle.classList.add('action-controller-title');
+            this.$actionControllerTitle.innerHTML = `
+                <button class="toggle"></button>
+                <span class="title">${self.translations.actionControllerTitle}</span>
+            `;
+        }
+
+        if (this.$actionController &&
+            this.$actionController.getElementsByClassName('actions-container').length > 0
+        ) {
+            this.$actionsContainer?.remove();
+        }
+
+        // Always create $actionsContainer
+        this.$actionsContainer = document.createElement('div');
+        this.$actionsContainer.classList.add('actions-container');
 
         if ($container) {
             $container.insertBefore(this.$actionController, $container.firstElementChild);
-    
-            this.$actionController.appendChild($actionTitle);
-            this.$actionController.appendChild($actionsContainer);
+
+            if (this.$actionController &&
+                this.$actionController.getElementsByClassName('action-controller-title').length === 0
+            ) {
+                this.$actionController.appendChild(this.$actionControllerTitle);
+            }
+
+            this.$actionController.appendChild(this.$actionsContainer);
 
             // Loop through actions
-            Array.from(this.actions).forEach(function(newAction) {
+            Array.from(this.actions).forEach((newAction) => {
                 // Create new action object
                 const $newAction = document.createElement('div');
 
@@ -110,17 +145,17 @@ export default class ActionController {
                 let html = '';
 
                 // Add action type
-                html += '<span class="action-row-title">' + previewTranslations[$newAction.getAttribute('actiontype') || ''];
+                html += '<span class="action-row-title">' + self.translations[$newAction.getAttribute('actiontype') || ''];
 
                 if ($newAction.getAttribute('actiontype') == 'navWidget') {
-                    html += ' <span title="' + previewTranslations.widgetId + '">[' + $newAction.getAttribute('widgetid') + ']</span>';
+                    html += ' <span title="' + self.translations.widgetId + '">[' + $newAction.getAttribute('widgetid') + ']</span>';
                 } else if ($newAction.getAttribute('actiontype') == 'navLayout') {
-                    html += ' <span title="' + previewTranslations.layoutCode + '">[' + $newAction.getAttribute('layoutcode') + ']</span>';
+                    html += ' <span title="' + self.translations.layoutCode + '">[' + $newAction.getAttribute('layoutcode') + ']</span>';
                 }
                 html += '</span>';
 
                 // Add target
-                html += '<span class="action-row-target" title="' + previewTranslations.target + '">' + $newAction.getAttribute('target');
+                html += '<span class="action-row-target" title="' + self.translations.target + '">' + $newAction.getAttribute('target');
                 if ($newAction.getAttribute('targetid') != '') {
                     html += '(' + $newAction.getAttribute('targetid') + $newAction.getAttribute('layoutcode') + ')';
                 }
@@ -133,7 +168,7 @@ export default class ActionController {
                 $newAction.classList.add('action');
                 $newAction.setAttribute('originalid', newAction.id);
                 $newAction.setAttribute('id', 'A-' + newAction.id + '-' + nextId(self.options as OptionsType));
-                $actionsContainer.insertBefore($newAction, $actionsContainer.lastElementChild);
+                this.$actionsContainer?.insertBefore($newAction, this.$actionsContainer?.lastElementChild);
             });
 
             // 
@@ -177,6 +212,21 @@ export default class ActionController {
         if(confirm(this.translations.navigateToLayout.replace('[layoutTag]', layoutCode))) {
             var url = options.layoutPreviewUrl.replace('[layoutCode]', layoutCode) + '?findByCode=1';
             window.open(url, '_blank');
+        }
+    }
+
+    openLayoutInPlayer(layoutCode: string, options: InactOptions) {
+        // this.parent.xlr.updateLoop([]);
+    }
+
+    prevOrNextLayout(targetId: string, actionType: string) {
+        // Check if currentLayout is the targetId
+        if (this.parent.xlr.currentLayout?.layoutId === parseInt(targetId)) {
+            if (actionType === 'next') {
+                this.parent.xlr.gotoNextLayout();
+            } else if (actionType === 'previous') {
+                this.parent.xlr.gotoPrevLayout();
+            }
         }
     }
 
@@ -233,12 +283,19 @@ export default class ActionController {
     /** Run action based on action data */
     runAction(actionData: {[k: string]: any}, options: InactOptions) {
         if(actionData.actiontype == 'navLayout') {
-            // Open layout preview in a new tab
-            this.openLayoutInNewTab(actionData.layoutcode, options);
+            if (this.parent.xlr.config.platform === 'CMS') {
+                // Open layout preview in a new tab
+                this.openLayoutInNewTab(actionData.layoutcode, options);
+            } else if (this.parent.xlr.config.platform === 'chromeOS') {
+                // Set target layout as active layout
+                this.openLayoutInPlayer(actionData.layoutcode, options);
+            }
         } else if((actionData.actiontype == 'previous' || actionData.actiontype == 'next') && actionData.target == 'region') {
             this.nextMediaInRegion(actionData.targetid, actionData.actiontype);
         } else if(actionData.actiontype == 'navWidget' && actionData.target == 'region') {
             this.loadMediaInRegion(actionData.targetid, actionData.widgetid);
+        } else if(actionData.target === 'screen') {
+            this.prevOrNextLayout(actionData.targetid, actionData.actiontype);
         } else {
             // TODO Handle other action types ( later? )
             console.log(actionData.actiontype + ' > ' + actionData.target + '[' + actionData.targetid + ']');

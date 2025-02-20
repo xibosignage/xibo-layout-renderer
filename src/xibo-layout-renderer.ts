@@ -294,6 +294,43 @@ export default function XiboLayoutRenderer(
         });
     };
 
+    xlrObject.gotoPrevLayout = async function() {
+        console.debug('XLR::gotoPrevLayout', {
+            method: 'XLR::gotoPrevLayout',
+            shouldParse: false,
+        });
+
+        const _currentLayoutIndex = this.currentLayoutIndex;
+        let _assumedPrevIndex = _currentLayoutIndex - 1;
+
+        // If previous layout is same as current layout or
+        // if there's only one layout, do nothing
+        if (_assumedPrevIndex < 0) {
+            return;
+        }
+
+        if (Boolean(this.layouts[_assumedPrevIndex])) {
+            // end current layout
+            await this.currentLayout?.finishAllRegions();
+
+            // and set the previous layout as current layout
+            this.currentLayoutIndex = _assumedPrevIndex;
+
+            this.prepareLayouts().then(() => {
+                this.playSchedules(this);
+            });
+        }
+    };
+
+    xlrObject.gotoNextLayout = async function() {
+        console.debug('XLR::gotoNextLayout', {
+            method: 'XLR::gotoNextLayout',
+            shouldParse: false,
+        });
+
+        await xlrObject.currentLayout?.finishAllRegions();
+    };
+
     xlrObject.bootstrap();
 
     return xlrObject;
