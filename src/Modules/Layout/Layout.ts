@@ -176,7 +176,20 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
 
             // If _nextLayout is undefined, then we go back to first layout
             if (_nextLayout === undefined) {
-                _nextLayout = params.xlr.layouts[0];
+                let availableLayout = null;
+
+                // Get available layout
+                for (let _availableLayout of params.xlr.layouts) {
+                    if (_availableLayout === undefined) {
+                        params.xlr.layouts.shift();
+                    } else {
+                        availableLayout = _availableLayout;
+                        break;
+                    }
+                }
+
+                _nextLayout = availableLayout !== null ?
+                    availableLayout : {...initialLayout, ...inputLayouts[0]};
             }
         }
     }
