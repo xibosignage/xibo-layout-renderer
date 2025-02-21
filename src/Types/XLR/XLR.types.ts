@@ -51,6 +51,8 @@ export interface IXlr {
     prepareLayouts(): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
     updateLoop(inputLayouts: InputLayoutType[]): void;
+    gotoPrevLayout(): void;
+    gotoNextLayout(): void;
 }
 
 export const initialXlr: IXlr = {
@@ -78,5 +80,9 @@ export const initialXlr: IXlr = {
     updateLayouts(inputLayouts: InputLayoutType[]) {
     },
     updateLoop(inputLayouts: InputLayoutType[]) {
-    }
+    },
+    gotoPrevLayout() {
+    },
+    gotoNextLayout() {
+    },
 };

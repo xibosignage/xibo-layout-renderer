@@ -27,7 +27,7 @@ import {
 } from './Types/Layout';
 import { ELayoutType, initialXlr, IXlr } from './Types/XLR';
 import SplashScreen, {PreviewSplashElement} from './Modules/SplashScreen';
-import {getIndexByLayoutId} from './Modules/Generators/Generators';
+import {getIndexByLayoutId} from './Modules/Generators';
 import { IXlrEvents } from './Types/XLR/XLR.types';
 
 export default function XiboLayoutRenderer(
@@ -42,9 +42,8 @@ export default function XiboLayoutRenderer(
     const xlrObject: IXlr = {
         ...initialXlr,
     };
-    const emitter = createNanoEvents<IXlrEvents>();
 
-    xlrObject.emitter = emitter;
+    xlrObject.emitter = createNanoEvents<IXlrEvents>();
 
     xlrObject.emitter.on('layoutChange', async (layoutId: number) => {
         let targetLayout: { layout: ILayout; pos: ELayoutType } | undefined;
@@ -128,14 +127,28 @@ export default function XiboLayoutRenderer(
          */
 
         this.inputLayouts = inputLayouts;
+        /**
+         * Case 0: When inputLayouts length = 0
+         */
+        if (inputLayouts.length === 0) {
+            this.layouts = [];
+            this.currentLayout = undefined;
+            this.nextLayout = undefined;
+            this.currentLayoutIndex = 0;
+
+            this.prepareLayouts().then(xlr => {
+                this.playSchedules(xlr);
+            });
+        }
         /** Case 1: When currentLayout is not in inputLayouts
          * Then, replace everything and start from first layout
          */
-        if (inputLayouts.filter((inputLayout) => inputLayout.layoutId === this.currentLayout?.layoutId).length === 0) {
+        else if (inputLayouts.filter((inputLayout) => inputLayout.layoutId === this.currentLayout?.layoutId).length === 0) {
             // Unset currentLayout, nextLayout and layouts
             this.layouts = [];
             this.currentLayout = undefined;
             this.nextLayout = undefined;
+            this.currentLayoutIndex = 0;
 
             const xlr = await this.prepareLayouts();
             this.playSchedules(xlr);
@@ -292,6 +305,43 @@ export default function XiboLayoutRenderer(
 
             resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
         });
+    };
+
+    xlrObject.gotoPrevLayout = async function() {
+        console.debug('XLR::gotoPrevLayout', {
+            method: 'XLR::gotoPrevLayout',
+            shouldParse: false,
+        });
+
+        const _currentLayoutIndex = this.currentLayoutIndex;
+        let _assumedPrevIndex = _currentLayoutIndex - 1;
+
+        // If previous layout is same as current layout or
+        // if there's only one layout, do nothing
+        if (_assumedPrevIndex < 0) {
+            return;
+        }
+
+        if (Boolean(this.layouts[_assumedPrevIndex])) {
+            // end current layout
+            await this.currentLayout?.finishAllRegions();
+
+            // and set the previous layout as current layout
+            this.currentLayoutIndex = _assumedPrevIndex;
+
+            this.prepareLayouts().then(() => {
+                this.playSchedules(this);
+            });
+        }
+    };
+
+    xlrObject.gotoNextLayout = async function() {
+        console.debug('XLR::gotoNextLayout', {
+            method: 'XLR::gotoNextLayout',
+            shouldParse: false,
+        });
+
+        await xlrObject.currentLayout?.finishAllRegions();
     };
 
     xlrObject.bootstrap();

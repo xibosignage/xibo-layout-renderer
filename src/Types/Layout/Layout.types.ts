@@ -95,6 +95,8 @@ export interface ILayout {
     index: number;
     actionController: InteractiveActions | undefined;
     enableStat: boolean;
+    xlr: IXlr,
+    finishAllRegions(): Promise<void[]>;
 }
 
 export const initialLayout: ILayout = {
@@ -151,6 +153,10 @@ export const initialLayout: ILayout = {
     index: -1,
     actionController: undefined,
     enableStat: false,
+    xlr: <IXlr>{},
+    finishAllRegions(): Promise<void[]> {
+        return Promise.resolve([]);
+    }
 };
 
 export type GetLayoutParamType = {
