@@ -132,6 +132,11 @@ export default function XiboLayoutRenderer(
          */
         if (inputLayouts.length === 0) {
             this.layouts = [];
+
+            if (this.currentLayout) {
+                this.currentLayout.inLoop = false;
+            }
+
             this.currentLayout = undefined;
             this.nextLayout = undefined;
             this.currentLayoutIndex = 0;
@@ -146,6 +151,14 @@ export default function XiboLayoutRenderer(
         else if (inputLayouts.filter((inputLayout) => inputLayout.layoutId === this.currentLayout?.layoutId).length === 0) {
             // Unset currentLayout, nextLayout and layouts
             this.layouts = [];
+
+            if (this.currentLayout) {
+                this.currentLayout.inLoop = false;
+            }
+
+            // Clean up currentLayout
+            await this.currentLayout?.finishAllRegions();
+
             this.currentLayout = undefined;
             this.nextLayout = undefined;
             this.currentLayoutIndex = 0;
@@ -194,6 +207,12 @@ export default function XiboLayoutRenderer(
                         const oldNxtLayoutIndex =
                             getIndexByLayoutId(inputLayouts, hasOldNxtLayout[0].layoutId).index as number;
                         this.layouts[oldNxtLayoutIndex] = tempOldNxtLayout;
+                    } else {
+                        if (tempOldNxtLayout) {
+                            // Finish old next layout and remove from layouts list
+                            await tempOldNxtLayout.finishAllRegions();
+                            delete this.layouts[tempOldNxtLayout.index];
+                        }
                     }
                 }
             } else {
@@ -208,6 +227,7 @@ export default function XiboLayoutRenderer(
                 // Remove old nextLayout if it's not in inputLayouts
                 if (tempOldNxtLayout?.index && Boolean(this.layouts[tempOldNxtLayout?.index])) {
                     if (inputLayouts.filter((_layout) => _layout.layoutId === tempOldNxtLayout?.layoutId).length === 0) {
+                        await tempOldNxtLayout.finishAllRegions();
                         delete this.layouts[tempOldNxtLayout?.index];
                     }
                 }
