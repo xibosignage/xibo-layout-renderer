@@ -97,6 +97,7 @@ export interface ILayout {
     enableStat: boolean;
     xlr: IXlr,
     finishAllRegions(): Promise<void[]>;
+    inLoop: boolean;
 }
 
 export const initialLayout: ILayout = {
@@ -156,7 +157,8 @@ export const initialLayout: ILayout = {
     xlr: <IXlr>{},
     finishAllRegions(): Promise<void[]> {
         return Promise.resolve([]);
-    }
+    },
+    inLoop: true,
 };
 
 export type GetLayoutParamType = {

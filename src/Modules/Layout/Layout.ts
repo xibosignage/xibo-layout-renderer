@@ -245,7 +245,7 @@ export default function Layout(
         console.debug({$layout});
 
         if ($layout !== null) {
-            $layout.remove();
+            $layout.parentElement?.removeChild($layout);
         }
 
         // Check if stats are enabled for the layout
@@ -258,7 +258,7 @@ export default function Layout(
             });
         }
 
-        if (xlr.config.platform !== 'CMS') {
+        if (xlr.config.platform !== 'CMS' && layout.inLoop) {
             // Transition next layout to current layout and prepare next layout if exist
             xlr.prepareLayouts().then((parent) => {
                 xlr.playSchedules(parent);
@@ -451,39 +451,38 @@ export default function Layout(
         }
     };
 
-    layoutObject.regionEnded = function() {
+    layoutObject.regionEnded = async function() {
         const self = layoutObject;
         self.allEnded = true;
         
-        for (var i = 0; i < self.regions.length; i++) {
+        for (let i = 0; i < self.regions.length; i++) {
             if (! self.regions[i].ended) {
                 self.allEnded = false;
             }
         }
         
         if (self.allEnded) {
-            self.stopAllMedia().then(async () => {
-                console.debug('starting to end layout . . .');
-                if (xlr.config.platform === 'CMS') {
-                    const $end = document.getElementById('play_ended');
-                    const $preview = document.getElementById('screen_container');
-        
-                    if ($preview) {
-                        while($preview.firstChild) {
-                            $preview.removeChild($preview.firstChild);
-                        }
-        
-                        $preview.style.display = 'none';
-                    }
-        
-                    if ($end) {
-                        $end.style.display = 'block';
-                    }
-                }
-                
-                self.emitter.emit('end', self);
-            });
+            await self.stopAllMedia();
 
+            console.debug('starting to end layout . . .');
+            if (xlr.config.platform === 'CMS') {
+                const $end = document.getElementById('play_ended');
+                const $preview = document.getElementById('screen_container');
+
+                if ($preview) {
+                    while($preview.firstChild) {
+                        $preview.removeChild($preview.firstChild);
+                    }
+
+                    $preview.style.display = 'none';
+                }
+
+                if ($end) {
+                    $end.style.display = 'block';
+                }
+            }
+
+            self.emitter.emit('end', self);
         }
     };
 
