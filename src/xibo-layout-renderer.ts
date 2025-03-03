@@ -237,6 +237,12 @@ export default function XiboLayoutRenderer(
 
     xlrObject.prepareLayouts = async function() {
         const self = this;
+
+        // Don't prepare layout if it's just the splash screen
+        if (self.inputLayouts.length === 1 && self.inputLayouts[0].layoutId === 0) {
+            return Promise.resolve(self);
+        }
+
         // Get layouts
         const xlrLayouts = getLayout({xlr: self});
 
