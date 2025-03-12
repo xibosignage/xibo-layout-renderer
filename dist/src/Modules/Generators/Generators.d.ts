@@ -39,4 +39,12 @@ export declare function getAllAttributes(elem: Element): {
  * @returns JSON string format of date
  */
 export declare function setExpiry(numDays: number): string;
+/**
+ * Check if given layout exists in the loop using layoutId
+ * @param layouts Schedule loop unique layouts (uniqueLayouts)
+ * @param layoutId Layout ID of the layout to look for
+ *
+ * @return boolean
+ */
+export declare function isLayoutValid(layouts: InputLayoutType[], layoutId: number): boolean;
 export {};

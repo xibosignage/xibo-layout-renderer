@@ -39,19 +39,33 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
     const $previewLoaderCaption = document.createElement('div');
     const $defaultNoLayout = document.createElement('div');
 
+    const loadImage = async (imageUrl: string) => {
+        const image = await import(imageUrl);
+
+        return image.default;
+    };
+
      const splashScreenObj = {
          init() {
              $previewSplash.classList.add('preview-splash');
 
              // Don't show Xibo logo on CMS Preview
              if (config && config.platform !== 'CMS') {
+                 let splashScreenImg = xiboLogoImg;
+
+                 if (config.icons?.splashScreen && config.icons.splashScreen.length > 0) {
+                     loadImage(config.icons.splashScreen).then((imageSrc) => {
+                         splashScreenImg = imageSrc;
+                     });
+                 }
+
                  $previewSplash.style.setProperty(
                      'background-image',
-                     `url(${xiboLogoImg})`,
+                     `url(${splashScreenImg})`,
                  );
                  $previewSplash.style.setProperty(
                      'background-size',
-                     '200px 120px',
+                     '200px',
                  );
                  $previewSplash.style.setProperty(
                      'background-position',

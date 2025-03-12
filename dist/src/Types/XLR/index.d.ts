@@ -1,1 +1,1 @@
-export { ELayoutType, IXlr, initialXlr, } from './XLR.types';
+export { ELayoutType, IXlr, initialXlr, IXlrEvents, PrepareLayoutsType, } from './XLR.types';

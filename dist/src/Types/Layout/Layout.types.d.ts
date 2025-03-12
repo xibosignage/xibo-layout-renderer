@@ -4,8 +4,9 @@ import { ILayoutEvents } from '../../Modules/Layout';
 import { IXlr } from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
 export type InputLayoutType = {
-    layoutId: number | null;
+    layoutId: number;
     path?: string;
+    index?: number;
 };
 export type OptionsType = {
     xlfUrl: string;
@@ -27,10 +28,14 @@ export type OptionsType = {
     previewTranslations?: {
         [k: string]: any;
     };
+    icons?: {
+        splashScreen: string;
+        logo: string;
+    };
 };
 export interface ILayout {
     id: number | null;
-    layoutId: number | null;
+    layoutId: number;
     scheduleId?: number;
     sw: number | null;
     sh: number | null;
@@ -82,6 +87,7 @@ export type GetLayoutParamType = {
 };
 export type GetLayoutType = {
     currentLayoutIndex: number;
+    nextLayoutIndex: number;
     inputLayouts: InputLayoutType[];
     current: ILayout | undefined;
     next: ILayout | undefined;

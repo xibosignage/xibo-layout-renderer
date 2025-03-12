@@ -1,6 +1,9 @@
 import { Emitter, Unsubscribe, DefaultEvents } from 'nanoevents';
 import Player from 'video.js/dist/types/player';
 
+type PrepareLayoutsType = {
+    moveNext?: boolean;
+};
 declare enum ELayoutType {
     CURRENT = 0,
     NEXT = 1
@@ -11,9 +14,11 @@ type IXlrEvents = {
 interface IXlr {
     inputLayouts: InputLayoutType[];
     config: OptionsType;
-    layouts: ILayout[];
+    layouts: {
+        [key: string]: ILayout;
+    };
     currentLayoutIndex: number;
-    currentLayoutId: number | null;
+    currentLayoutId: number;
     currentLayout: ILayout | undefined;
     nextLayout: ILayout | undefined;
     emitter: Emitter<IXlrEvents>;
@@ -26,6 +31,9 @@ interface IXlr {
     updateLoop(inputLayouts: InputLayoutType[]): void;
     gotoPrevLayout(): void;
     gotoNextLayout(): void;
+    uniqueLayouts: InputLayoutType[];
+    getLayout(inputLayout: InputLayoutType): Promise<ILayout | undefined>;
+    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): void;
 }
 declare const initialXlr: IXlr;
 
@@ -174,8 +182,9 @@ declare class ActionController {
 }
 
 type InputLayoutType = {
-    layoutId: number | null;
+    layoutId: number;
     path?: string;
+    index?: number;
 };
 type OptionsType = {
     xlfUrl: string;
@@ -197,10 +206,14 @@ type OptionsType = {
     previewTranslations?: {
         [k: string]: any;
     };
+    icons?: {
+        splashScreen: string;
+        logo: string;
+    };
 };
 interface ILayout {
     id: number | null;
-    layoutId: number | null;
+    layoutId: number;
     scheduleId?: number;
     sw: number | null;
     sh: number | null;
@@ -252,6 +265,7 @@ type GetLayoutParamType = {
 };
 type GetLayoutType = {
     currentLayoutIndex: number;
+    nextLayoutIndex: number;
     inputLayouts: InputLayoutType[];
     current: ILayout | undefined;
     next: ILayout | undefined;
@@ -408,4 +422,4 @@ type flyTransitionParams = {
 };
 declare const flyTransitionKeyframes: (params: flyTransitionParams) => KeyframeOptionsType;
 
-export { Action, ActionsWrapper, AudioMedia, ELayoutType, type GetLayoutParamType, type GetLayoutType, type ILayout, type ILayoutEvents, type IMedia, type IRegion, type IRegionEvents, type ISplashScreen, type IXlr, type InactOptions, type InputLayoutType, type KeyframeOptionsType, Media, type MediaTypes, type OptionsType, type PreviewSplashElement, Region, type TransitionElementOptions, type TransitionNameType, VideoMedia, audioFileType, capitalizeStr, type compassPoints, composeBgUrlByPlatform, composeMediaUrl, composeResourceUrl, composeResourceUrlByPlatform, XiboLayoutRenderer as default, defaultTrans, fadeInElem, fadeOutElem, fetchJSON, fetchText, flyInElem, flyOutElem, flyTransitionKeyframes, type flyTransitionParams, getDataBlob, getFileExt, getIndexByLayoutId, getLayout, getMediaId, getXlf, initRenderingDOM, initialLayout, initialMedia, initialRegion, initialXlr, isEmpty, nextId, platform, preloadMediaBlob, setExpiry, transitionElement, videoFileType };
+export { Action, ActionsWrapper, AudioMedia, ELayoutType, type GetLayoutParamType, type GetLayoutType, type ILayout, type ILayoutEvents, type IMedia, type IRegion, type IRegionEvents, type ISplashScreen, type IXlr, type IXlrEvents, type InactOptions, type InputLayoutType, type KeyframeOptionsType, Media, type MediaTypes, type OptionsType, type PrepareLayoutsType, type PreviewSplashElement, Region, type TransitionElementOptions, type TransitionNameType, VideoMedia, audioFileType, capitalizeStr, type compassPoints, composeBgUrlByPlatform, composeMediaUrl, composeResourceUrl, composeResourceUrlByPlatform, XiboLayoutRenderer as default, defaultTrans, fadeInElem, fadeOutElem, fetchJSON, fetchText, flyInElem, flyOutElem, flyTransitionKeyframes, type flyTransitionParams, getDataBlob, getFileExt, getIndexByLayoutId, getLayout, getMediaId, getXlf, initRenderingDOM, initialLayout, initialMedia, initialRegion, initialXlr, isEmpty, nextId, platform, preloadMediaBlob, setExpiry, transitionElement, videoFileType };

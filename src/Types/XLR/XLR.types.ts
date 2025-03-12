@@ -38,9 +38,11 @@ export type IXlrEvents = {
 export interface IXlr {
     inputLayouts: InputLayoutType[],
     config: OptionsType,
-    layouts: ILayout[],
+    layouts: {
+        [key: string]: ILayout;
+    };
     currentLayoutIndex: number;
-    currentLayoutId: number | null;
+    currentLayoutId: number;
     currentLayout: ILayout | undefined;
     nextLayout: ILayout | undefined;
     emitter: Emitter<IXlrEvents>;
@@ -53,14 +55,17 @@ export interface IXlr {
     updateLoop(inputLayouts: InputLayoutType[]): void;
     gotoPrevLayout(): void;
     gotoNextLayout(): void;
+    uniqueLayouts: InputLayoutType[];
+    getLayout(inputLayout: InputLayoutType): Promise<ILayout | undefined>;
+    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): void;
 }
 
 export const initialXlr: IXlr = {
     inputLayouts: [],
     config: platform,
-    layouts: [],
+    layouts: {},
     currentLayoutIndex: 0,
-    currentLayoutId: null,
+    currentLayoutId: -1,
     currentLayout: undefined,
     nextLayout: undefined,
     emitter: <Emitter<IXlrEvents>>{},
@@ -85,4 +90,10 @@ export const initialXlr: IXlr = {
     },
     gotoNextLayout() {
     },
+    uniqueLayouts: [],
+    getLayout(inputLayout: InputLayoutType): Promise<ILayout | undefined> {
+        return Promise.resolve(undefined);
+    },
+    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]) {
+    }
 };

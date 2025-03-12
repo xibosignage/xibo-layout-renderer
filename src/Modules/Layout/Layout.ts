@@ -31,7 +31,7 @@ import { nextId } from '../Generators';
 import { Region } from '../Region';
 
 import './layout.css';
-import {composeBgUrlByPlatform, getIndexByLayoutId} from '../Generators/Generators';
+import {composeBgUrlByPlatform} from '../Generators';
 import ActionController, { Action } from '../ActionController';
 
 const playAgainClickHandle = function(ev: { preventDefault: () => void; }) {
@@ -163,39 +163,27 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
         if (hasLayout) {
             _currentLayout = nextLayout;
 
-            currentLayoutIndex = getIndexByLayoutId(inputLayouts, _currentLayout?.layoutId).index as number;
+            currentLayoutIndex = _currentLayout?.index as number;
             nextLayoutIndex = currentLayoutIndex + 1;
 
             if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
-                if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
-                    _nextLayout = params.xlr.layouts[nextLayoutIndex];
-                } else {
+                if (Boolean(inputLayouts[nextLayoutIndex])) {
                     _nextLayout = {...initialLayout, ...inputLayouts[nextLayoutIndex]};
+                } else {
+                    // If _nextLayout is undefined, then we go back to first layout
+                    _nextLayout = {...initialLayout, ...inputLayouts[0]};
                 }
+            } else {
+                // If _nextLayout is undefined, then we go back to first layout
+                _nextLayout = {...initialLayout, ...inputLayouts[0]};
             }
 
-            // If _nextLayout is undefined, then we go back to first layout
-            if (_nextLayout === undefined) {
-                let availableLayout = null;
-
-                // Get available layout
-                for (let _availableLayout of params.xlr.layouts) {
-                    if (_availableLayout === undefined) {
-                        params.xlr.layouts.shift();
-                    } else {
-                        availableLayout = _availableLayout;
-                        break;
-                    }
-                }
-
-                _nextLayout = availableLayout !== null ?
-                    availableLayout : {...initialLayout, ...inputLayouts[0]};
-            }
         }
     }
 
     return {
         currentLayoutIndex,
+        nextLayoutIndex,
         inputLayouts: params.xlr.inputLayouts,
         current: _currentLayout,
         next: _nextLayout,
@@ -390,6 +378,8 @@ export default function Layout(
         // Set the background color
         if ($layout && layout.bgColor) {
             $layout.style.backgroundColor = `${layout.bgColor}`;
+            // Also set the background color of the player window > body
+            document.body.style.setProperty('background-color', `${layout.bgColor}`);
         }
 
         // Hide if layout is not the currentLayout
@@ -498,10 +488,10 @@ export default function Layout(
     layoutObject.stopAllMedia = function() {
         console.debug('Stopping all media . . .');
         return new Promise(async (resolve) => {
-            for(var i = 0;i < layoutObject.regions.length;i++) {
-                var region = layoutObject.regions[i];
-                for(var j = 0;j < region.mediaObjects.length;j++) {
-                    var media = region.mediaObjects[j];
+            for(let i = 0;i < layoutObject.regions.length;i++) {
+                let region = layoutObject.regions[i];
+                for(let j = 0;j < region.mediaObjects.length;j++) {
+                    let media = region.mediaObjects[j];
                     await media.stop();
                 }
             }
