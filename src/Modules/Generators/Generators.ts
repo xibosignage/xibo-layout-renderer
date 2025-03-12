@@ -265,3 +265,18 @@ export function setExpiry(numDays: number) {
 
     return new Date(today.setHours(24 * numDays || 1)).toJSON();
 }
+
+/**
+ * Check if given layout exists in the loop using layoutId
+ * @param layouts Schedule loop unique layouts (uniqueLayouts)
+ * @param layoutId Layout ID of the layout to look for
+ *
+ * @return boolean
+ */
+export function isLayoutValid(layouts: InputLayoutType[], layoutId: number) {
+    if (!layouts || !layoutId || layouts.length === 0) {
+        return false;
+    }
+
+    return layouts.filter(layout => layout.layoutId === layoutId).length > 0;
+}
