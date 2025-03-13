@@ -74493,33 +74493,53 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
     var splashScreenObj = {
       init: function init() {
         var _this = this;
-        $previewSplash.classList.add('preview-splash');
-        // Don't show Xibo logo on CMS Preview
-        if (config && config.platform !== 'CMS') {
-          var _config$icons;
-          var splashScreenImg = img$1;
-          if ((_config$icons = config.icons) !== null && _config$icons !== void 0 && _config$icons.splashScreen && config.icons.splashScreen.length > 0) {
-            loadImage(config.icons.splashScreen).then(function (imageSrc) {
-              splashScreenImg = imageSrc;
-            });
-          }
-          $previewSplash.style.setProperty('background-image', "url(".concat(splashScreenImg, ")"));
-          $previewSplash.style.setProperty('background-size', '200px');
-          $previewSplash.style.setProperty('background-position', 'calc(100% - 50px) calc(100% - 30px)');
-        }
-        $previewSplash.constructor.prototype.hide = function () {
-          _this.hide();
-        };
-        $previewLoader.classList.add('preview-loader');
-        $previewLoaderCaption.classList.add('preview-loaderCaption');
-        // Show loader bar and text on CMS Preview
-        if (config && config.platform === 'CMS') {
-          $previewLoader.style.setProperty('background-image', "url(".concat(img, ")"));
-          $previewLoaderCaption.innerHTML = '<p>Loading Layout...</p>';
-        }
-        $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
-        $previewSplash.insertBefore($previewLoaderCaption, null);
-        this.hide();
+        return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+          var _config$icons, splashScreenImg;
+          return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+            while (1) switch (_context2.prev = _context2.next) {
+              case 0:
+                $previewSplash.classList.add('preview-splash');
+                // Don't show Xibo logo on CMS Preview
+                if (!(config && config.platform !== 'CMS')) {
+                  _context2.next = 10;
+                  break;
+                }
+                splashScreenImg = img$1;
+                if (!((_config$icons = config.icons) !== null && _config$icons !== void 0 && _config$icons.splashScreen && config.icons.splashScreen.length > 0)) {
+                  _context2.next = 7;
+                  break;
+                }
+                _context2.next = 6;
+                return loadImage(config.icons.splashScreen);
+              case 6:
+                splashScreenImg = _context2.sent;
+              case 7:
+                $previewSplash.style.setProperty('background-image', "url(".concat(splashScreenImg, ")"));
+                $previewSplash.style.setProperty('background-size', '200px');
+                $previewSplash.style.setProperty('background-position', 'calc(100% - 50px) calc(100% - 30px)');
+              case 10:
+                $previewSplash.constructor.prototype.hide = function () {
+                  _this.hide();
+                };
+                $previewSplash.constructor.prototype.show = function () {
+                  _this.show();
+                };
+                $previewLoader.classList.add('preview-loader');
+                $previewLoaderCaption.classList.add('preview-loaderCaption');
+                // Show loader bar and text on CMS Preview
+                if (config && config.platform === 'CMS') {
+                  $previewLoader.style.setProperty('background-image', "url(".concat(img, ")"));
+                  $previewLoaderCaption.innerHTML = '<p>Loading Layout...</p>';
+                }
+                $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
+                $previewSplash.insertBefore($previewLoaderCaption, null);
+                _this.hide();
+              case 18:
+              case "end":
+                return _context2.stop();
+            }
+          }, _callee2);
+        }))();
       },
       show: function show() {
         if ($parent) {
@@ -74541,6 +74561,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
       options: options
     };
     var xlrObject = _objectSpread2({}, initialXlr);
+    var splashScreen;
     xlrObject.emitter = createNanoEvents();
     xlrObject.emitter.on('layoutChange', /*#__PURE__*/function () {
       var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(layoutId) {
@@ -74582,7 +74603,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
       var previewCanvas = document.querySelector('#preview_canvas');
       initRenderingDOM(previewCanvas);
       // Prepare splash screen
-      var splashScreen = SplashScreen(document.querySelector('.player-preview'), self.config);
+      splashScreen = SplashScreen(document.querySelector('.player-preview'), self.config);
       splashScreen.show();
     };
     xlrObject.init = function () {
@@ -74600,14 +74621,19 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
       });
     };
     xlrObject.playSchedules = function (xlr) {
+      var $splashScreen = document.querySelector('.preview-splash');
       // Check if there's a current layout
       if (xlr.currentLayout !== undefined) {
-        var $splashScreen = document.querySelector('.preview-splash');
         if ($splashScreen && $splashScreen.style.display === 'block') {
           $splashScreen === null || $splashScreen === void 0 || $splashScreen.hide();
         }
         xlr.currentLayout.emitter.emit('start', xlr.currentLayout);
         xlr.currentLayout.run();
+      } else {
+        // Show splash screen
+        if ($splashScreen) {
+          $splashScreen === null || $splashScreen === void 0 || $splashScreen.show();
+        }
       }
     };
     xlrObject.updateLoop = function (inputLayouts) {

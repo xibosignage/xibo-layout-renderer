@@ -26,7 +26,7 @@ import {
     ILayout, initialLayout, InputLayoutType, OptionsType,
 } from './Types/Layout';
 import { ELayoutType, initialXlr, IXlr, IXlrEvents } from './Types/XLR';
-import SplashScreen, {PreviewSplashElement} from './Modules/SplashScreen';
+import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
 import {isLayoutValid} from "./Modules/Generators/Generators";
 
 export default function XiboLayoutRenderer(
@@ -41,6 +41,8 @@ export default function XiboLayoutRenderer(
     const xlrObject: IXlr = {
         ...initialXlr,
     };
+
+    let splashScreen: ISplashScreen;
 
     xlrObject.emitter = createNanoEvents<IXlrEvents>();
 
@@ -71,7 +73,7 @@ export default function XiboLayoutRenderer(
         initRenderingDOM(previewCanvas);
 
         // Prepare splash screen
-        const splashScreen = SplashScreen(
+        splashScreen = SplashScreen(
             document.querySelector('.player-preview'),
             self.config,
         );
@@ -94,15 +96,21 @@ export default function XiboLayoutRenderer(
     };
 
     xlrObject.playSchedules = function(xlr: IXlr) {
+        const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
         // Check if there's a current layout
         if (xlr.currentLayout !== undefined) {
-            const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
             if ($splashScreen && $splashScreen.style.display === 'block') {
                 $splashScreen?.hide();
             }
 
             xlr.currentLayout.emitter.emit('start', xlr.currentLayout);
             xlr.currentLayout.run();
+        } else {
+            // Show splash screen
+            if ($splashScreen) {
+                $splashScreen?.show();
+            }
+
         }
     };
 
