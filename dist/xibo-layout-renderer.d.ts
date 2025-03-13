@@ -329,6 +329,7 @@ interface ISplashScreen {
 }
 interface PreviewSplashElement extends HTMLDivElement {
     hide: () => void;
+    show: () => void;
 }
 
 declare const defaultTrans: (duration: number, trans: 'in' | 'out') => {
