@@ -40,12 +40,6 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
     const $previewLoaderCaption = document.createElement('div');
     const $defaultNoLayout = document.createElement('div');
 
-    const loadImage = async (imageUrl: string) => {
-        const image = await import(imageUrl);
-
-        return image.default;
-    };
-
      const splashScreenObj = {
          async init() {
              $previewSplash.classList.add('preview-splash');
@@ -55,7 +49,7 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
                  let splashScreenImg = xiboLogoImg;
 
                  if (config.icons?.splashScreen && config.icons.splashScreen.length > 0) {
-                     splashScreenImg = await loadImage(config.icons.splashScreen);
+                     splashScreenImg = config.icons.splashScreen;
                  }
 
                  $previewSplash.style.setProperty(

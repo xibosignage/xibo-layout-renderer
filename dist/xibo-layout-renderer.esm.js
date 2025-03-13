@@ -74466,55 +74466,25 @@ function SplashScreen($parent, config) {
   var $previewLoader = document.createElement('div');
   var $previewLoaderCaption = document.createElement('div');
   document.createElement('div');
-  var loadImage = /*#__PURE__*/function () {
-    var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(imageUrl) {
-      var image;
-      return _regeneratorRuntime().wrap(function _callee$(_context) {
-        while (1) switch (_context.prev = _context.next) {
-          case 0:
-            _context.next = 2;
-            return import(imageUrl);
-          case 2:
-            image = _context.sent;
-            return _context.abrupt("return", image["default"]);
-          case 4:
-          case "end":
-            return _context.stop();
-        }
-      }, _callee);
-    }));
-    return function loadImage(_x) {
-      return _ref.apply(this, arguments);
-    };
-  }();
   var splashScreenObj = {
     init: function init() {
       var _this = this;
-      return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+      return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
         var _config$icons, splashScreenImg;
-        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-          while (1) switch (_context2.prev = _context2.next) {
+        return _regeneratorRuntime().wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
             case 0:
               $previewSplash.classList.add('preview-splash');
               // Don't show Xibo logo on CMS Preview
-              if (!(config && config.platform !== 'CMS')) {
-                _context2.next = 10;
-                break;
+              if (config && config.platform !== 'CMS') {
+                splashScreenImg = img$1;
+                if ((_config$icons = config.icons) !== null && _config$icons !== void 0 && _config$icons.splashScreen && config.icons.splashScreen.length > 0) {
+                  splashScreenImg = config.icons.splashScreen;
+                }
+                $previewSplash.style.setProperty('background-image', "url(".concat(splashScreenImg, ")"));
+                $previewSplash.style.setProperty('background-size', '200px');
+                $previewSplash.style.setProperty('background-position', 'calc(100% - 50px) calc(100% - 30px)');
               }
-              splashScreenImg = img$1;
-              if (!((_config$icons = config.icons) !== null && _config$icons !== void 0 && _config$icons.splashScreen && config.icons.splashScreen.length > 0)) {
-                _context2.next = 7;
-                break;
-              }
-              _context2.next = 6;
-              return loadImage(config.icons.splashScreen);
-            case 6:
-              splashScreenImg = _context2.sent;
-            case 7:
-              $previewSplash.style.setProperty('background-image', "url(".concat(splashScreenImg, ")"));
-              $previewSplash.style.setProperty('background-size', '200px');
-              $previewSplash.style.setProperty('background-position', 'calc(100% - 50px) calc(100% - 30px)');
-            case 10:
               $previewSplash.constructor.prototype.hide = function () {
                 _this.hide();
               };
@@ -74531,11 +74501,11 @@ function SplashScreen($parent, config) {
               $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
               $previewSplash.insertBefore($previewLoaderCaption, null);
               _this.hide();
-            case 18:
+            case 10:
             case "end":
-              return _context2.stop();
+              return _context.stop();
           }
-        }, _callee2);
+        }, _callee);
       }))();
     },
     show: function show() {
