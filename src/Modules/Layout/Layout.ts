@@ -273,6 +273,8 @@ export default function Layout(
 
         if ($layoutContainer) {
             $layoutContainer.style.display = 'block';
+            // Also set the background color of the player window > body
+            document.body.style.setProperty('background-color', `${layout.bgColor}`);
         }
 
         if ($splashScreen) {
@@ -378,8 +380,6 @@ export default function Layout(
         // Set the background color
         if ($layout && layout.bgColor) {
             $layout.style.backgroundColor = `${layout.bgColor}`;
-            // Also set the background color of the player window > body
-            document.body.style.setProperty('background-color', `${layout.bgColor}`);
         }
 
         // Hide if layout is not the currentLayout
