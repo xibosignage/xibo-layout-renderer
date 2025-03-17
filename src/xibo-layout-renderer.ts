@@ -320,10 +320,12 @@ export default function XiboLayoutRenderer(
                 self.nextLayout = xlrLayouts.current;
             } else {
                 // If loop has changed and next layout is not in the loop, set next layout to first layout
-                if (self.inputLayouts.length > 1 && Boolean(self.inputLayouts[xlrLayouts.nextLayoutIndex])) {
+                if (self.inputLayouts.length > 1 &&
+                    xlrLayouts.next &&
+                    Boolean(self.inputLayouts[xlrLayouts.next.index])) {
                     self.nextLayout = xlrLayouts.next;
                 } else {
-                    self.nextLayout = xlrLayouts.current;
+                    self.nextLayout = await this.getLayout(this.inputLayouts[0]);
                 }
             }
 
@@ -375,11 +377,6 @@ export default function XiboLayoutRenderer(
     };
 
     xlrObject.gotoPrevLayout = async function() {
-        console.debug('XLR::gotoPrevLayout', {
-            method: 'XLR::gotoPrevLayout',
-            shouldParse: false,
-        });
-
         const _currentLayoutIndex = this.currentLayoutIndex;
         let _assumedPrevIndex = _currentLayoutIndex - 1;
 
@@ -388,6 +385,12 @@ export default function XiboLayoutRenderer(
         if (_assumedPrevIndex < 0) {
             return;
         }
+
+        console.debug('XLR::gotoPrevLayout', {
+            previousLayoutIndex: _assumedPrevIndex,
+            method: 'XLR::gotoPrevLayout',
+            shouldParse: false,
+        });
 
         if (Boolean(this.inputLayouts[_assumedPrevIndex])) {
             // end current layout
@@ -404,6 +407,7 @@ export default function XiboLayoutRenderer(
 
     xlrObject.gotoNextLayout = async function() {
         console.debug('XLR::gotoNextLayout', {
+            nextLayoutIndex: this.currentLayoutIndex + 1,
             method: 'XLR::gotoNextLayout',
             shouldParse: false,
         });

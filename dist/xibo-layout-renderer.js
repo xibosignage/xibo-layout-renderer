@@ -74183,6 +74183,8 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
       var $splashScreen = document.getElementById("splash_".concat(layout.id));
       if ($layoutContainer) {
         $layoutContainer.style.display = 'block';
+        // Also set the background color of the player window > body
+        document.body.style.setProperty('background-color', "".concat(layout.bgColor));
       }
       if ($splashScreen) {
         $splashScreen.style.display = 'none';
@@ -74265,8 +74267,6 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
       // Set the background color
       if ($layout && layout.bgColor) {
         $layout.style.backgroundColor = "".concat(layout.bgColor);
-        // Also set the background color of the player window > body
-        document.body.style.setProperty('background-color', "".concat(layout.bgColor));
       }
       // Hide if layout is not the currentLayout
       if ($layout && xlr.currentLayoutId !== undefined && xlr.currentLayoutId !== layout.id) {
@@ -74728,7 +74728,8 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
       };
     }();
     xlrObject.prepareLayouts = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
-      var _xlrLayouts$current;
+      var _xlrLayouts$current,
+        _this3 = this;
       var self, xlrLayouts;
       return _regeneratorRuntime().wrap(function _callee5$(_context5) {
         while (1) switch (_context5.prev = _context5.next) {
@@ -74771,19 +74772,30 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
                     case 0:
                       self.currentLayoutIndex = xlrLayouts.currentLayoutIndex;
                       self.currentLayout = xlrLayouts.current;
-                      if (self.inputLayouts.length === 1) {
-                        // Use current layout as next layout if only one layout is available
-                        self.nextLayout = xlrLayouts.current;
-                      } else {
-                        // If loop has changed and next layout is not in the loop, set next layout to first layout
-                        if (self.inputLayouts.length > 1 && Boolean(self.inputLayouts[xlrLayouts.nextLayoutIndex])) {
-                          self.nextLayout = xlrLayouts.next;
-                        } else {
-                          self.nextLayout = xlrLayouts.current;
-                        }
+                      if (!(self.inputLayouts.length === 1)) {
+                        _context4.next = 6;
+                        break;
                       }
+                      // Use current layout as next layout if only one layout is available
+                      self.nextLayout = xlrLayouts.current;
+                      _context4.next = 13;
+                      break;
+                    case 6:
+                      if (!(self.inputLayouts.length > 1 && xlrLayouts.next && Boolean(self.inputLayouts[xlrLayouts.next.index]))) {
+                        _context4.next = 10;
+                        break;
+                      }
+                      self.nextLayout = xlrLayouts.next;
+                      _context4.next = 13;
+                      break;
+                    case 10:
+                      _context4.next = 12;
+                      return _this3.getLayout(_this3.inputLayouts[0]);
+                    case 12:
+                      self.nextLayout = _context4.sent;
+                    case 13:
                       resolve(self);
-                    case 4:
+                    case 14:
                     case "end":
                       return _context4.stop();
                   }
@@ -74848,24 +74860,25 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
       };
     }();
     xlrObject.gotoPrevLayout = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
-      var _this3 = this;
+      var _this4 = this;
       var _currentLayoutIndex, _assumedPrevIndex, _this$currentLayout;
       return _regeneratorRuntime().wrap(function _callee7$(_context7) {
         while (1) switch (_context7.prev = _context7.next) {
           case 0:
-            console.debug('XLR::gotoPrevLayout', {
-              method: 'XLR::gotoPrevLayout',
-              shouldParse: false
-            });
             _currentLayoutIndex = this.currentLayoutIndex;
             _assumedPrevIndex = _currentLayoutIndex - 1; // If previous layout is same as current layout or
             // if there's only one layout, do nothing
             if (!(_assumedPrevIndex < 0)) {
-              _context7.next = 5;
+              _context7.next = 4;
               break;
             }
             return _context7.abrupt("return");
-          case 5:
+          case 4:
+            console.debug('XLR::gotoPrevLayout', {
+              previousLayoutIndex: _assumedPrevIndex,
+              method: 'XLR::gotoPrevLayout',
+              shouldParse: false
+            });
             if (!Boolean(this.inputLayouts[_assumedPrevIndex])) {
               _context7.next = 10;
               break;
@@ -74876,7 +74889,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
             // and set the previous layout as current layout
             this.currentLayoutIndex = _assumedPrevIndex;
             this.prepareLayouts().then(function () {
-              _this3.playSchedules(_this3);
+              _this4.playSchedules(_this4);
             });
           case 10:
           case "end":
@@ -74890,6 +74903,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
         while (1) switch (_context8.prev = _context8.next) {
           case 0:
             console.debug('XLR::gotoNextLayout', {
+              nextLayoutIndex: this.currentLayoutIndex + 1,
               method: 'XLR::gotoNextLayout',
               shouldParse: false
             });
@@ -74899,7 +74913,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
           case "end":
             return _context8.stop();
         }
-      }, _callee8);
+      }, _callee8, this);
     }));
     xlrObject.bootstrap();
     return xlrObject;
