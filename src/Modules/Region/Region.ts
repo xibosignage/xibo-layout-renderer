@@ -88,9 +88,12 @@ export default function Region(
             }
         }
 
-
-        let $region = document.getElementById(self.containerName);
         const $layout = document.getElementById(`${self.layout.containerName}`);
+
+        let $region = null;
+        if ($layout !== null) {
+            $region = $layout.querySelector('#' + self.containerName) as HTMLDivElement;
+        }
 
         if ($region === null) {
             $region = document.createElement('div');

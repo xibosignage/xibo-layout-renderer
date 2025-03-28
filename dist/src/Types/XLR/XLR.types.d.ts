@@ -10,6 +10,13 @@ export declare enum ELayoutType {
 export type IXlrEvents = {
     layoutChange: (layoutId: number) => void;
 };
+export interface IXlrPlayback {
+    currentLayout: ILayout | undefined;
+    nextLayout: ILayout | undefined;
+    currentLayoutIndex: number;
+    nextLayoutIndex: number;
+    isCurrentLayoutValid: boolean;
+}
 export interface IXlr {
     inputLayouts: InputLayoutType[];
     config: OptionsType;
@@ -25,13 +32,16 @@ export interface IXlr {
     init(): Promise<IXlr>;
     playSchedules(xlr: IXlr): void;
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
-    prepareLayouts(): Promise<IXlr>;
+    prepareLayouts(playback: IXlrPlayback): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
     updateLoop(inputLayouts: InputLayoutType[]): void;
     gotoPrevLayout(): void;
     gotoNextLayout(): void;
-    uniqueLayouts: InputLayoutType[];
-    getLayout(inputLayout: InputLayoutType): Promise<ILayout | undefined>;
+    uniqueLayouts: {
+        [layoutId: string]: InputLayoutType;
+    };
+    getLayout(inputLayout: InputLayoutType): ILayout | undefined;
     updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): void;
+    parseLayouts(loopUpdate?: boolean): IXlrPlayback;
 }
 export declare const initialXlr: IXlr;

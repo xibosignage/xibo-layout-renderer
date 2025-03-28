@@ -248,7 +248,8 @@ export default function Layout(
 
         if (xlr.config.platform !== 'CMS' && layout.inLoop) {
             // Transition next layout to current layout and prepare next layout if exist
-            xlr.prepareLayouts().then((parent) => {
+            const playback = xlr.parseLayouts();
+            xlr.prepareLayouts(playback).then((parent) => {
                 xlr.playSchedules(parent);
             });
         }
@@ -275,6 +276,9 @@ export default function Layout(
             $layoutContainer.style.display = 'block';
             // Also set the background color of the player window > body
             document.body.style.setProperty('background-color', `${layout.bgColor}`);
+
+            // Emit start event
+            layout.emitter.emit('start', layout);
         }
 
         if ($splashScreen) {
@@ -297,10 +301,14 @@ export default function Layout(
         const layout = this;
         const {options} = layout;
 
+        if (options.idCounter === 0) {
+            options.idCounter = nextId(options);
+        }
+
         layout.done = false;
         layout.allEnded = false;
         layout.allExpired = false;
-        layout.containerName = "L" + layout.id + "-" + nextId(options);
+        layout.containerName = "L" + layout.id + "-" + options.idCounter;
         layout.regions = [];
         layout.actions = [];
 
@@ -313,9 +321,10 @@ export default function Layout(
         }
 
         let $screen = document.getElementById('screen_container');
-        ($screen) && $screen.appendChild($layout);
+        ($screen) && $screen.append($layout);
 
         if ($layout) {
+            $layout.dataset.sequence = `${layout.index}`;
             $layout.style.display = 'none';
             if (xlr.config.platform === 'CMS') {
                 $layout.style.outline = 'red solid thin';
@@ -502,6 +511,19 @@ export default function Layout(
 
     layoutObject.finishAllRegions = function() {
         return Promise.all(layoutObject.regions.map(region => region.finished()));
+    };
+
+    layoutObject.removeLayout = function() {
+        const layout = this;
+        /* Remove layout that does not exist */
+        const $layout = document.getElementById(layout.containerName);
+
+        layout.done = true;
+        console.debug({$layout});
+
+        if ($layout !== null) {
+            $layout.parentElement?.removeChild($layout);
+        }
     };
 
     layoutObject.prepareLayout();

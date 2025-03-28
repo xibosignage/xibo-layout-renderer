@@ -20,6 +20,7 @@
  */
 import { IMedia } from '../../Types/Media';
 import {InputLayoutType, OptionsType} from '../../Types/Layout';
+import {IXlr} from "../../Types/XLR";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -273,10 +274,10 @@ export function setExpiry(numDays: number) {
  *
  * @return boolean
  */
-export function isLayoutValid(layouts: InputLayoutType[], layoutId: number) {
-    if (!layouts || !layoutId || layouts.length === 0) {
+export function isLayoutValid(layouts: { [p: string]: InputLayoutType }, layoutId: number | undefined) {
+    if (Object.keys(layouts).length < 1 || !layoutId) {
         return false;
     }
 
-    return layouts.filter(layout => layout.layoutId === layoutId).length > 0;
+    return Object.keys(layouts).includes(`${layoutId}`);
 }

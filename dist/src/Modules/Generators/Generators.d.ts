@@ -46,5 +46,7 @@ export declare function setExpiry(numDays: number): string;
  *
  * @return boolean
  */
-export declare function isLayoutValid(layouts: InputLayoutType[], layoutId: number): boolean;
+export declare function isLayoutValid(layouts: {
+    [p: string]: InputLayoutType;
+}, layoutId: number | undefined): boolean;
 export {};
