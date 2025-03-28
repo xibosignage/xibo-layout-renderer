@@ -11,6 +11,13 @@ declare enum ELayoutType {
 type IXlrEvents = {
     layoutChange: (layoutId: number) => void;
 };
+interface IXlrPlayback {
+    currentLayout: ILayout | undefined;
+    nextLayout: ILayout | undefined;
+    currentLayoutIndex: number;
+    nextLayoutIndex: number;
+    isCurrentLayoutValid: boolean;
+}
 interface IXlr {
     inputLayouts: InputLayoutType[];
     config: OptionsType;
@@ -26,14 +33,17 @@ interface IXlr {
     init(): Promise<IXlr>;
     playSchedules(xlr: IXlr): void;
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
-    prepareLayouts(): Promise<IXlr>;
+    prepareLayouts(playback: IXlrPlayback): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
     updateLoop(inputLayouts: InputLayoutType[]): void;
     gotoPrevLayout(): void;
     gotoNextLayout(): void;
-    uniqueLayouts: InputLayoutType[];
-    getLayout(inputLayout: InputLayoutType): Promise<ILayout | undefined>;
+    uniqueLayouts: {
+        [layoutId: string]: InputLayoutType;
+    };
+    getLayout(inputLayout: InputLayoutType): ILayout | undefined;
     updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): void;
+    parseLayouts(loopUpdate?: boolean): IXlrPlayback;
 }
 declare const initialXlr: IXlr;
 
@@ -185,6 +195,7 @@ type InputLayoutType = {
     layoutId: number;
     path?: string;
     index?: number;
+    id?: number;
 };
 type OptionsType = {
     xlfUrl: string;
@@ -257,6 +268,7 @@ interface ILayout {
     xlr: IXlr;
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
+    removeLayout(): void;
 }
 declare const initialLayout: ILayout;
 type GetLayoutParamType = {

@@ -7,6 +7,7 @@ export type InputLayoutType = {
     layoutId: number;
     path?: string;
     index?: number;
+    id?: number;
 };
 export type OptionsType = {
     xlfUrl: string;
@@ -79,6 +80,7 @@ export interface ILayout {
     xlr: IXlr;
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
+    removeLayout(): void;
 }
 export declare const initialLayout: ILayout;
 export type GetLayoutParamType = {
