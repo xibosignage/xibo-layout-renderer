@@ -29,6 +29,7 @@ export type InputLayoutType = {
     layoutId: number;
     path?: string;
     index?: number;
+    id?: number;
 };
 
 export type OptionsType = {
@@ -103,6 +104,7 @@ export interface ILayout {
     xlr: IXlr,
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
+    removeLayout(): void;
 }
 
 export const initialLayout: ILayout = {
@@ -164,6 +166,8 @@ export const initialLayout: ILayout = {
         return Promise.resolve([]);
     },
     inLoop: true,
+    removeLayout() {
+    }
 };
 
 export type GetLayoutParamType = {
