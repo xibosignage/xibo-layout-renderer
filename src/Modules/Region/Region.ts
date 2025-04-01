@@ -88,7 +88,7 @@ export default function Region(
             }
         }
 
-        const $layout = document.getElementById(`${self.layout.containerName}`);
+        const $layout = <HTMLDivElement | null>(document.querySelector(`#${self.layout.containerName}[data-sequence="${self.layout.index}"]`));
 
         let $region = null;
         if ($layout !== null) {
