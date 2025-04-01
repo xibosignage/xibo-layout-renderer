@@ -931,6 +931,13 @@ function isLayoutValid(layouts, layoutId) {
   }
   return Object.keys(layouts).includes("".concat(layoutId));
 }
+function hasDefaultOnly(inputLayouts) {
+  var _inputLayouts$0$respo;
+  if (!inputLayouts) {
+    return false;
+  }
+  return inputLayouts.length === 1 && ((_inputLayouts$0$respo = inputLayouts[0].response) === null || _inputLayouts$0$respo === void 0 ? void 0 : _inputLayouts$0$respo.nodeName) === 'default';
+}
 
 var initialRegion = {
   layout: initialLayout,
@@ -73411,7 +73418,7 @@ function Region(layout, xml, regionId, options, xlr) {
         }
       }
     }
-    var $layout = document.getElementById("".concat(self.layout.containerName));
+    var $layout = document.querySelector("#".concat(self.layout.containerName, "[data-sequence=\"").concat(self.layout.index, "\"]"));
     var $region = null;
     if ($layout !== null) {
       $region = $layout.querySelector('#' + self.containerName);
@@ -73711,7 +73718,7 @@ var ActionController = /*#__PURE__*/function () {
     this.actions = actions;
     this.options = options;
     this.$actionListContainer = null;
-    this.$container = document.getElementById(this.parent.containerName);
+    this.$container = document.querySelector("#".concat(this.parent.containerName, "[data-sequence=\"").concat(this.parent.index, "\"]"));
     this.$actionControllerTitle = null;
     this.$actionsContainer = null;
     if (this.$container && this.$container.getElementsByClassName('action-controller')[0]) {
@@ -73735,7 +73742,7 @@ var ActionController = /*#__PURE__*/function () {
         _previewTranslations = window['previewTranslations'];
         self.translations = _previewTranslations;
       }
-      var $container = document.getElementById(this.parent.containerName);
+      var $container = document.querySelector("#".concat(this.parent.containerName, "[data-sequence=\"").concat(this.parent.index, "\"]"));
       this.$actionController.innerHTML = '';
       if (this.$actionController && this.$actionController.getElementsByClassName('action-controller-title').length > 0) {
         this.$actionControllerTitle = this.$actionController.getElementsByClassName('action-controller-title')[0];
@@ -73926,7 +73933,7 @@ var ActionController = /*#__PURE__*/function () {
         // Find source object
         var $sourceObj;
         if (dataset.source === 'layout') {
-          $sourceObj = document.getElementById(self.parent.containerName);
+          $sourceObj = document.querySelector("#".concat(self.parent.containerName, "[data-sequence=\"").concat(self.parent.index, "\"]"));
         } else {
           var regionObjects = Array.from(self.parent.regions);
           // Loop through layout regions
@@ -74139,7 +74146,7 @@ function Layout(data, options, xlr, layout) {
           case 0:
             console.debug('Ending layout with ID of > ', layout.layoutId);
             /* Remove layout that has ended */
-            $layout = document.getElementById(layout.containerName);
+            $layout = document.querySelector("#".concat(layout.containerName, "[data-sequence=\"").concat(layout.index, "\"]"));
             layout.done = true;
             console.debug({
               $layout: $layout
@@ -74183,7 +74190,7 @@ function Layout(data, options, xlr, layout) {
   layoutObject.emitter = emitter;
   layoutObject.run = function () {
     var layout = layoutObject;
-    var $layoutContainer = document.getElementById("".concat(layout.containerName));
+    var $layoutContainer = document.querySelector("#".concat(layout.containerName, "[data-sequence=\"").concat(layout.index, "\"]"));
     var $splashScreen = document.getElementById("splash_".concat(layout.id));
     if ($layoutContainer) {
       $layoutContainer.style.display = 'block';
@@ -74219,7 +74226,7 @@ function Layout(data, options, xlr, layout) {
     layout.regions = [];
     layout.actions = [];
     /* Create a hidden div to show the layout in */
-    var $layout = document.getElementById(layout.containerName);
+    var $layout = document.querySelector("#".concat(layout.containerName, "[data-sequence=\"").concat(layout.index, "\"]"));
     if ($layout === null) {
       $layout = document.createElement('div');
       $layout.id = layout.containerName;
@@ -74433,7 +74440,7 @@ function Layout(data, options, xlr, layout) {
   layoutObject.removeLayout = function () {
     var layout = this;
     /* Remove layout that does not exist */
-    var $layout = document.getElementById(layout.containerName);
+    var $layout = document.querySelector("#".concat(layout.containerName, "[data-sequence=\"").concat(layout.index, "\"]"));
     layout.done = true;
     console.debug({
       $layout: $layout
@@ -74473,14 +74480,18 @@ var initialXlr = {
     return Promise.resolve({});
   },
   updateLayouts: function updateLayouts(inputLayouts) {},
-  updateLoop: function updateLoop(inputLayouts) {},
+  updateLoop: function updateLoop(inputLayouts) {
+    return Promise.resolve();
+  },
   gotoPrevLayout: function gotoPrevLayout() {},
   gotoNextLayout: function gotoNextLayout() {},
   uniqueLayouts: {},
   getLayout: function getLayout(inputLayout) {
     return;
   },
-  updateScheduleLayouts: function updateScheduleLayouts(scheduleLayouts) {},
+  updateScheduleLayouts: function updateScheduleLayouts(scheduleLayouts) {
+    return Promise.resolve();
+  },
   parseLayouts: function parseLayouts() {
     return {};
   }
@@ -74637,22 +74648,32 @@ function XiboLayoutRenderer(inputLayouts, options) {
   xlrObject.updateScheduleLayouts = /*#__PURE__*/function () {
     var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(scheduleLayouts) {
       var _this2 = this;
+      var inputLayoutIds;
       return _regeneratorRuntime().wrap(function _callee2$(_context2) {
         while (1) switch (_context2.prev = _context2.next) {
           case 0:
             console.debug('XLR::updateScheduleLayouts > Updating schedule layouts . . .');
-            _context2.next = 3;
+            inputLayoutIds = [];
+            _context2.next = 4;
             return Promise.all(scheduleLayouts.map(function (_layout, layoutIndex) {
               var uniqueLayout = _layout;
               uniqueLayout.index = layoutIndex;
               uniqueLayout.id = _layout.layoutId;
               _this2.uniqueLayouts[_layout.layoutId] = uniqueLayout;
+              inputLayoutIds.push(_layout.layoutId);
             }));
-          case 3:
+          case 4:
+            _context2.next = 6;
+            return Promise.all(Object.keys(this.uniqueLayouts).map(function (layoutId) {
+              if (!inputLayoutIds.includes(parseInt(layoutId))) {
+                delete _this2.uniqueLayouts[layoutId];
+              }
+            }));
+          case 6:
           case "end":
             return _context2.stop();
         }
-      }, _callee2);
+      }, _callee2, this);
     }));
     return function (_x2) {
       return _ref2.apply(this, arguments);
@@ -74660,7 +74681,7 @@ function XiboLayoutRenderer(inputLayouts, options) {
   }();
   xlrObject.updateLoop = /*#__PURE__*/function () {
     var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(inputLayouts) {
-      var playback, isCurrentLayoutValid, _this$nextLayout;
+      var playback, isCurrentLayoutValid;
       return _regeneratorRuntime().wrap(function _callee3$(_context3) {
         while (1) switch (_context3.prev = _context3.next) {
           case 0:
@@ -74674,79 +74695,91 @@ function XiboLayoutRenderer(inputLayouts, options) {
             console.debug('XLR::updateLoop > nextLayout', this.nextLayout);
             console.debug('XLR::updateLoop > playback', playback);
             if (isCurrentLayoutValid) {
-              _context3.next = 27;
+              _context3.next = 37;
               break;
             }
+            if (!playback.hasDefaultOnly) {
+              _context3.next = 20;
+              break;
+            }
+            _context3.next = 13;
+            return this.prepareLayoutXlf(playback.currentLayout);
+          case 13:
+            this.currentLayout = _context3.sent;
+            this.currentLayoutId = this.currentLayout.layoutId;
+            _context3.next = 17;
+            return this.prepareLayoutXlf(playback.nextLayout);
+          case 17:
+            this.nextLayout = _context3.sent;
+            _context3.next = 34;
+            break;
+          case 20:
             if (!this.currentLayout) {
-              _context3.next = 14;
+              _context3.next = 24;
               break;
             }
             this.currentLayout.inLoop = false;
-            _context3.next = 14;
+            _context3.next = 24;
             return this.currentLayout.finishAllRegions();
-          case 14:
+          case 24:
             if (this.nextLayout) {
               this.nextLayout.removeLayout();
             }
             if (!playback.currentLayout) {
-              _context3.next = 20;
+              _context3.next = 30;
               break;
             }
-            _context3.next = 18;
+            _context3.next = 28;
             return this.prepareLayoutXlf(playback.currentLayout);
-          case 18:
+          case 28:
             this.currentLayout = _context3.sent;
             this.currentLayoutIndex = playback.currentLayoutIndex;
-          case 20:
+          case 30:
             if (!playback.nextLayout) {
-              _context3.next = 24;
-              break;
-            }
-            _context3.next = 23;
-            return this.prepareLayoutXlf(playback.nextLayout);
-          case 23:
-            this.nextLayout = _context3.sent;
-          case 24:
-            this.playSchedules(this);
-            _context3.next = 39;
-            break;
-          case 27:
-            if (this.nextLayout && playback.nextLayout) {
-              if (this.nextLayout.index >= playback.nextLayout.index) {
-                // Only remove if nextLayout is not same with currentLayout
-                if (this.currentLayout && this.nextLayout.layoutId !== this.currentLayout.layoutId) {
-                  // Remove existing nextLayout
-                  this.nextLayout.removeLayout();
-                }
-              }
-            }
-            if (!playback.nextLayout) {
-              _context3.next = 38;
-              break;
-            }
-            if (!playback.currentLayout) {
-              _context3.next = 38;
-              break;
-            }
-            if (!(this.inputLayouts.length === 1)) {
               _context3.next = 34;
               break;
             }
-            this.nextLayout = this.currentLayout;
-            _context3.next = 38;
-            break;
+            _context3.next = 33;
+            return this.prepareLayoutXlf(playback.nextLayout);
+          case 33:
+            this.nextLayout = _context3.sent;
           case 34:
-            if (!(((_this$nextLayout = this.nextLayout) === null || _this$nextLayout === void 0 ? void 0 : _this$nextLayout.layoutId) !== playback.nextLayout.layoutId)) {
-              _context3.next = 38;
+            this.playSchedules(this);
+            _context3.next = 50;
+            break;
+          case 37:
+            if (this.nextLayout && playback.nextLayout) {
+              if (this.nextLayout.index >= playback.nextLayout.index) {
+                // Remove existing nextLayout
+                this.nextLayout.removeLayout();
+              }
+            }
+            if (!playback.nextLayout) {
+              _context3.next = 49;
               break;
             }
-            _context3.next = 37;
-            return this.prepareLayoutXlf(playback.nextLayout);
-          case 37:
+            if (!playback.currentLayout) {
+              _context3.next = 49;
+              break;
+            }
+            if (!(this.inputLayouts.length === 1)) {
+              _context3.next = 46;
+              break;
+            }
+            _context3.next = 43;
+            return this.prepareLayoutXlf(playback.currentLayout);
+          case 43:
             this.nextLayout = _context3.sent;
-          case 38:
+            _context3.next = 49;
+            break;
+          case 46:
+            _context3.next = 48;
+            return this.prepareLayoutXlf(playback.nextLayout);
+          case 48:
+            this.nextLayout = _context3.sent;
+          case 49:
             console.debug('XLR::updateLoop > updated nextLayout', this.nextLayout);
-          case 39:
+          case 50:
           case "end":
             return _context3.stop();
         }
@@ -74760,6 +74793,7 @@ function XiboLayoutRenderer(inputLayouts, options) {
     var _this$currentLayout;
     var _currentLayout;
     var _nextLayout;
+    var _hasDefaultOnly = hasDefaultOnly(this.inputLayouts);
     var hasLayout = this.inputLayouts.length > 0;
     var _currentLayoutIndex = this.currentLayoutIndex;
     var _nextLayoutIndex = _currentLayoutIndex + 1;
@@ -74813,12 +74847,19 @@ function XiboLayoutRenderer(inputLayouts, options) {
         }
       }
     }
+    if (_currentLayout === undefined && _nextLayout === undefined) {
+      if (_hasDefaultOnly) {
+        _currentLayout = this.getLayout(this.inputLayouts[0]);
+        _nextLayout = this.getLayout(this.inputLayouts[0]);
+      }
+    }
     return {
       currentLayout: _currentLayout,
       nextLayout: _nextLayout,
       currentLayoutIndex: _currentLayoutIndex,
       nextLayoutIndex: _nextLayoutIndex,
-      isCurrentLayoutValid: isCurrentLayoutValid
+      isCurrentLayoutValid: isCurrentLayoutValid,
+      hasDefaultOnly: _hasDefaultOnly
     };
   };
   xlrObject.getLayout = function (inputLayout) {

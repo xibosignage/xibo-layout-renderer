@@ -16,6 +16,7 @@ export interface IXlrPlayback {
     currentLayoutIndex: number;
     nextLayoutIndex: number;
     isCurrentLayoutValid: boolean;
+    hasDefaultOnly: boolean;
 }
 export interface IXlr {
     inputLayouts: InputLayoutType[];
@@ -34,14 +35,14 @@ export interface IXlr {
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(playback: IXlrPlayback): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
-    updateLoop(inputLayouts: InputLayoutType[]): void;
+    updateLoop(inputLayouts: InputLayoutType[]): Promise<void>;
     gotoPrevLayout(): void;
     gotoNextLayout(): void;
     uniqueLayouts: {
         [layoutId: string]: InputLayoutType;
     };
     getLayout(inputLayout: InputLayoutType): ILayout | undefined;
-    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): void;
+    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): Promise<void>;
     parseLayouts(loopUpdate?: boolean): IXlrPlayback;
 }
 export declare const initialXlr: IXlr;
