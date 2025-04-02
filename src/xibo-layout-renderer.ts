@@ -181,7 +181,7 @@ export default function XiboLayoutRenderer(
             this.playSchedules(this);
         } else {
             if (this.nextLayout && playback.nextLayout) {
-                if (this.nextLayout.index >= playback.nextLayout.index) {
+                if (this.nextLayout.index > playback.nextLayout.index) {
                     // Remove existing nextLayout
                     this.nextLayout.removeLayout();
                 }
@@ -189,8 +189,14 @@ export default function XiboLayoutRenderer(
 
             if (playback.nextLayout) {
                 if (playback.currentLayout) {
-                    if (this.inputLayouts.length === 1) {
-                        this.nextLayout = await this.prepareLayoutXlf(playback.currentLayout);
+                    if (inputLayouts.length === 1) {
+                        if (playback.currentLayout.layoutId === this.currentLayoutId &&
+                            playback.currentLayout.index === this.currentLayoutIndex
+                        ) {
+                            this.nextLayout = playback.currentLayout;
+                        } else {
+                            this.nextLayout = await this.prepareLayoutXlf(playback.currentLayout);
+                        }
                     } else {
                         this.nextLayout = await this.prepareLayoutXlf(playback.nextLayout);
                     }
@@ -204,7 +210,7 @@ export default function XiboLayoutRenderer(
     xlrObject.parseLayouts = function(loopUpdate?: boolean) {
         let _currentLayout;
         let _nextLayout;
-        let _hasDefaultOnly = hasDefaultOnly(this.inputLayouts);;
+        let _hasDefaultOnly = hasDefaultOnly(this.inputLayouts);
         const hasLayout = this.inputLayouts.length > 0;
         let _currentLayoutIndex = this.currentLayoutIndex;
         let _nextLayoutIndex = _currentLayoutIndex + 1;
@@ -230,11 +236,8 @@ export default function XiboLayoutRenderer(
                             _currentLayout.layoutId === this.inputLayouts[0].layoutId &&
                             _currentLayout.index !== this.inputLayouts[0].index
                         ) {
-                            this.currentLayout.index = this.inputLayouts[0].index as number;
-
-                            _currentLayout = this.currentLayout
-                            _currentLayoutIndex = _currentLayout.index;
-                            _nextLayoutIndex = _currentLayoutIndex + 1;
+                            _currentLayout = this.getLayout(this.inputLayouts[0]);
+                            _nextLayoutIndex = (this.inputLayouts[0].index as number) + 1;
                         }
                     } else {
                         _currentLayout = this.nextLayout;

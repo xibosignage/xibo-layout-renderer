@@ -114,6 +114,9 @@ export default function Region(
         `;
         $region.className = 'region--item';
 
+        // Save region html
+        self.html = $region;
+
         /* Parse region media objects */
         const regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));
         self.totalMediaObjects = regionMediaItems.length;

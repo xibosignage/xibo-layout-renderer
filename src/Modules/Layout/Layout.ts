@@ -356,6 +356,7 @@ export default function Layout(
             $layout.style.position = 'absolute';
             $layout.style.left = `${layout.offsetX}px`;
             $layout.style.top = `${layout.offsetY}px`;
+            $layout.style.overflow = 'hidden';
         }
 
         if ($layout && layout.zIndex !== null) {
