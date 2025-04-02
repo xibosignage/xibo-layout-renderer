@@ -979,7 +979,8 @@ var initialRegion = {
     return {};
   },
   prepareMediaObjects: function prepareMediaObjects() {},
-  reset: function reset() {}
+  reset: function reset() {},
+  html: {}
 };
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -73054,7 +73055,7 @@ function Media(region, mediaId, xml, options, xlr) {
     $mediaIframe.height = "".concat(self.divHeight, "px");
     $mediaIframe.style.cssText = "border: 0;";
     var $mediaId = getMediaId(self);
-    var $media = document.getElementById($mediaId);
+    var $media = self.region.html.querySelector("#".concat($mediaId));
     if ($media === null) {
       if (self.mediaType === 'video') {
         $media = document.createElement('video');
@@ -73432,6 +73433,8 @@ function Region(layout, xml, regionId, options, xlr) {
     /* Add region styles */
     $region.style.cssText = "\n            width: ".concat(self.sWidth, "px;\n            height: ").concat(self.sHeight, "px;\n            position: absolute;\n            left: ").concat(self.offsetX, "px;\n            top: ").concat(self.offsetY, "px;\n            z-index: ").concat(Math.round(self.zIndex), ";\n        ");
     $region.className = 'region--item';
+    // Save region html
+    self.html = $region;
     /* Parse region media objects */
     var regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));
     self.totalMediaObjects = regionMediaItems.length;
@@ -74261,6 +74264,7 @@ function Layout(data, options, xlr, layout) {
       $layout.style.position = 'absolute';
       $layout.style.left = "".concat(layout.offsetX, "px");
       $layout.style.top = "".concat(layout.offsetY, "px");
+      $layout.style.overflow = 'hidden';
     }
     if ($layout && layout.zIndex !== null) {
       $layout.style.zIndex = "".concat(layout.zIndex);
@@ -74745,41 +74749,50 @@ function XiboLayoutRenderer(inputLayouts, options) {
             this.nextLayout = _context3.sent;
           case 34:
             this.playSchedules(this);
-            _context3.next = 50;
+            _context3.next = 54;
             break;
           case 37:
             if (this.nextLayout && playback.nextLayout) {
-              if (this.nextLayout.index >= playback.nextLayout.index) {
+              if (this.nextLayout.index > playback.nextLayout.index) {
                 // Remove existing nextLayout
                 this.nextLayout.removeLayout();
               }
             }
             if (!playback.nextLayout) {
-              _context3.next = 49;
+              _context3.next = 53;
               break;
             }
             if (!playback.currentLayout) {
-              _context3.next = 49;
+              _context3.next = 53;
               break;
             }
-            if (!(this.inputLayouts.length === 1)) {
-              _context3.next = 46;
+            if (!(inputLayouts.length === 1)) {
+              _context3.next = 50;
               break;
             }
-            _context3.next = 43;
-            return this.prepareLayoutXlf(playback.currentLayout);
-          case 43:
-            this.nextLayout = _context3.sent;
-            _context3.next = 49;
-            break;
-          case 46:
+            if (!(playback.currentLayout.layoutId === this.currentLayoutId && playback.currentLayout.index === this.currentLayoutIndex)) {
+              _context3.next = 45;
+              break;
+            }
+            this.nextLayout = playback.currentLayout;
             _context3.next = 48;
-            return this.prepareLayoutXlf(playback.nextLayout);
-          case 48:
+            break;
+          case 45:
+            _context3.next = 47;
+            return this.prepareLayoutXlf(playback.currentLayout);
+          case 47:
             this.nextLayout = _context3.sent;
-          case 49:
-            console.debug('XLR::updateLoop > updated nextLayout', this.nextLayout);
+          case 48:
+            _context3.next = 53;
+            break;
           case 50:
+            _context3.next = 52;
+            return this.prepareLayoutXlf(playback.nextLayout);
+          case 52:
+            this.nextLayout = _context3.sent;
+          case 53:
+            console.debug('XLR::updateLoop > updated nextLayout', this.nextLayout);
+          case 54:
           case "end":
             return _context3.stop();
         }
@@ -74813,10 +74826,8 @@ function XiboLayoutRenderer(inputLayouts, options) {
           if (loopUpdate) {
             _currentLayout = this.currentLayout;
             if (this.inputLayouts.length === 1 && _currentLayout.layoutId === this.inputLayouts[0].layoutId && _currentLayout.index !== this.inputLayouts[0].index) {
-              this.currentLayout.index = this.inputLayouts[0].index;
-              _currentLayout = this.currentLayout;
-              _currentLayoutIndex = _currentLayout.index;
-              _nextLayoutIndex = _currentLayoutIndex + 1;
+              _currentLayout = this.getLayout(this.inputLayouts[0]);
+              _nextLayoutIndex = this.inputLayouts[0].index + 1;
             }
           } else {
             _currentLayout = this.nextLayout;
