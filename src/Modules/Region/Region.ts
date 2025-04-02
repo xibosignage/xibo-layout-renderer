@@ -88,7 +88,7 @@ export default function Region(
             }
         }
 
-        const $layout = document.getElementById(`${self.layout.containerName}`);
+        const $layout = <HTMLDivElement | null>(document.querySelector(`#${self.layout.containerName}[data-sequence="${self.layout.index}"]`));
 
         let $region = null;
         if ($layout !== null) {
@@ -113,6 +113,9 @@ export default function Region(
             z-index: ${Math.round(self.zIndex)};
         `;
         $region.className = 'region--item';
+
+        // Save region html
+        self.html = $region;
 
         /* Parse region media objects */
         const regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));

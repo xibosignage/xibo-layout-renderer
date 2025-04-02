@@ -69,6 +69,7 @@ export interface IRegion {
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe;
     prepareMediaObjects(): void;
     reset(): void;
+    html: HTMLDivElement;
 }
 
 export const initialRegion: IRegion = {
@@ -120,5 +121,6 @@ export const initialRegion: IRegion = {
     prepareMediaObjects() {
     },
     reset() {
-    }
+    },
+    html: <HTMLDivElement>{},
 };

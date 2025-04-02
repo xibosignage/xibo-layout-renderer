@@ -26,6 +26,7 @@ import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
 
 export type InputLayoutType = {
+    response: any;
     layoutId: number;
     path?: string;
     index?: number;

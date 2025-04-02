@@ -227,7 +227,7 @@ export default function Layout(
     emitter.on('end', async (layout: ILayout) => {
         console.debug('Ending layout with ID of > ', layout.layoutId);
         /* Remove layout that has ended */
-        const $layout = document.getElementById(layout.containerName);
+        const $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
 
         layout.done = true;
         console.debug({$layout});
@@ -269,7 +269,7 @@ export default function Layout(
 
     layoutObject.run = function() {
         const layout = layoutObject;
-        const $layoutContainer = document.getElementById(`${layout.containerName}`);
+        const $layoutContainer = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
         const $splashScreen = document.getElementById(`splash_${layout.id}`);
 
         if ($layoutContainer) {
@@ -313,7 +313,7 @@ export default function Layout(
         layout.actions = [];
 
         /* Create a hidden div to show the layout in */
-        let $layout = document.getElementById(layout.containerName);
+        let $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
 
         if ($layout === null) {
             $layout = document.createElement('div');
@@ -356,6 +356,7 @@ export default function Layout(
             $layout.style.position = 'absolute';
             $layout.style.left = `${layout.offsetX}px`;
             $layout.style.top = `${layout.offsetY}px`;
+            $layout.style.overflow = 'hidden';
         }
 
         if ($layout && layout.zIndex !== null) {
@@ -516,7 +517,7 @@ export default function Layout(
     layoutObject.removeLayout = function() {
         const layout = this;
         /* Remove layout that does not exist */
-        const $layout = document.getElementById(layout.containerName);
+        const $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
 
         layout.done = true;
         console.debug({$layout});

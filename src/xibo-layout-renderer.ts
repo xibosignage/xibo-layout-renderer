@@ -27,7 +27,7 @@ import {
 } from './Types/Layout';
 import { ELayoutType, initialXlr, IXlr, IXlrEvents } from './Types/XLR';
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
-import {isLayoutValid} from "./Modules/Generators/Generators";
+import {hasDefaultOnly, isDefaultLayout, isLayoutValid} from "./Modules/Generators/Generators";
 import {IXlrPlayback} from "./Types/XLR/XLR.types";
 import SpatialNavKeyCodes from "video.js/dist/types/utils/spatial-navigation-key-codes";
 import play = SpatialNavKeyCodes.codes.play;
@@ -121,13 +121,23 @@ export default function XiboLayoutRenderer(
 
     xlrObject.updateScheduleLayouts = async function(scheduleLayouts: InputLayoutType[]) {
         console.debug('XLR::updateScheduleLayouts > Updating schedule layouts . . .');
+        const inputLayoutIds: number[] = [];
+
         await Promise.all(scheduleLayouts.map((_layout, layoutIndex) => {
             const uniqueLayout = _layout;
             uniqueLayout.index = layoutIndex;
             uniqueLayout.id = _layout.layoutId;
 
             this.uniqueLayouts[_layout.layoutId] = uniqueLayout;
+            inputLayoutIds.push(_layout.layoutId);
         }));
+
+        // Cross-check if we need to remove non-existing layouts based on inputLayouts
+        await Promise.all(Object.keys(this.uniqueLayouts).map((layoutId) => {
+            if (!inputLayoutIds.includes(parseInt(layoutId))) {
+                delete this.uniqueLayouts[layoutId];
+            }
+        }))
     };
 
     xlrObject.updateLoop = async function(inputLayouts: InputLayoutType[]) {
@@ -144,44 +154,51 @@ export default function XiboLayoutRenderer(
         console.debug('XLR::updateLoop > playback', playback);
 
         if (!isCurrentLayoutValid) {
-            if (this.currentLayout) {
-                this.currentLayout.inLoop = false;
-                await this.currentLayout.finishAllRegions();
-            }
-
-            if (this.nextLayout) {
-                this.nextLayout.removeLayout();
-            }
-
-            if (playback.currentLayout) {
+            if (playback.hasDefaultOnly) {
                 this.currentLayout = await this.prepareLayoutXlf(playback.currentLayout);
-                this.currentLayoutIndex = playback.currentLayoutIndex;
-            }
-
-            if (playback.nextLayout) {
+                this.currentLayoutId = this.currentLayout.layoutId;
                 this.nextLayout = await this.prepareLayoutXlf(playback.nextLayout);
+            } else {
+                if (this.currentLayout) {
+                    this.currentLayout.inLoop = false;
+                    await this.currentLayout.finishAllRegions();
+                }
+    
+                if (this.nextLayout) {
+                    this.nextLayout.removeLayout();
+                }
+    
+                if (playback.currentLayout) {
+                    this.currentLayout = await this.prepareLayoutXlf(playback.currentLayout);
+                    this.currentLayoutIndex = playback.currentLayoutIndex;
+                }
+    
+                if (playback.nextLayout) {
+                    this.nextLayout = await this.prepareLayoutXlf(playback.nextLayout);
+                }
             }
 
             this.playSchedules(this);
         } else {
             if (this.nextLayout && playback.nextLayout) {
-                if (this.nextLayout.index >= playback.nextLayout.index) {
-                    // Only remove if nextLayout is not same with currentLayout
-                    if (this.currentLayout && this.nextLayout.layoutId !== this.currentLayout.layoutId) {
-                        // Remove existing nextLayout
-                        this.nextLayout.removeLayout();
-                    }
+                if (this.nextLayout.index > playback.nextLayout.index) {
+                    // Remove existing nextLayout
+                    this.nextLayout.removeLayout();
                 }
             }
 
             if (playback.nextLayout) {
                 if (playback.currentLayout) {
-                    if (this.inputLayouts.length === 1) {
-                        this.nextLayout = this.currentLayout;
-                    } else {
-                        if (this.nextLayout?.layoutId !== playback.nextLayout.layoutId) {
-                            this.nextLayout = await this.prepareLayoutXlf(playback.nextLayout);
+                    if (inputLayouts.length === 1) {
+                        if (playback.currentLayout.layoutId === this.currentLayoutId &&
+                            playback.currentLayout.index === this.currentLayoutIndex
+                        ) {
+                            this.nextLayout = playback.currentLayout;
+                        } else {
+                            this.nextLayout = await this.prepareLayoutXlf(playback.currentLayout);
                         }
+                    } else {
+                        this.nextLayout = await this.prepareLayoutXlf(playback.nextLayout);
                     }
                 }
             }
@@ -193,6 +210,7 @@ export default function XiboLayoutRenderer(
     xlrObject.parseLayouts = function(loopUpdate?: boolean) {
         let _currentLayout;
         let _nextLayout;
+        let _hasDefaultOnly = hasDefaultOnly(this.inputLayouts);
         const hasLayout = this.inputLayouts.length > 0;
         let _currentLayoutIndex = this.currentLayoutIndex;
         let _nextLayoutIndex = _currentLayoutIndex + 1;
@@ -218,11 +236,8 @@ export default function XiboLayoutRenderer(
                             _currentLayout.layoutId === this.inputLayouts[0].layoutId &&
                             _currentLayout.index !== this.inputLayouts[0].index
                         ) {
-                            this.currentLayout.index = this.inputLayouts[0].index as number;
-
-                            _currentLayout = this.currentLayout
-                            _currentLayoutIndex = _currentLayout.index;
-                            _nextLayoutIndex = _currentLayoutIndex + 1;
+                            _currentLayout = this.getLayout(this.inputLayouts[0]);
+                            _nextLayoutIndex = (this.inputLayouts[0].index as number) + 1;
                         }
                     } else {
                         _currentLayout = this.nextLayout;
@@ -257,12 +272,20 @@ export default function XiboLayoutRenderer(
             }
         }
 
+        if (_currentLayout === undefined && _nextLayout === undefined) {
+            if (_hasDefaultOnly) {
+                _currentLayout = this.getLayout(this.inputLayouts[0]);
+                _nextLayout = this.getLayout(this.inputLayouts[0]);
+            }
+        }
+
         return {
             currentLayout: _currentLayout,
             nextLayout: _nextLayout,
             currentLayoutIndex: _currentLayoutIndex,
             nextLayoutIndex: _nextLayoutIndex,
             isCurrentLayoutValid,
+            hasDefaultOnly: _hasDefaultOnly,
         };
     };
 

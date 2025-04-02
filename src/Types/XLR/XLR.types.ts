@@ -41,6 +41,7 @@ export interface IXlrPlayback {
     currentLayoutIndex: number;
     nextLayoutIndex: number;
     isCurrentLayoutValid: boolean;
+    hasDefaultOnly: boolean;
 }
 
 export interface IXlr {
@@ -60,14 +61,14 @@ export interface IXlr {
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(playback: IXlrPlayback): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
-    updateLoop(inputLayouts: InputLayoutType[]): void;
+    updateLoop(inputLayouts: InputLayoutType[]): Promise<void>;
     gotoPrevLayout(): void;
     gotoNextLayout(): void;
     uniqueLayouts: {
         [layoutId: string]: InputLayoutType;
     };
     getLayout(inputLayout: InputLayoutType): ILayout | undefined;
-    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): void;
+    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): Promise<void>;
     parseLayouts(loopUpdate?: boolean): IXlrPlayback;
 }
 
@@ -95,7 +96,8 @@ export const initialXlr: IXlr = {
     },
     updateLayouts(inputLayouts: InputLayoutType[]) {
     },
-    updateLoop(inputLayouts: InputLayoutType[]) {
+    updateLoop(inputLayouts) {
+        return Promise.resolve();
     },
     gotoPrevLayout() {
     },
@@ -105,7 +107,8 @@ export const initialXlr: IXlr = {
     getLayout(inputLayout: InputLayoutType): ILayout | undefined {
         return;
     },
-    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]) {
+    updateScheduleLayouts(scheduleLayouts) {
+        return Promise.resolve();
     },
     parseLayouts(): IXlrPlayback {
         return <IXlrPlayback>{};

@@ -192,7 +192,7 @@ export default function Media(
         $mediaIframe.style.cssText = `border: 0;`;
 
         const $mediaId = getMediaId(self);
-        let $media = document.getElementById($mediaId);
+        let $media = <HTMLElement>(self.region.html.querySelector!(`#${$mediaId}`));
 
         if ($media === null) {
             if (self.mediaType === 'video') {

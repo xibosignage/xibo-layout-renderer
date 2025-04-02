@@ -17,6 +17,7 @@ interface IXlrPlayback {
     currentLayoutIndex: number;
     nextLayoutIndex: number;
     isCurrentLayoutValid: boolean;
+    hasDefaultOnly: boolean;
 }
 interface IXlr {
     inputLayouts: InputLayoutType[];
@@ -35,14 +36,14 @@ interface IXlr {
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
     prepareLayouts(playback: IXlrPlayback): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
-    updateLoop(inputLayouts: InputLayoutType[]): void;
+    updateLoop(inputLayouts: InputLayoutType[]): Promise<void>;
     gotoPrevLayout(): void;
     gotoNextLayout(): void;
     uniqueLayouts: {
         [layoutId: string]: InputLayoutType;
     };
     getLayout(inputLayout: InputLayoutType): ILayout | undefined;
-    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): void;
+    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): Promise<void>;
     parseLayouts(loopUpdate?: boolean): IXlrPlayback;
 }
 declare const initialXlr: IXlr;
@@ -144,6 +145,7 @@ interface IRegion {
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]): Unsubscribe;
     prepareMediaObjects(): void;
     reset(): void;
+    html: HTMLDivElement;
 }
 declare const initialRegion: IRegion;
 
@@ -192,6 +194,7 @@ declare class ActionController {
 }
 
 type InputLayoutType = {
+    response: any;
     layoutId: number;
     path?: string;
     index?: number;

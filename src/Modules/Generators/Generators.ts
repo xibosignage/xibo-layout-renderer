@@ -227,6 +227,7 @@ export function isEmpty(input: any) {
 export const splashScreenLayoutObj: InputLayoutType = {
     layoutId: 0,
     path: '',
+    response: null,
 };
 
 export function splashScreenDOM() {
@@ -280,4 +281,20 @@ export function isLayoutValid(layouts: { [p: string]: InputLayoutType }, layoutI
     }
 
     return Object.keys(layouts).includes(`${layoutId}`);
+}
+
+export function hasDefaultOnly(inputLayouts: InputLayoutType[]) {
+    if (!inputLayouts) {
+        return false;
+    }
+
+    return inputLayouts.length === 1 && inputLayouts[0].response?.nodeName === 'default';
+}
+
+export function isDefaultLayout(inputLayout: InputLayoutType) {
+    if (!inputLayout) {
+        return false;
+    }
+
+    return inputLayout.response?.nodeName === 'default';
 }
