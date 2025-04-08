@@ -20,6 +20,7 @@
  */
 import { IMedia } from '../../Types/Media';
 import {InputLayoutType, OptionsType} from '../../Types/Layout';
+import {IXlr} from "../../Types/XLR";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -226,6 +227,7 @@ export function isEmpty(input: any) {
 export const splashScreenLayoutObj: InputLayoutType = {
     layoutId: 0,
     path: '',
+    response: null,
 };
 
 export function splashScreenDOM() {
@@ -264,4 +266,35 @@ export function setExpiry(numDays: number) {
     const today = new Date();
 
     return new Date(today.setHours(24 * numDays || 1)).toJSON();
+}
+
+/**
+ * Check if given layout exists in the loop using layoutId
+ * @param layouts Schedule loop unique layouts (uniqueLayouts)
+ * @param layoutId Layout ID of the layout to look for
+ *
+ * @return boolean
+ */
+export function isLayoutValid(layouts: { [p: string]: InputLayoutType }, layoutId: number | undefined) {
+    if (Object.keys(layouts).length < 1 || !layoutId) {
+        return false;
+    }
+
+    return Object.keys(layouts).includes(`${layoutId}`);
+}
+
+export function hasDefaultOnly(inputLayouts: InputLayoutType[]) {
+    if (!inputLayouts) {
+        return false;
+    }
+
+    return inputLayouts.length === 1 && inputLayouts[0].response?.nodeName === 'default';
+}
+
+export function isDefaultLayout(inputLayout: InputLayoutType) {
+    if (!inputLayout) {
+        return false;
+    }
+
+    return inputLayout.response?.nodeName === 'default';
 }

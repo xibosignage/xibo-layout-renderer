@@ -26,8 +26,11 @@ import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
 
 export type InputLayoutType = {
-    layoutId: number | null;
+    response: any;
+    layoutId: number;
     path?: string;
+    index?: number;
+    id?: number;
 };
 
 export type OptionsType = {
@@ -49,12 +52,16 @@ export type OptionsType = {
     };
     previewTranslations?: {
         [k: string]: any;
-    }
+    };
+    icons?: {
+        splashScreen: string;
+        logo: string;
+    };
 };
 
 export interface ILayout {
     id: number | null;
-    layoutId: number | null;
+    layoutId: number;
     scheduleId?: number;
     sw: number | null;
     sh: number | null;
@@ -98,11 +105,12 @@ export interface ILayout {
     xlr: IXlr,
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
+    removeLayout(): void;
 }
 
 export const initialLayout: ILayout = {
     id: null,
-    layoutId: null,
+    layoutId: -1,
     sw: 0,
     sh: 0,
     xw: 0,
@@ -159,6 +167,8 @@ export const initialLayout: ILayout = {
         return Promise.resolve([]);
     },
     inLoop: true,
+    removeLayout() {
+    }
 };
 
 export type GetLayoutParamType = {
@@ -168,6 +178,7 @@ export type GetLayoutParamType = {
 
 export type GetLayoutType = {
     currentLayoutIndex: number;
+    nextLayoutIndex: number;
     inputLayouts: InputLayoutType[];
     current: ILayout | undefined;
     next: ILayout | undefined;

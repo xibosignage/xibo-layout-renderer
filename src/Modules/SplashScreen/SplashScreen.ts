@@ -31,6 +31,7 @@ export interface ISplashScreen {
 
 export interface PreviewSplashElement extends HTMLDivElement {
     hide: () => void;
+    show: () => void;
 }
 
 export default function SplashScreen($parent: Element | null, config?: OptionsType): ISplashScreen {
@@ -40,18 +41,24 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
     const $defaultNoLayout = document.createElement('div');
 
      const splashScreenObj = {
-         init() {
+         async init() {
              $previewSplash.classList.add('preview-splash');
 
              // Don't show Xibo logo on CMS Preview
              if (config && config.platform !== 'CMS') {
+                 let splashScreenImg = xiboLogoImg;
+
+                 if (config.icons?.splashScreen && config.icons.splashScreen.length > 0) {
+                     splashScreenImg = config.icons.splashScreen;
+                 }
+
                  $previewSplash.style.setProperty(
                      'background-image',
-                     `url(${xiboLogoImg})`,
+                     `url(${splashScreenImg})`,
                  );
                  $previewSplash.style.setProperty(
                      'background-size',
-                     '200px 120px',
+                     '200px',
                  );
                  $previewSplash.style.setProperty(
                      'background-position',
@@ -61,6 +68,9 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
 
              $previewSplash.constructor.prototype.hide = () => {
                  this.hide();
+             };
+             $previewSplash.constructor.prototype.show = () => {
+                 this.show();
              };
 
              $previewLoader.classList.add('preview-loader');

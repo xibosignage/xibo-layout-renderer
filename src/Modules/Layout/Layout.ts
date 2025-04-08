@@ -31,7 +31,7 @@ import { nextId } from '../Generators';
 import { Region } from '../Region';
 
 import './layout.css';
-import {composeBgUrlByPlatform, getIndexByLayoutId} from '../Generators/Generators';
+import {composeBgUrlByPlatform} from '../Generators';
 import ActionController, { Action } from '../ActionController';
 
 const playAgainClickHandle = function(ev: { preventDefault: () => void; }) {
@@ -163,39 +163,27 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
         if (hasLayout) {
             _currentLayout = nextLayout;
 
-            currentLayoutIndex = getIndexByLayoutId(inputLayouts, _currentLayout?.layoutId).index as number;
+            currentLayoutIndex = _currentLayout?.index as number;
             nextLayoutIndex = currentLayoutIndex + 1;
 
             if (inputLayouts.length > 1 && nextLayoutIndex < inputLayouts.length) {
-                if (Boolean(params.xlr.layouts[nextLayoutIndex])) {
-                    _nextLayout = params.xlr.layouts[nextLayoutIndex];
-                } else {
+                if (Boolean(inputLayouts[nextLayoutIndex])) {
                     _nextLayout = {...initialLayout, ...inputLayouts[nextLayoutIndex]};
+                } else {
+                    // If _nextLayout is undefined, then we go back to first layout
+                    _nextLayout = {...initialLayout, ...inputLayouts[0]};
                 }
+            } else {
+                // If _nextLayout is undefined, then we go back to first layout
+                _nextLayout = {...initialLayout, ...inputLayouts[0]};
             }
 
-            // If _nextLayout is undefined, then we go back to first layout
-            if (_nextLayout === undefined) {
-                let availableLayout = null;
-
-                // Get available layout
-                for (let _availableLayout of params.xlr.layouts) {
-                    if (_availableLayout === undefined) {
-                        params.xlr.layouts.shift();
-                    } else {
-                        availableLayout = _availableLayout;
-                        break;
-                    }
-                }
-
-                _nextLayout = availableLayout !== null ?
-                    availableLayout : {...initialLayout, ...inputLayouts[0]};
-            }
         }
     }
 
     return {
         currentLayoutIndex,
+        nextLayoutIndex,
         inputLayouts: params.xlr.inputLayouts,
         current: _currentLayout,
         next: _nextLayout,
@@ -239,7 +227,7 @@ export default function Layout(
     emitter.on('end', async (layout: ILayout) => {
         console.debug('Ending layout with ID of > ', layout.layoutId);
         /* Remove layout that has ended */
-        const $layout = document.getElementById(layout.containerName);
+        const $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
 
         layout.done = true;
         console.debug({$layout});
@@ -260,7 +248,8 @@ export default function Layout(
 
         if (xlr.config.platform !== 'CMS' && layout.inLoop) {
             // Transition next layout to current layout and prepare next layout if exist
-            xlr.prepareLayouts().then((parent) => {
+            const playback = xlr.parseLayouts();
+            xlr.prepareLayouts(playback).then((parent) => {
                 xlr.playSchedules(parent);
             });
         }
@@ -280,11 +269,16 @@ export default function Layout(
 
     layoutObject.run = function() {
         const layout = layoutObject;
-        const $layoutContainer = document.getElementById(`${layout.containerName}`);
+        const $layoutContainer = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
         const $splashScreen = document.getElementById(`splash_${layout.id}`);
 
         if ($layoutContainer) {
             $layoutContainer.style.display = 'block';
+            // Also set the background color of the player window > body
+            document.body.style.setProperty('background-color', `${layout.bgColor}`);
+
+            // Emit start event
+            layout.emitter.emit('start', layout);
         }
 
         if ($splashScreen) {
@@ -307,15 +301,19 @@ export default function Layout(
         const layout = this;
         const {options} = layout;
 
+        if (options.idCounter === 0) {
+            options.idCounter = nextId(options);
+        }
+
         layout.done = false;
         layout.allEnded = false;
         layout.allExpired = false;
-        layout.containerName = "L" + layout.id + "-" + nextId(options);
+        layout.containerName = "L" + layout.id + "-" + options.idCounter;
         layout.regions = [];
         layout.actions = [];
 
         /* Create a hidden div to show the layout in */
-        let $layout = document.getElementById(layout.containerName);
+        let $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
 
         if ($layout === null) {
             $layout = document.createElement('div');
@@ -323,9 +321,10 @@ export default function Layout(
         }
 
         let $screen = document.getElementById('screen_container');
-        ($screen) && $screen.appendChild($layout);
+        ($screen) && $screen.append($layout);
 
         if ($layout) {
+            $layout.dataset.sequence = `${layout.index}`;
             $layout.style.display = 'none';
             if (xlr.config.platform === 'CMS') {
                 $layout.style.outline = 'red solid thin';
@@ -357,6 +356,7 @@ export default function Layout(
             $layout.style.position = 'absolute';
             $layout.style.left = `${layout.offsetX}px`;
             $layout.style.top = `${layout.offsetY}px`;
+            $layout.style.overflow = 'hidden';
         }
 
         if ($layout && layout.zIndex !== null) {
@@ -498,10 +498,10 @@ export default function Layout(
     layoutObject.stopAllMedia = function() {
         console.debug('Stopping all media . . .');
         return new Promise(async (resolve) => {
-            for(var i = 0;i < layoutObject.regions.length;i++) {
-                var region = layoutObject.regions[i];
-                for(var j = 0;j < region.mediaObjects.length;j++) {
-                    var media = region.mediaObjects[j];
+            for(let i = 0;i < layoutObject.regions.length;i++) {
+                let region = layoutObject.regions[i];
+                for(let j = 0;j < region.mediaObjects.length;j++) {
+                    let media = region.mediaObjects[j];
                     await media.stop();
                 }
             }
@@ -512,6 +512,19 @@ export default function Layout(
 
     layoutObject.finishAllRegions = function() {
         return Promise.all(layoutObject.regions.map(region => region.finished()));
+    };
+
+    layoutObject.removeLayout = function() {
+        const layout = this;
+        /* Remove layout that does not exist */
+        const $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
+
+        layout.done = true;
+        console.debug({$layout});
+
+        if ($layout !== null) {
+            $layout.parentElement?.removeChild($layout);
+        }
     };
 
     layoutObject.prepareLayout();

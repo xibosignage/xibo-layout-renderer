@@ -35,12 +35,23 @@ export type IXlrEvents = {
     layoutChange: (layoutId: number) => void;
 };
 
+export interface IXlrPlayback {
+    currentLayout: ILayout | undefined;
+    nextLayout: ILayout | undefined;
+    currentLayoutIndex: number;
+    nextLayoutIndex: number;
+    isCurrentLayoutValid: boolean;
+    hasDefaultOnly: boolean;
+}
+
 export interface IXlr {
     inputLayouts: InputLayoutType[],
     config: OptionsType,
-    layouts: ILayout[],
+    layouts: {
+        [key: string]: ILayout;
+    };
     currentLayoutIndex: number;
-    currentLayoutId: number | null;
+    currentLayoutId: number;
     currentLayout: ILayout | undefined;
     nextLayout: ILayout | undefined;
     emitter: Emitter<IXlrEvents>;
@@ -48,19 +59,25 @@ export interface IXlr {
     init(): Promise<IXlr>;
     playSchedules(xlr: IXlr): void;
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
-    prepareLayouts(): Promise<IXlr>;
+    prepareLayouts(playback: IXlrPlayback): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
-    updateLoop(inputLayouts: InputLayoutType[]): void;
+    updateLoop(inputLayouts: InputLayoutType[]): Promise<void>;
     gotoPrevLayout(): void;
     gotoNextLayout(): void;
+    uniqueLayouts: {
+        [layoutId: string]: InputLayoutType;
+    };
+    getLayout(inputLayout: InputLayoutType): ILayout | undefined;
+    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): Promise<void>;
+    parseLayouts(loopUpdate?: boolean): IXlrPlayback;
 }
 
 export const initialXlr: IXlr = {
     inputLayouts: [],
     config: platform,
-    layouts: [],
+    layouts: {},
     currentLayoutIndex: 0,
-    currentLayoutId: null,
+    currentLayoutId: -1,
     currentLayout: undefined,
     nextLayout: undefined,
     emitter: <Emitter<IXlrEvents>>{},
@@ -79,10 +96,21 @@ export const initialXlr: IXlr = {
     },
     updateLayouts(inputLayouts: InputLayoutType[]) {
     },
-    updateLoop(inputLayouts: InputLayoutType[]) {
+    updateLoop(inputLayouts) {
+        return Promise.resolve();
     },
     gotoPrevLayout() {
     },
     gotoNextLayout() {
     },
+    uniqueLayouts: {},
+    getLayout(inputLayout: InputLayoutType): ILayout | undefined {
+        return;
+    },
+    updateScheduleLayouts(scheduleLayouts) {
+        return Promise.resolve();
+    },
+    parseLayouts(): IXlrPlayback {
+        return <IXlrPlayback>{};
+    }
 };

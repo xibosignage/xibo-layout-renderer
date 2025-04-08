@@ -65,7 +65,7 @@ export default class ActionController {
         this.actions = actions;
         this.options = options;
         this.$actionListContainer = null;
-        this.$container = document.getElementById(this.parent.containerName);
+        this.$container = <HTMLDivElement | null>(document.querySelector(`#${this.parent.containerName}[data-sequence="${this.parent.index}"]`));
         this.$actionControllerTitle = null;
         this.$actionsContainer = null;
 
@@ -90,7 +90,7 @@ export default class ActionController {
             self.translations = _previewTranslations;
         }
     
-        const $container = document.getElementById(this.parent.containerName);
+        const $container = <HTMLDivElement | null>(document.querySelector(`#${this.parent.containerName}[data-sequence="${this.parent.index}"]`));
 
         this.$actionController.innerHTML = '';
 
@@ -312,7 +312,7 @@ export default class ActionController {
             let $sourceObj;
 
             if (dataset.source === 'layout') {
-                $sourceObj = document.getElementById(self.parent.containerName);
+                $sourceObj = <HTMLDivElement | null>(document.querySelector(`#${self.parent.containerName}[data-sequence="${self.parent.index}"]`));
             } else {
                 const regionObjects = Array.from(self.parent.regions);
 
