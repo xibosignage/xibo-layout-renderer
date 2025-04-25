@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2025 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://www.xibosignage.com
  *
@@ -18,9 +18,9 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
+import {Emitter, Unsubscribe} from 'nanoevents';
 import {ILayout, InputLayoutType, OptionsType} from '../Layout';
 import {platform} from '../../Modules/Platform';
-import { Emitter } from 'nanoevents';
 
 export type PrepareLayoutsType = {
     moveNext?: boolean;
@@ -33,6 +33,12 @@ export enum ELayoutType {
 
 export type IXlrEvents = {
     layoutChange: (layoutId: number) => void;
+    layoutStart: (layoutId: number, layoutIndex?: number) => void;
+    layoutEnd: (layoutId: number, layoutIndex?: number) => void;
+    layoutError: (layoutId: number) => void;
+    widgetStart: (widgetId: number) => void;
+    widgetEnd: (widgetId: number) => void;
+    widgetError: (widgetId: number) => void;
 };
 
 export interface IXlrPlayback {
@@ -70,6 +76,8 @@ export interface IXlr {
     getLayout(inputLayout: InputLayoutType): ILayout | undefined;
     updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): Promise<void>;
     parseLayouts(loopUpdate?: boolean): IXlrPlayback;
+    getLayoutById(layoutId: number, layoutIndex?: number): ILayout | undefined;
+    on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe;
 }
 
 export const initialXlr: IXlr = {
@@ -112,5 +120,11 @@ export const initialXlr: IXlr = {
     },
     parseLayouts(): IXlrPlayback {
         return <IXlrPlayback>{};
+    },
+    getLayoutById(layoutId: number): ILayout | undefined {
+        return <ILayout>{};
+    },
+    on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe {
+        return <Unsubscribe>{};
     }
 };

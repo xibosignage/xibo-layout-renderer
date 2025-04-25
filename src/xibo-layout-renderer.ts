@@ -20,17 +20,14 @@
  */
 import { createNanoEvents } from 'nanoevents';
 
-import Layout, { getLayout, getXlf, initRenderingDOM } from './Modules/Layout';
+import Layout, {getXlf, initRenderingDOM} from './Modules/Layout';
 import { platform } from './Modules/Platform';
 import {
     ILayout, initialLayout, InputLayoutType, OptionsType,
 } from './Types/Layout';
-import { ELayoutType, initialXlr, IXlr, IXlrEvents } from './Types/XLR';
+import { ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback } from './Types/XLR';
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
-import {hasDefaultOnly, isDefaultLayout, isLayoutValid} from "./Modules/Generators/Generators";
-import {IXlrPlayback} from "./Types/XLR/XLR.types";
-import SpatialNavKeyCodes from "video.js/dist/types/utils/spatial-navigation-key-codes";
-import play = SpatialNavKeyCodes.codes.play;
+import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -49,7 +46,11 @@ export default function XiboLayoutRenderer(
 
     xlrObject.emitter = createNanoEvents<IXlrEvents>();
 
-    xlrObject.emitter.on('layoutChange', async (layoutId: number) => {
+    xlrObject.on = function<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]) {
+        return xlrObject.emitter.on(event, callback);
+    };
+
+    xlrObject.on('layoutChange', async (layoutId: number) => {
         let targetLayout: { layout: ILayout; pos: ELayoutType } | undefined;
 
         if (layoutId === xlrObject.nextLayout?.layoutId) {
@@ -63,6 +64,7 @@ export default function XiboLayoutRenderer(
             xlrObject.nextLayout = await xlrObject.prepareLayoutXlf(xlrObject.nextLayout);
         }
     });
+
     xlrObject.bootstrap = function() {
         // Place to set configurations and initialize required props
         const self = this;
@@ -83,6 +85,7 @@ export default function XiboLayoutRenderer(
 
         splashScreen.show();
     };
+
     xlrObject.init = function() {
         return new Promise<IXlr>((resolve) => {
             const self = this;
@@ -303,6 +306,24 @@ export default function XiboLayoutRenderer(
         _layout.index = inputLayout.index as number;
 
         return  _layout as ILayout;
+    };
+
+    xlrObject.getLayoutById = function(layoutId: number, layoutIndex) {
+        if (!layoutId || Object.keys(this.uniqueLayouts).length === 0) {
+            return undefined;
+        }
+
+        const _layout = {
+            ...initialLayout,
+            ...this.uniqueLayouts[layoutId],
+        };
+
+        // Set layout index if available
+        if (layoutIndex) {
+            _layout.index = layoutIndex;
+        }
+
+        return _layout as ILayout;
     };
 
     xlrObject.prepareLayouts = async function(playback: IXlrPlayback) {

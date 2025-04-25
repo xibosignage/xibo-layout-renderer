@@ -17,4 +17,6 @@ export {
     getIndexByLayoutId,
     isEmpty,
     composeBgUrlByPlatform,
+    hasDefaultOnly,
+    isLayoutValid,
 } from './Generators';
