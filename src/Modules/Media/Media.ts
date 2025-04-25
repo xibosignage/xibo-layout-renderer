@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2025 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://www.xibosignage.com
  *
@@ -115,6 +115,10 @@ export default function Media(
                 type: 'media',
             });
         }
+
+        // Emit media/widget start event
+        console.debug('Media::Emitter > Start - Calling widgetStart event');
+        xlr.emitter.emit('widgetStart', parseInt(media.id));
     });
 
     emitter.on('end', function(media: IMedia) {
@@ -133,6 +137,10 @@ export default function Media(
                 type: 'media',
             });
         }
+
+        // Emit media/widget end event
+        console.debug('Media::Emitter > End - Calling widgetEnd event');
+        xlr.emitter.emit('widgetEnd', parseInt(media.id));
 
         media.region.playNextMedia();
     });

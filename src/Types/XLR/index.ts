@@ -4,4 +4,5 @@ export {
     initialXlr,
     IXlrEvents,
     PrepareLayoutsType,
+    IXlrPlayback,
 } from './XLR.types';

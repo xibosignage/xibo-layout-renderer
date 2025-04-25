@@ -209,7 +209,19 @@ export default function Layout(
     const emitter = createNanoEvents<ILayoutEvents>();
     const statsBC = new BroadcastChannel('statsBC');
 
-    emitter.on('start', (layout: ILayout) => {
+    const layoutObject: ILayout = {
+        ...props.layout,
+        options: props.options,
+    };
+
+    layoutObject.xlr = xlr;
+
+    layoutObject.emitter = emitter;
+    layoutObject.on = function<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
+        return emitter.on(event, callback);
+    };
+
+    layoutObject.on('start', (layout: ILayout) => {
         layout.done = false;
         console.debug('Layout start emitted > Layout ID > ', layout.id);
 
@@ -222,9 +234,13 @@ export default function Layout(
                 type: 'layout',
             });
         }
+
+        // Emit layout start event
+        console.debug('Layout::Emitter > Start - Calling layoutStart event');
+        layoutObject.xlr.emitter.emit('layoutStart', layout.layoutId);
     });
 
-    emitter.on('end', async (layout: ILayout) => {
+    layoutObject.on('end', async (layout: ILayout) => {
         console.debug('Ending layout with ID of > ', layout.layoutId);
         /* Remove layout that has ended */
         const $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
@@ -235,6 +251,9 @@ export default function Layout(
         if ($layout !== null) {
             $layout.parentElement?.removeChild($layout);
         }
+        // Emit layout end event
+        console.debug('Layout::Emitter > End - Calling layoutEnd event');
+        layoutObject.xlr.emitter.emit('layoutEnd', layout.layoutId);
 
         // Check if stats are enabled for the layout
         if (layout.enableStat) {
@@ -254,18 +273,6 @@ export default function Layout(
             });
         }
     });
-
-    const layoutObject: ILayout = {
-        ...props.layout,
-        options: props.options,
-    };
-
-    layoutObject.xlr = xlr;
-
-    layoutObject.on = function<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
-        return emitter.on(event, callback);
-    };
-    layoutObject.emitter = emitter;
 
     layoutObject.run = function() {
         const layout = layoutObject;
