@@ -160,7 +160,7 @@ export default function XiboLayoutRenderer(
             if (playback.hasDefaultOnly) {
                 this.currentLayout = await this.prepareLayoutXlf(playback.currentLayout);
                 this.currentLayoutId = this.currentLayout.layoutId;
-                this.nextLayout = await this.prepareLayoutXlf(playback.nextLayout);
+                this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
             } else {
                 if (this.currentLayout) {
                     this.currentLayout.inLoop = false;
@@ -177,7 +177,7 @@ export default function XiboLayoutRenderer(
                 }
     
                 if (playback.nextLayout) {
-                    this.nextLayout = await this.prepareLayoutXlf(playback.nextLayout);
+                    this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
                 }
             }
 
@@ -201,7 +201,7 @@ export default function XiboLayoutRenderer(
                             this.nextLayout = await this.prepareLayoutXlf(playback.currentLayout);
                         }
                     } else {
-                        this.nextLayout = await this.prepareLayoutXlf(playback.nextLayout);
+                        this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
                     }
                 }
             }
@@ -250,7 +250,6 @@ export default function XiboLayoutRenderer(
 
                     // Since currentLayout is still in the schedule loop
                     // Then, we only try to validate nextLayout
-
                     if (_nextLayoutIndex >= this.inputLayouts.length) {
                         // nextLayout index is beyond the schedule loop
                         // then, we set nextLayout to 0
@@ -297,13 +296,19 @@ export default function XiboLayoutRenderer(
             return;
         }
 
-        const _layout = {
-            ...initialLayout,
-            ...this.uniqueLayouts[inputLayout.layoutId],
-        };
+        let _layout = {...initialLayout};
 
-        // Must set index/sequence from schedule loop
-        _layout.index = inputLayout.index as number;
+        if (inputLayout) {
+            if (inputLayout.layoutId === -1) {
+                _layout = {..._layout, ...inputLayout};
+                _layout.id = inputLayout.layoutId;
+            } else {
+                _layout = {..._layout, ...this.uniqueLayouts[inputLayout.layoutId]};
+
+                // Must set index/sequence from schedule loop
+                _layout.index = inputLayout.index as number;
+            }
+        }
 
         return  _layout as ILayout;
     };
@@ -338,11 +343,15 @@ export default function XiboLayoutRenderer(
 
         self.currentLayoutId = playback.currentLayout?.layoutId as ILayout['layoutId'];
 
-        const layoutsXlf = [
-            await this.prepareLayoutXlf(playback.currentLayout),
-            await this.prepareLayoutXlf(playback.nextLayout),
-        ];
-        const layouts = await Promise.all(layoutsXlf);
+        let currentLayoutXlf: ILayout;
+        let nextLayoutXlf: ILayout;
+
+        const layouts: ILayout[] = [];
+        currentLayoutXlf = await this.prepareLayoutXlf(playback.currentLayout);
+        layouts.push(currentLayoutXlf);
+
+        nextLayoutXlf = await self.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
+        layouts.push(nextLayoutXlf);
 
         return new Promise<IXlr>(async (resolve) => {
             self.layouts.current = layouts[0];
@@ -378,7 +387,12 @@ export default function XiboLayoutRenderer(
         let layoutXlf: string;
         let layoutXlfNode: Document | null;
         if (inputLayout && inputLayout.layoutNode === null) {
-            layoutXlf = await getXlf(newOptions);
+            // Check if we have an SspLayout
+            if (inputLayout.layoutId === -1) {
+                layoutXlf = inputLayout.getXlf();
+            } else {
+                layoutXlf = await getXlf(newOptions);
+            }
 
             const parser = new window.DOMParser();
             layoutXlfNode = parser.parseFromString(layoutXlf as string, 'text/xml');
@@ -394,9 +408,27 @@ export default function XiboLayoutRenderer(
             xlrLayoutObj.scheduleId = inputLayout?.scheduleId || undefined;
             xlrLayoutObj.options = newOptions;
             xlrLayoutObj.index = inputLayout.index;
+            xlrLayoutObj.xlfString = layoutXlf;
 
             resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
         });
+    };
+
+    xlrObject.prepareForSsp = async function (nextLayout: ILayout) {
+        const self = this;
+        let _nextLayout = nextLayout;
+
+        while (_nextLayout && _nextLayout.xlfString === '') {
+            // Remove skipped layout
+            _nextLayout.removeLayout();
+
+            // Get next valid layout
+            // We will skip next layout that has no valid xlf
+            const nextLayout = self.getLayout(self.inputLayouts[_nextLayout.index + 1]);
+            _nextLayout = await self.prepareLayoutXlf(nextLayout);
+        }
+
+        return _nextLayout;
     };
 
     xlrObject.gotoPrevLayout = async function() {

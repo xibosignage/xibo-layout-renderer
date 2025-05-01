@@ -106,6 +106,8 @@ export interface ILayout {
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
     removeLayout(): void;
+    xlfString: string;
+    getXlf(): string;
 }
 
 export const initialLayout: ILayout = {
@@ -168,6 +170,10 @@ export const initialLayout: ILayout = {
     },
     inLoop: true,
     removeLayout() {
+    },
+    xlfString: '',
+    getXlf(): string {
+        return '';
     }
 };
 

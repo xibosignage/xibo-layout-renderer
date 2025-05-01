@@ -274,6 +274,10 @@ export default function Layout(
         }
     });
 
+    layoutObject.getXlf = function () {
+        return layoutObject.xlfString;
+    };
+
     layoutObject.run = function() {
         const layout = layoutObject;
         const $layoutContainer = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));

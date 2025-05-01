@@ -78,6 +78,7 @@ export interface IXlr {
     parseLayouts(loopUpdate?: boolean): IXlrPlayback;
     getLayoutById(layoutId: number, layoutIndex?: number): ILayout | undefined;
     on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe;
+    prepareForSsp(nextLayout: ILayout): Promise<ILayout>;
 }
 
 export const initialXlr: IXlr = {
@@ -126,5 +127,8 @@ export const initialXlr: IXlr = {
     },
     on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe {
         return <Unsubscribe>{};
+    },
+    prepareForSsp(nextLayout: ILayout): Promise<ILayout> {
+        return Promise.resolve(<ILayout>{});
     }
 };
