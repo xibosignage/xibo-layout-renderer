@@ -31,6 +31,8 @@ export type InputLayoutType = {
     path?: string;
     index?: number;
     id?: number;
+    ad?: any;
+    getXlf?(): string;
 };
 
 export type OptionsType = {

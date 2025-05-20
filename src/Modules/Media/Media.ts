@@ -255,6 +255,11 @@ export default function Media(
 
             if (self.mediaType === 'image' || self.mediaType === 'video' || self.mediaType === 'audio') {
                 tmpUrl = composeMediaUrl(resourceUrlParams);
+
+                // this is an SSP Layout
+                if (self.region.layout.layoutId === -1) {
+                    tmpUrl = self.uri;
+                }
             }
         }
 

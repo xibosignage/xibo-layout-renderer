@@ -65,6 +65,19 @@ export default function XiboLayoutRenderer(
         }
     });
 
+    /**
+     * Asynchronous event emitter. Extended nanoevents event emitter.
+     *
+     * @param eventName
+     * @param args
+     */
+    xlrObject.emitSync = <E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>) => {
+        return new Promise(async resolve => {
+            xlrObject.emitter.emit(eventName, ...args);
+            resolve();
+        });
+    };
+
     xlrObject.bootstrap = function() {
         // Place to set configurations and initialize required props
         const self = this;
@@ -389,7 +402,11 @@ export default function XiboLayoutRenderer(
         if (inputLayout && inputLayout.layoutNode === null) {
             // Check if we have an SspLayout
             if (inputLayout.layoutId === -1) {
-                layoutXlf = inputLayout.getXlf();
+                await self.emitSync('adRequest', inputLayout.index);
+                const sspLayout = self.inputLayouts[inputLayout.index];
+
+                // @ts-ignore
+                layoutXlf = sspLayout?.getXlf() || '';
             } else {
                 layoutXlf = await getXlf(newOptions);
             }

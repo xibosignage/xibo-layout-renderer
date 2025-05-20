@@ -39,6 +39,7 @@ export type IXlrEvents = {
     widgetStart: (widgetId: number) => void;
     widgetEnd: (widgetId: number) => void;
     widgetError: (widgetId: number) => void;
+    adRequest: (sspLayoutIndex: number) => Promise<InputLayoutType>;
 };
 
 export interface IXlrPlayback {
@@ -79,6 +80,7 @@ export interface IXlr {
     getLayoutById(layoutId: number, layoutIndex?: number): ILayout | undefined;
     on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe;
     prepareForSsp(nextLayout: ILayout): Promise<ILayout>;
+    emitSync<E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>): Promise<void>;
 }
 
 export const initialXlr: IXlr = {
@@ -130,5 +132,8 @@ export const initialXlr: IXlr = {
     },
     prepareForSsp(nextLayout: ILayout): Promise<ILayout> {
         return Promise.resolve(<ILayout>{});
+    },
+    emitSync<E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>): Promise<void> {
+        return Promise.resolve();
     }
 };
