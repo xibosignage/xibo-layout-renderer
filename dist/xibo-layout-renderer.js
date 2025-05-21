@@ -932,7 +932,7 @@ var XiboLayoutRenderer = (function (exports) {
     if (Object.keys(layouts).length < 1 || !layoutId) {
       return false;
     }
-    return Object.keys(layouts).includes("".concat(layoutId));
+    return Object.keys(layouts).includes(layoutId === -1 ? 'sspLayout' : "".concat(layoutId));
   }
   function hasDefaultOnly(inputLayouts) {
     var _inputLayouts$0$respo;
@@ -74490,7 +74490,8 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
     config: platform,
     layouts: {},
     currentLayoutIndex: 0,
-    currentLayoutId: -1,
+    // NOTE: Using -2 to avoid conflict with usage of -1 with SSP Layout
+    currentLayoutId: -2,
     currentLayout: undefined,
     nextLayout: undefined,
     emitter: {},
@@ -74729,13 +74730,18 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
                 var uniqueLayout = _layout;
                 uniqueLayout.index = layoutIndex;
                 uniqueLayout.id = _layout.layoutId;
-                _this2.uniqueLayouts[_layout.layoutId] = uniqueLayout;
-                inputLayoutIds.push(_layout.layoutId);
+                var uniqueLayoutId = _layout.layoutId;
+                if (_layout.layoutId === -1) {
+                  uniqueLayoutId = 'sspLayout';
+                }
+                _this2.uniqueLayouts[uniqueLayoutId] = uniqueLayout;
+                inputLayoutIds.push(uniqueLayoutId);
               }));
             case 4:
               _context3.next = 6;
               return Promise.all(Object.keys(this.uniqueLayouts).map(function (layoutId) {
-                if (!inputLayoutIds.includes(parseInt(layoutId))) {
+                var _uniqueLayoutId = isNaN(parseInt(layoutId)) ? layoutId : parseInt(layoutId);
+                if (!inputLayoutIds.includes(_uniqueLayoutId)) {
                   delete _this2.uniqueLayouts[layoutId];
                 }
               }));
