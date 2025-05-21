@@ -137,20 +137,28 @@ export default function XiboLayoutRenderer(
 
     xlrObject.updateScheduleLayouts = async function(scheduleLayouts: InputLayoutType[]) {
         console.debug('XLR::updateScheduleLayouts > Updating schedule layouts . . .');
-        const inputLayoutIds: number[] = [];
+        const inputLayoutIds: (number | string)[] = [];
 
         await Promise.all(scheduleLayouts.map((_layout, layoutIndex) => {
             const uniqueLayout = _layout;
             uniqueLayout.index = layoutIndex;
             uniqueLayout.id = _layout.layoutId;
 
-            this.uniqueLayouts[_layout.layoutId] = uniqueLayout;
-            inputLayoutIds.push(_layout.layoutId);
+            let uniqueLayoutId: number | string = _layout.layoutId;
+
+            if (_layout.layoutId === -1) {
+                uniqueLayoutId = 'sspLayout';
+            }
+
+            this.uniqueLayouts[uniqueLayoutId] = uniqueLayout;
+            inputLayoutIds.push(uniqueLayoutId);
         }));
 
         // Cross-check if we need to remove non-existing layouts based on inputLayouts
         await Promise.all(Object.keys(this.uniqueLayouts).map((layoutId) => {
-            if (!inputLayoutIds.includes(parseInt(layoutId))) {
+            const _uniqueLayoutId = isNaN(parseInt(layoutId)) ? layoutId : parseInt(layoutId);
+
+            if (!inputLayoutIds.includes(_uniqueLayoutId)) {
                 delete this.uniqueLayouts[layoutId];
             }
         }))

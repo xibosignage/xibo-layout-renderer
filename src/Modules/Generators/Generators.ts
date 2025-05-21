@@ -280,7 +280,8 @@ export function isLayoutValid(layouts: { [p: string]: InputLayoutType }, layoutI
         return false;
     }
 
-    return Object.keys(layouts).includes(`${layoutId}`);
+    return Object.keys(layouts)
+        .includes(layoutId === -1 ? 'sspLayout' : `${layoutId}`);
 }
 
 export function hasDefaultOnly(inputLayouts: InputLayoutType[]) {

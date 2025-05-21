@@ -88,7 +88,8 @@ export const initialXlr: IXlr = {
     config: platform,
     layouts: {},
     currentLayoutIndex: 0,
-    currentLayoutId: -1,
+    // NOTE: Using -2 to avoid conflict with usage of -1 with SSP Layout
+    currentLayoutId: -2,
     currentLayout: undefined,
     nextLayout: undefined,
     emitter: <Emitter<IXlrEvents>>{},
