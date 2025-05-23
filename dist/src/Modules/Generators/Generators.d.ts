@@ -51,4 +51,5 @@ export declare function isLayoutValid(layouts: {
 }, layoutId: number | undefined): boolean;
 export declare function hasDefaultOnly(inputLayouts: InputLayoutType[]): boolean;
 export declare function isDefaultLayout(inputLayout: InputLayoutType): boolean;
+export declare function hasSspLayout(inputLayouts: InputLayoutType[], defaultValue?: boolean): boolean;
 export {};

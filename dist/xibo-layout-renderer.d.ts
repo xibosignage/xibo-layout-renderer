@@ -16,7 +16,7 @@ type IXlrEvents = {
     widgetStart: (widgetId: number) => void;
     widgetEnd: (widgetId: number) => void;
     widgetError: (widgetId: number) => void;
-    adRequest: (sspLayoutIndex: number) => Promise<InputLayoutType>;
+    adRequest: (sspLayoutIndex: number) => void;
 };
 interface IXlrPlayback {
     currentLayout: ILayout | undefined;
@@ -56,6 +56,8 @@ interface IXlr {
     on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe;
     prepareForSsp(nextLayout: ILayout): Promise<ILayout>;
     emitSync<E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>): Promise<void>;
+    updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
+    isSspEnabled: boolean;
 }
 declare const initialXlr: IXlr;
 
