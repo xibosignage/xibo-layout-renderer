@@ -28,6 +28,7 @@ import {
 import { ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback } from './Types/XLR';
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
 import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
+import {hasSspLayout} from "./Modules/Generators/Generators";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -144,21 +145,13 @@ export default function XiboLayoutRenderer(
             uniqueLayout.index = layoutIndex;
             uniqueLayout.id = _layout.layoutId;
 
-            let uniqueLayoutId: number | string = _layout.layoutId;
-
-            if (_layout.layoutId === -1) {
-                uniqueLayoutId = 'sspLayout';
-            }
-
-            this.uniqueLayouts[uniqueLayoutId] = uniqueLayout;
-            inputLayoutIds.push(uniqueLayoutId);
+            this.uniqueLayouts[_layout.layoutId] = uniqueLayout;
+            inputLayoutIds.push(_layout.layoutId);
         }));
 
         // Cross-check if we need to remove non-existing layouts based on inputLayouts
         await Promise.all(Object.keys(this.uniqueLayouts).map((layoutId) => {
-            const _uniqueLayoutId = isNaN(parseInt(layoutId)) ? layoutId : parseInt(layoutId);
-
-            if (!inputLayoutIds.includes(_uniqueLayoutId)) {
+            if (!inputLayoutIds.includes(parseInt(layoutId))) {
                 delete this.uniqueLayouts[layoutId];
             }
         }))
@@ -169,7 +162,11 @@ export default function XiboLayoutRenderer(
         this.inputLayouts = inputLayouts;
         const playback = this.parseLayouts(true);
 
-        const isCurrentLayoutValid = isLayoutValid(this.uniqueLayouts, this.currentLayoutId);
+        let isCurrentLayoutValid = isLayoutValid(this.uniqueLayouts, this.currentLayoutId);
+
+        if (this.isSspEnabled && this.currentLayoutId === -1) {
+            isCurrentLayoutValid = true;
+        }
 
         console.debug('XLR::updateLoop > inputLayouts', this.inputLayouts);
         console.debug('XLR::updateLoop > isCurrentLayoutValid', isCurrentLayoutValid);
@@ -194,6 +191,7 @@ export default function XiboLayoutRenderer(
     
                 if (playback.currentLayout) {
                     this.currentLayout = await this.prepareLayoutXlf(playback.currentLayout);
+                    this.currentLayoutId = this.currentLayout.layoutId;
                     this.currentLayoutIndex = playback.currentLayoutIndex;
                 }
     
@@ -238,7 +236,14 @@ export default function XiboLayoutRenderer(
         const hasLayout = this.inputLayouts.length > 0;
         let _currentLayoutIndex = this.currentLayoutIndex;
         let _nextLayoutIndex = _currentLayoutIndex + 1;
-        const isCurrentLayoutValid = isLayoutValid(this.uniqueLayouts, this.currentLayout?.layoutId);
+        let isCurrentLayoutValid = isLayoutValid(this.uniqueLayouts, this.currentLayout?.layoutId);
+
+        // Check for SSP layout
+        this.isSspEnabled = hasSspLayout(this.inputLayouts);
+
+        if (this.isSspEnabled && this.currentLayout?.layoutId === -1) {
+            isCurrentLayoutValid = true;
+        }
 
         _currentLayout = this.currentLayout;
 
@@ -380,6 +385,7 @@ export default function XiboLayoutRenderer(
 
             self.currentLayoutIndex = playback.currentLayoutIndex;
             self.currentLayout = self.layouts.current;
+            self.currentLayoutId = self.currentLayout.layoutId;
             self.nextLayout = self.layouts.next;
 
             resolve(self);
@@ -494,6 +500,16 @@ export default function XiboLayoutRenderer(
         });
 
         await xlrObject.currentLayout?.finishAllRegions();
+    };
+
+    xlrObject.updateInputLayout = function(layoutIndex, layout) {
+        const xlrInputLayout = this.inputLayouts[layoutIndex];
+
+        if (layout !== null) {
+            layout.index = xlrInputLayout.index;
+        }
+
+        this.inputLayouts[layoutIndex] = layout || xlrInputLayout;
     };
 
     xlrObject.bootstrap();
