@@ -40,7 +40,7 @@ const commonInputOptions: InputOptions = {
         typescriptPlugin(),
         postCssPlugin({
             // all `*.css` files in src directory
-            extract: path.resolve('dist/styles.css'),
+            extract: path.resolve(__dirname, 'dist/styles.css'),
         }),
         imagePlugin(),
         importMetaAssets(),
