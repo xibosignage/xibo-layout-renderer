@@ -15,7 +15,8 @@
     "url": "git+https://github.com/xibosignage/xibo-layout-renderer.git"
   },
   "files": [
-    "dist/"
+    "dist/",
+    "rollup.config.ts"
   ],
   "author": "Xibo Signage Ltd",
   "license": "LGPL-3.0",
