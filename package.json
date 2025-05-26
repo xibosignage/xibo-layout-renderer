@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "build": "rimraf dist && rollup --config rollup.config.prod.ts --configPlugin @rollup/plugin-typescript",
-    "dev": "rimraf dist && rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
+    "dev": "rimraf dist && rollup -c --configPlugin @rollup/plugin-typescript"
   },
   "repository": {
     "type": "git",
@@ -16,6 +16,7 @@
   },
   "files": [
     "dist/",
+    "src/index.ts",
     "rollup.config.ts"
   ],
   "author": "Xibo Signage Ltd",

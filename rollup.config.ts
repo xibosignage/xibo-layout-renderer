@@ -1,5 +1,5 @@
 // rollup.config.ts
-import type { InputOptions, OutputOptions, RollupOptions } from 'rollup';
+import type {InputOptions, OutputOptions, RollupOptions} from 'rollup';
 
 import {importMetaAssets} from "@web/rollup-plugin-import-meta-assets";
 import { nodeResolve as nodeResolvePlugin } from '@rollup/plugin-node-resolve';
@@ -13,9 +13,13 @@ import imagePlugin from '@rollup/plugin-image';
 import dtsPlugin from 'rollup-plugin-dts';
 // @ts-ignore
 import path from 'path';
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const libName = 'xibo-layout-renderer';
-const outputPath = path.resolve(__dirname, './dist');
+const outputPath = path.join(__dirname, '/dist');
 const commonInputOptions: InputOptions = {
     input: 'src/index.ts',
     external: ['xibo-interactive-control', 'jquery'],
@@ -54,7 +58,7 @@ const iifeCommonOutputOptions: OutputOptions = {
     name: 'XiboLayoutRenderer',
 };
 
-const config: RollupOptions[] = [
+export default <RollupOptions[]>[
     {
         ...commonInputOptions,
         output: [
@@ -119,5 +123,3 @@ const config: RollupOptions[] = [
         ],
     }
 ];
-
-export default config;
