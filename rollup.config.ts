@@ -15,7 +15,7 @@ import dtsPlugin from 'rollup-plugin-dts';
 import path from 'path';
 
 const libName = 'xibo-layout-renderer';
-const outputPath = path.resolve(__dirname, 'dist/');
+const outputPath = 'dist/';
 const commonInputOptions: InputOptions = {
     input: 'src/index.ts',
     external: ['xibo-interactive-control', 'jquery'],
@@ -37,7 +37,7 @@ const commonInputOptions: InputOptions = {
             babelHelpers: 'bundled',
             presets: ['@babel/preset-env'],
         }),
-        typescriptPlugin(),
+        typescriptPlugin({allowImportingTsExtensions: true}),
         postCssPlugin({
             // all `*.css` files in src directory
             extract: path.resolve(__dirname, 'dist/styles.css'),
@@ -59,7 +59,7 @@ const config: RollupOptions[] = [
         ...commonInputOptions,
         output: [
             {
-                file: `${outputPath}${libName}.esm.js`,
+                file: path.resolve(`${outputPath}${libName}.esm.js`),
                 format: 'esm',
                 exports: 'named',
                 sourcemap: true,
@@ -74,7 +74,7 @@ const config: RollupOptions[] = [
         output: [
             {
                 ...iifeCommonOutputOptions,
-                file: `${outputPath}${libName}.js`,
+                file: path.resolve(`${outputPath}${libName}.js`),
                 format: 'iife',
                 exports: 'named',
                 globals: {
@@ -83,7 +83,7 @@ const config: RollupOptions[] = [
             },
             {
                 ...iifeCommonOutputOptions,
-                file: `${outputPath}${libName}.min.js`,
+                file: path.resolve(`${outputPath}${libName}.min.js`),
                 format: 'iife',
                 sourcemap: true,
                 exports: 'named',
@@ -101,7 +101,7 @@ const config: RollupOptions[] = [
         plugins: [commonInputOptions.plugins],
         output: [
             {
-                file: `${outputPath}${libName}.cjs.js`,
+                file: path.resolve(`${outputPath}${libName}.cjs.js`),
                 format: 'cjs',
                 sourcemap: true,
                 exports: 'named',
@@ -113,7 +113,7 @@ const config: RollupOptions[] = [
         plugins: [commonInputOptions.plugins, dtsPlugin()],
         output: [
             {
-                file: `${outputPath}${libName}.d.ts`,
+                file: path.resolve(`${outputPath}${libName}.d.ts`),
                 format: 'esm',
             }
         ],
