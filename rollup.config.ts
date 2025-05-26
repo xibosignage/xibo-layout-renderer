@@ -15,7 +15,7 @@ import dtsPlugin from 'rollup-plugin-dts';
 import path from 'path';
 
 const libName = 'xibo-layout-renderer';
-const outputPath = 'dist/';
+const outputPath = path.resolve(__dirname, 'dist/');
 const commonInputOptions: InputOptions = {
     input: 'src/index.ts',
     external: ['xibo-interactive-control', 'jquery'],
