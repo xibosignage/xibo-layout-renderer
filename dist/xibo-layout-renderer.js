@@ -74267,6 +74267,8 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
       layout.containerName = "L" + layout.id + "-" + options.idCounter;
       layout.regions = [];
       layout.actions = [];
+      layout.duration = props.layout.duration;
+      layout.ad = props.layout.ad;
       /* Create a hidden div to show the layout in */
       var $layout = document.querySelector("#".concat(layout.containerName, "[data-sequence=\"").concat(layout.index, "\"]"));
       if ($layout === null) {
@@ -75126,6 +75128,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
                 xlrLayoutObj.index = inputLayout.index;
                 xlrLayoutObj.xlfString = layoutXlf;
                 xlrLayoutObj.duration = inputLayout.duration;
+                xlrLayoutObj.ad = inputLayout.ad;
                 resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
               }));
             case 21:
