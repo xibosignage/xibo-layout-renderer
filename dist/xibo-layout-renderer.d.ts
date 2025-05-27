@@ -17,6 +17,8 @@ type IXlrEvents = {
     widgetEnd: (widgetId: number) => void;
     widgetError: (widgetId: number) => void;
     adRequest: (sspLayoutIndex: number) => void;
+    adError: (urls: string[], code: number) => void;
+    adImpressions: (urls: string[], duration: number, lat: number | null, lng: number | null) => void;
 };
 interface IXlrPlayback {
     currentLayout: ILayout | undefined;
@@ -248,6 +250,7 @@ interface ILayout {
     sh: number | null;
     xw: number | null;
     xh: number | null;
+    duration: number;
     zIndex: number | null;
     scaleFactor: number;
     sWidth: number;
@@ -289,6 +292,7 @@ interface ILayout {
     removeLayout(): void;
     xlfString: string;
     getXlf(): string;
+    ad: any;
 }
 declare const initialLayout: ILayout;
 type GetLayoutParamType = {

@@ -45,6 +45,7 @@ export interface ILayout {
     sh: number | null;
     xw: number | null;
     xh: number | null;
+    duration: number;
     zIndex: number | null;
     scaleFactor: number;
     sWidth: number;
@@ -86,6 +87,7 @@ export interface ILayout {
     removeLayout(): void;
     xlfString: string;
     getXlf(): string;
+    ad: any;
 }
 export declare const initialLayout: ILayout;
 export type GetLayoutParamType = {

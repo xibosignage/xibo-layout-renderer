@@ -612,6 +612,7 @@ var XiboLayoutRenderer = (function (exports) {
     sh: 0,
     xw: 0,
     xh: 0,
+    duration: 0,
     zIndex: 0,
     scaleFactor: 1,
     sWidth: 0,
@@ -662,7 +663,8 @@ var XiboLayoutRenderer = (function (exports) {
     xlfString: '',
     getXlf: function getXlf() {
       return '';
-    }
+    },
+    ad: null
   };
 
   function nextId(options) {
@@ -74176,7 +74178,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
     });
     layoutObject.on('end', /*#__PURE__*/function () {
       var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(layout) {
-        var $layout, _$layout$parentElemen, playback;
+        var $layout, layoutRemoved, _$layout$parentElemen, playback;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
             case 0:
@@ -74187,8 +74189,14 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
               console.debug({
                 $layout: $layout
               });
+              layoutRemoved = false;
               if ($layout !== null) {
                 (_$layout$parentElemen = $layout.parentElement) === null || _$layout$parentElemen === void 0 || _$layout$parentElemen.removeChild($layout);
+                layoutRemoved = true;
+              }
+              if (layoutRemoved && layout.ad && layout.ad.impressionUrls) {
+                // Check if layout is an SSP layout, then fire impressions
+                layoutObject.xlr.emitter.emit('adImpressions', layout.ad.impressionUrls, layout.duration, null, null);
               }
               // Emit layout end event
               console.debug('Layout::Emitter > End - Calling layoutEnd event');
@@ -74209,7 +74217,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
                   xlr.playSchedules(parent);
                 });
               }
-            case 9:
+            case 11:
             case "end":
               return _context.stop();
           }
@@ -75117,6 +75125,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
                 xlrLayoutObj.options = newOptions;
                 xlrLayoutObj.index = inputLayout.index;
                 xlrLayoutObj.xlfString = layoutXlf;
+                xlrLayoutObj.duration = inputLayout.duration;
                 resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
               }));
             case 21:

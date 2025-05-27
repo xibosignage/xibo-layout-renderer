@@ -16,6 +16,8 @@ export type IXlrEvents = {
     widgetEnd: (widgetId: number) => void;
     widgetError: (widgetId: number) => void;
     adRequest: (sspLayoutIndex: number) => void;
+    adError: (urls: string[], code: number) => void;
+    adImpressions: (urls: string[], duration: number, lat: number | null, lng: number | null) => void;
 };
 export interface IXlrPlayback {
     currentLayout: ILayout | undefined;
