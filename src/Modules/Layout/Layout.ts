@@ -332,6 +332,8 @@ export default function Layout(
         layout.containerName = "L" + layout.id + "-" + options.idCounter;
         layout.regions = [];
         layout.actions = [];
+        layout.duration = props.layout.duration;
+        layout.ad = props.layout.ad;
 
         /* Create a hidden div to show the layout in */
         let $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));

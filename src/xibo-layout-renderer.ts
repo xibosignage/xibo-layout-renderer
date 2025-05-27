@@ -441,6 +441,7 @@ export default function XiboLayoutRenderer(
             xlrLayoutObj.index = inputLayout.index;
             xlrLayoutObj.xlfString = layoutXlf;
             xlrLayoutObj.duration = inputLayout.duration;
+            xlrLayoutObj.ad = inputLayout.ad;
 
             resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
         });
