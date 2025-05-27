@@ -243,14 +243,24 @@ export default function Layout(
     layoutObject.on('end', async (layout: ILayout) => {
         console.debug('Ending layout with ID of > ', layout.layoutId);
         /* Remove layout that has ended */
-        const $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
+        const $layout = <HTMLDivElement | null>(
+            document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`)
+        );
 
         layout.done = true;
         console.debug({$layout});
 
+        let layoutRemoved = false;
         if ($layout !== null) {
             $layout.parentElement?.removeChild($layout);
+            layoutRemoved = true;
         }
+
+        if (layoutRemoved && layout.ad && layout.ad.impressionUrls) {
+            // Check if layout is an SSP layout, then fire impressions
+            layoutObject.xlr.emitter.emit('adImpressions', layout.ad.impressionUrls, layout.duration, null, null);
+        }
+
         // Emit layout end event
         console.debug('Layout::Emitter > End - Calling layoutEnd event');
         layoutObject.xlr.emitter.emit('layoutEnd', layout.layoutId);
