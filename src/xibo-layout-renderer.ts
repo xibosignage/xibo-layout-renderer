@@ -445,7 +445,7 @@ export default function XiboLayoutRenderer(
 
             if (sspInputLayout) {
                 xlrLayoutObj.duration = sspInputLayout.duration || 0;
-                xlrLayoutObj.ad = inputLayout.ad;
+                xlrLayoutObj.ad = sspInputLayout.ad;
             }
 
             resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
