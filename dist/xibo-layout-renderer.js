@@ -75131,7 +75131,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
                 xlrLayoutObj.duration = inputLayout.duration;
                 if (sspInputLayout) {
                   xlrLayoutObj.duration = sspInputLayout.duration || 0;
-                  xlrLayoutObj.ad = inputLayout.ad;
+                  xlrLayoutObj.ad = sspInputLayout.ad;
                 }
                 resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
               }));

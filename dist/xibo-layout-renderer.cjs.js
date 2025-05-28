@@ -75132,7 +75132,7 @@ function XiboLayoutRenderer(inputLayouts, options) {
               xlrLayoutObj.duration = inputLayout.duration;
               if (sspInputLayout) {
                 xlrLayoutObj.duration = sspInputLayout.duration || 0;
-                xlrLayoutObj.ad = inputLayout.ad;
+                xlrLayoutObj.ad = sspInputLayout.ad;
               }
               resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
             }));
