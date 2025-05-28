@@ -413,14 +413,15 @@ export default function XiboLayoutRenderer(
 
         let layoutXlf: string;
         let layoutXlfNode: Document | null;
+        let sspInputLayout: InputLayoutType;
         if (inputLayout && inputLayout.layoutNode === null) {
             // Check if we have an SspLayout
             if (inputLayout.layoutId === -1) {
                 await self.emitSync('adRequest', inputLayout.index);
-                const sspLayout = self.inputLayouts[inputLayout.index];
+                sspInputLayout = self.inputLayouts[inputLayout.index];
 
                 // @ts-ignore
-                layoutXlf = sspLayout?.getXlf() || '';
+                layoutXlf = sspInputLayout?.getXlf() || '';
             } else {
                 layoutXlf = await getXlf(newOptions);
             }
@@ -441,7 +442,11 @@ export default function XiboLayoutRenderer(
             xlrLayoutObj.index = inputLayout.index;
             xlrLayoutObj.xlfString = layoutXlf;
             xlrLayoutObj.duration = inputLayout.duration;
-            xlrLayoutObj.ad = inputLayout.ad;
+
+            if (sspInputLayout) {
+                xlrLayoutObj.duration = sspInputLayout.duration || 0;
+                xlrLayoutObj.ad = inputLayout.ad;
+            }
 
             resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
         });
@@ -457,7 +462,9 @@ export default function XiboLayoutRenderer(
 
             // Get next valid layout
             // We will skip next layout that has no valid xlf
-            const nextLayout = self.getLayout(self.inputLayouts[_nextLayout.index + 1]);
+            const inputLayout = self.inputLayouts[_nextLayout.index + 1];
+            const nextLayout = self.getLayout(inputLayout);
+
             _nextLayout = await self.prepareLayoutXlf(nextLayout);
         }
 
