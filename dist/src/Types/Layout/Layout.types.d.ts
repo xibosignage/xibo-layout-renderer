@@ -11,6 +11,7 @@ export type InputLayoutType = {
     id?: number;
     ad?: any;
     getXlf?(): string;
+    duration?: number;
 };
 export type OptionsType = {
     xlfUrl: string;

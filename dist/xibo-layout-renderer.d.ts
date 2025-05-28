@@ -216,6 +216,7 @@ type InputLayoutType = {
     id?: number;
     ad?: any;
     getXlf?(): string;
+    duration?: number;
 };
 type OptionsType = {
     xlfUrl: string;

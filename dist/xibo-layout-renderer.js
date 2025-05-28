@@ -75079,7 +75079,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
     }();
     xlrObject.prepareLayoutXlf = /*#__PURE__*/function () {
       var _ref7 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7(inputLayout) {
-        var self, newOptions, layoutXlf, layoutXlfNode, sspLayout, parser;
+        var self, newOptions, layoutXlf, layoutXlfNode, sspInputLayout, _sspInputLayout, parser;
         return _regeneratorRuntime().wrap(function _callee7$(_context7) {
           while (1) switch (_context7.prev = _context7.next) {
             case 0:
@@ -75102,8 +75102,9 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
               _context7.next = 8;
               return self.emitSync('adRequest', inputLayout.index);
             case 8:
-              sspLayout = self.inputLayouts[inputLayout.index]; // @ts-ignore
-              layoutXlf = (sspLayout === null || sspLayout === void 0 ? void 0 : sspLayout.getXlf()) || '';
+              sspInputLayout = self.inputLayouts[inputLayout.index];
+              // @ts-ignore
+              layoutXlf = ((_sspInputLayout = sspInputLayout) === null || _sspInputLayout === void 0 ? void 0 : _sspInputLayout.getXlf()) || '';
               _context7.next = 15;
               break;
             case 12:
@@ -75128,7 +75129,10 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
                 xlrLayoutObj.index = inputLayout.index;
                 xlrLayoutObj.xlfString = layoutXlf;
                 xlrLayoutObj.duration = inputLayout.duration;
-                xlrLayoutObj.ad = inputLayout.ad;
+                if (sspInputLayout) {
+                  xlrLayoutObj.duration = sspInputLayout.duration || 0;
+                  xlrLayoutObj.ad = inputLayout.ad;
+                }
                 resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
               }));
             case 21:
@@ -75143,7 +75147,7 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
     }();
     xlrObject.prepareForSsp = /*#__PURE__*/function () {
       var _ref8 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8(nextLayout) {
-        var self, _nextLayout, _nextLayout2;
+        var self, _nextLayout, inputLayout, _nextLayout2;
         return _regeneratorRuntime().wrap(function _callee8$(_context8) {
           while (1) switch (_context8.prev = _context8.next) {
             case 0:
@@ -75151,23 +75155,24 @@ ${segmentInfoString(segmentInfo)}`); // If there's an init segment associated wi
               _nextLayout = nextLayout;
             case 2:
               if (!(_nextLayout && _nextLayout.xlfString === '')) {
-                _context8.next = 10;
+                _context8.next = 11;
                 break;
               }
               // Remove skipped layout
               _nextLayout.removeLayout();
               // Get next valid layout
               // We will skip next layout that has no valid xlf
-              _nextLayout2 = self.getLayout(self.inputLayouts[_nextLayout.index + 1]);
-              _context8.next = 7;
+              inputLayout = self.inputLayouts[_nextLayout.index + 1];
+              _nextLayout2 = self.getLayout(inputLayout);
+              _context8.next = 8;
               return self.prepareLayoutXlf(_nextLayout2);
-            case 7:
+            case 8:
               _nextLayout = _context8.sent;
               _context8.next = 2;
               break;
-            case 10:
-              return _context8.abrupt("return", _nextLayout);
             case 11:
+              return _context8.abrupt("return", _nextLayout);
+            case 12:
             case "end":
               return _context8.stop();
           }
