@@ -74171,11 +74171,11 @@ function Layout(data, options, xlr, layout) {
     }
     // Emit layout start event
     console.debug('Layout::Emitter > Start - Calling layoutStart event');
-    layoutObject.xlr.emitter.emit('layoutStart', layout.layoutId);
+    layoutObject.xlr.emitter.emit('layoutStart', layout);
   });
   layoutObject.on('end', /*#__PURE__*/function () {
     var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(layout) {
-      var $layout, layoutRemoved, _$layout$parentElemen, playback;
+      var $layout, _$layout$parentElemen, playback;
       return _regeneratorRuntime().wrap(function _callee$(_context) {
         while (1) switch (_context.prev = _context.next) {
           case 0:
@@ -74186,18 +74186,12 @@ function Layout(data, options, xlr, layout) {
             console.debug({
               $layout: $layout
             });
-            layoutRemoved = false;
             if ($layout !== null) {
               (_$layout$parentElemen = $layout.parentElement) === null || _$layout$parentElemen === void 0 || _$layout$parentElemen.removeChild($layout);
-              layoutRemoved = true;
-            }
-            if (layoutRemoved && layout.ad && layout.ad.impressionUrls) {
-              // Check if layout is an SSP layout, then fire impressions
-              layoutObject.xlr.emitter.emit('adImpressions', layout.ad.impressionUrls, layout.duration, null, null);
             }
             // Emit layout end event
             console.debug('Layout::Emitter > End - Calling layoutEnd event');
-            layoutObject.xlr.emitter.emit('layoutEnd', layout.layoutId);
+            layoutObject.xlr.emitter.emit('layoutEnd', layout);
             // Check if stats are enabled for the layout
             if (layout.enableStat) {
               statsBC.postMessage({
@@ -74214,7 +74208,7 @@ function Layout(data, options, xlr, layout) {
                 xlr.playSchedules(parent);
               });
             }
-          case 11:
+          case 9:
           case "end":
             return _context.stop();
         }
