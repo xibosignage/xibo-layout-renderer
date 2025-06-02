@@ -237,7 +237,7 @@ export default function Layout(
 
         // Emit layout start event
         console.debug('Layout::Emitter > Start - Calling layoutStart event');
-        layoutObject.xlr.emitter.emit('layoutStart', layout.layoutId);
+        layoutObject.xlr.emitter.emit('layoutStart', layout);
     });
 
     layoutObject.on('end', async (layout: ILayout) => {
@@ -250,20 +250,13 @@ export default function Layout(
         layout.done = true;
         console.debug({$layout});
 
-        let layoutRemoved = false;
         if ($layout !== null) {
             $layout.parentElement?.removeChild($layout);
-            layoutRemoved = true;
-        }
-
-        if (layoutRemoved && layout.ad && layout.ad.impressionUrls) {
-            // Check if layout is an SSP layout, then fire impressions
-            layoutObject.xlr.emitter.emit('adImpressions', layout.ad.impressionUrls, layout.duration, null, null);
         }
 
         // Emit layout end event
         console.debug('Layout::Emitter > End - Calling layoutEnd event');
-        layoutObject.xlr.emitter.emit('layoutEnd', layout.layoutId);
+        layoutObject.xlr.emitter.emit('layoutEnd', layout);
 
         // Check if stats are enabled for the layout
         if (layout.enableStat) {

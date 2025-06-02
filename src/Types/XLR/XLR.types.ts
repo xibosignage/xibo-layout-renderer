@@ -33,15 +33,13 @@ export enum ELayoutType {
 
 export type IXlrEvents = {
     layoutChange: (layoutId: number) => void;
-    layoutStart: (layoutId: number, layoutIndex?: number) => void;
-    layoutEnd: (layoutId: number, layoutIndex?: number) => void;
-    layoutError: (layoutId: number) => void;
+    layoutStart: (layout: ILayout) => void;
+    layoutEnd: (layout: ILayout) => void;
+    layoutError: (layout: ILayout) => void;
     widgetStart: (widgetId: number) => void;
     widgetEnd: (widgetId: number) => void;
     widgetError: (widgetId: number) => void;
     adRequest: (sspLayoutIndex: number) => void;
-    adError: (urls: string[], code: number) => void;
-    adImpressions: (urls: string[], duration: number, lat: number|null, lng: number|null) => void;
 };
 
 export interface IXlrPlayback {
