@@ -4,9 +4,11 @@
   "description": "Xibo layout renderer is a shared library that performs rendering of given layout from sources (e.g. CMS Preview, Linux Player, etc.)",
   "main": "dist/xibo-layout-renderer.cjs.js",
   "module": "dist/xibo-layout-renderer.esm.js",
+  "types": "dist/xibo-layout-renderer.d.ts",
   "typings": "dist/xibo-layout-renderer.d.ts",
   "type": "module",
   "scripts": {
+    "prepare": "npm run build",
     "build": "rimraf dist && rollup --config rollup.config.prod.ts --configPlugin @rollup/plugin-typescript",
     "dev": "rimraf dist && rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
   },
@@ -15,7 +17,7 @@
     "url": "git+https://github.com/xibosignage/xibo-layout-renderer.git"
   },
   "files": [
-    "dist/"
+    "dist"
   ],
   "author": "Xibo Signage Ltd",
   "license": "LGPL-3.0",
