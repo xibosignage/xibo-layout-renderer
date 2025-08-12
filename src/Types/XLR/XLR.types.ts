@@ -33,12 +33,13 @@ export enum ELayoutType {
 
 export type IXlrEvents = {
     layoutChange: (layoutId: number) => void;
-    layoutStart: (layoutId: number, layoutIndex?: number) => void;
-    layoutEnd: (layoutId: number, layoutIndex?: number) => void;
-    layoutError: (layoutId: number) => void;
+    layoutStart: (layout: ILayout) => void;
+    layoutEnd: (layout: ILayout) => void;
+    layoutError: (layout: ILayout) => void;
     widgetStart: (widgetId: number) => void;
     widgetEnd: (widgetId: number) => void;
     widgetError: (widgetId: number) => void;
+    adRequest: (sspLayoutIndex: number) => void;
 };
 
 export interface IXlrPlayback {
@@ -78,6 +79,10 @@ export interface IXlr {
     parseLayouts(loopUpdate?: boolean): IXlrPlayback;
     getLayoutById(layoutId: number, layoutIndex?: number): ILayout | undefined;
     on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe;
+    prepareForSsp(nextLayout: ILayout): Promise<ILayout>;
+    emitSync<E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>): Promise<void>;
+    updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
+    isSspEnabled: boolean;
 }
 
 export const initialXlr: IXlr = {
@@ -85,7 +90,8 @@ export const initialXlr: IXlr = {
     config: platform,
     layouts: {},
     currentLayoutIndex: 0,
-    currentLayoutId: -1,
+    // NOTE: Using -2 to avoid conflict with usage of -1 with SSP Layout
+    currentLayoutId: -2,
     currentLayout: undefined,
     nextLayout: undefined,
     emitter: <Emitter<IXlrEvents>>{},
@@ -126,5 +132,14 @@ export const initialXlr: IXlr = {
     },
     on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe {
         return <Unsubscribe>{};
-    }
+    },
+    prepareForSsp(nextLayout: ILayout): Promise<ILayout> {
+        return Promise.resolve(<ILayout>{});
+    },
+    emitSync<E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>): Promise<void> {
+        return Promise.resolve();
+    },
+    updateInputLayout(layoutIndex: number, layout: InputLayoutType) {
+    },
+    isSspEnabled: false,
 };

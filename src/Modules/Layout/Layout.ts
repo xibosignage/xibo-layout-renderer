@@ -237,13 +237,15 @@ export default function Layout(
 
         // Emit layout start event
         console.debug('Layout::Emitter > Start - Calling layoutStart event');
-        layoutObject.xlr.emitter.emit('layoutStart', layout.layoutId);
+        layoutObject.xlr.emitter.emit('layoutStart', layout);
     });
 
     layoutObject.on('end', async (layout: ILayout) => {
         console.debug('Ending layout with ID of > ', layout.layoutId);
         /* Remove layout that has ended */
-        const $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
+        const $layout = <HTMLDivElement | null>(
+            document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`)
+        );
 
         layout.done = true;
         console.debug({$layout});
@@ -251,9 +253,10 @@ export default function Layout(
         if ($layout !== null) {
             $layout.parentElement?.removeChild($layout);
         }
+
         // Emit layout end event
         console.debug('Layout::Emitter > End - Calling layoutEnd event');
-        layoutObject.xlr.emitter.emit('layoutEnd', layout.layoutId);
+        layoutObject.xlr.emitter.emit('layoutEnd', layout);
 
         // Check if stats are enabled for the layout
         if (layout.enableStat) {
@@ -273,6 +276,10 @@ export default function Layout(
             });
         }
     });
+
+    layoutObject.getXlf = function () {
+        return layoutObject.xlfString;
+    };
 
     layoutObject.run = function() {
         const layout = layoutObject;
@@ -318,6 +325,8 @@ export default function Layout(
         layout.containerName = "L" + layout.id + "-" + options.idCounter;
         layout.regions = [];
         layout.actions = [];
+        layout.duration = props.layout.duration;
+        layout.ad = props.layout.ad;
 
         /* Create a hidden div to show the layout in */
         let $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));

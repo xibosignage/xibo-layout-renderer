@@ -280,7 +280,7 @@ export function isLayoutValid(layouts: { [p: string]: InputLayoutType }, layoutI
         return false;
     }
 
-    return Object.keys(layouts).includes(`${layoutId}`);
+    return Object.keys(layouts).includes(String(layoutId));
 }
 
 export function hasDefaultOnly(inputLayouts: InputLayoutType[]) {
@@ -297,4 +297,12 @@ export function isDefaultLayout(inputLayout: InputLayoutType) {
     }
 
     return inputLayout.response?.nodeName === 'default';
+}
+
+export function hasSspLayout(inputLayouts: InputLayoutType[], defaultValue = false) {
+    if (!inputLayouts || inputLayouts.length === 0) {
+        return defaultValue;
+    }
+
+    return inputLayouts.find(layout => layout.layoutId === -1) !== undefined;
 }

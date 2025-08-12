@@ -31,6 +31,9 @@ export type InputLayoutType = {
     path?: string;
     index?: number;
     id?: number;
+    ad?: any;
+    getXlf?(): string;
+    duration?: number;
 };
 
 export type OptionsType = {
@@ -67,6 +70,7 @@ export interface ILayout {
     sh: number | null;
     xw: number | null;
     xh: number | null;
+    duration: number;
     zIndex: number | null;
     scaleFactor: number;
     sWidth: number;
@@ -106,6 +110,9 @@ export interface ILayout {
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
     removeLayout(): void;
+    xlfString: string;
+    getXlf(): string;
+    ad: any;
 }
 
 export const initialLayout: ILayout = {
@@ -115,6 +122,7 @@ export const initialLayout: ILayout = {
     sh: 0,
     xw: 0,
     xh: 0,
+    duration: 0,
     zIndex: 0,
     scaleFactor: 1,
     sWidth: 0,
@@ -168,7 +176,12 @@ export const initialLayout: ILayout = {
     },
     inLoop: true,
     removeLayout() {
-    }
+    },
+    xlfString: '',
+    getXlf(): string {
+        return '';
+    },
+    ad: null,
 };
 
 export type GetLayoutParamType = {
