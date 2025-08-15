@@ -1,21 +1,21 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2025 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - https://www.xibosignage.com
+ * Xibo - Digital Signage - https://xibosignage.com
  *
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {createNanoEvents} from 'nanoevents';
@@ -289,10 +289,16 @@ export default function Layout(
         if ($layoutContainer) {
             $layoutContainer.style.display = 'block';
             // Also set the background color of the player window > body
-            document.body.style.setProperty('background-color', `${layout.bgColor}`);
+            // Only set the body color when layout.isOverlay === false
+            if (!layout.isOverlay) {
+                document.body.style.setProperty('background-color', `${layout.bgColor}`);
+            }
 
             // Emit start event
-            layout.emitter.emit('start', layout);
+            // Only start event emitter when layout.isOverlay === false
+            if (!layout.isOverlay) {
+                layout.emitter.emit('start', layout);
+            }
         }
 
         if ($splashScreen) {
@@ -327,6 +333,9 @@ export default function Layout(
         layout.actions = [];
         layout.duration = props.layout.duration;
         layout.ad = props.layout.ad;
+        layout.isOverlay = props.layout.isOverlay;
+
+        console.log('XLR::Layout/parseXlf isOverlay', layout.isOverlay);
 
         /* Create a hidden div to show the layout in */
         let $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
@@ -344,6 +353,11 @@ export default function Layout(
             $layout.style.display = 'none';
             if (xlr.config.platform === 'CMS') {
                 $layout.style.outline = 'red solid thin';
+            }
+
+            // Add is-overlay className
+            if (layout.isOverlay) {
+                $layout.classList.add('is-overlay');
             }
         }
 
@@ -376,7 +390,7 @@ export default function Layout(
         }
 
         if ($layout && layout.zIndex !== null) {
-            $layout.style.zIndex = `${layout.zIndex}`;
+            $layout.style.zIndex = layout.isOverlay ? '999' : `${layout.zIndex}`;
         }
 
         /* Set the layout background */
@@ -396,21 +410,27 @@ export default function Layout(
             );
 
             if ($layout) {
-                $layout.style.backgroundImage = `url("${bgImageUrl}")`;
-                $layout.style.backgroundRepeat = 'no-repeat';
-                $layout.style.backgroundSize = `${layout.sWidth}px ${layout.sHeight}px`;
-                $layout.style.backgroundPosition = '0px 0px';
+                if (!layout.isOverlay) {
+                    $layout.style.backgroundImage = `url("${bgImageUrl}")`;
+                    $layout.style.backgroundRepeat = 'no-repeat';
+                    $layout.style.backgroundSize = `${layout.sWidth}px ${layout.sHeight}px`;
+                    $layout.style.backgroundPosition = '0px 0px';
+                }
             }
         }
 
         // Set the background color
         if ($layout && layout.bgColor) {
-            $layout.style.backgroundColor = `${layout.bgColor}`;
+            $layout.style.backgroundColor = layout.isOverlay ? 'transparent' : `${layout.bgColor}`;
         }
 
         // Hide if layout is not the currentLayout
         if ($layout && xlr.currentLayoutId !== undefined && xlr.currentLayoutId !== layout.id) {
             $layout.style.display = 'none';
+        }
+
+        // For overlay layout
+        if (layout.isOverlay && $layout) {
         }
 
         // Create actions
@@ -542,6 +562,10 @@ export default function Layout(
             $layout.parentElement?.removeChild($layout);
         }
     };
+
+    layoutObject.isInterrupt = function() {
+        return this.shareOfVoice > 0;
+    }
 
     layoutObject.prepareLayout();
 
