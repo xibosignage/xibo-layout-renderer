@@ -83,7 +83,7 @@ export interface IXlr {
     emitSync<E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>): Promise<void>;
     updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
     isSspEnabled: boolean;
-    renderOverlayLayouts(): void;
+    renderOverlayLayouts(): Promise<void>;
 }
 
 export const initialXlr: IXlr = {
@@ -143,6 +143,7 @@ export const initialXlr: IXlr = {
     updateInputLayout(layoutIndex: number, layout: InputLayoutType) {
     },
     isSspEnabled: false,
-    renderOverlayLayouts() {
+    renderOverlayLayouts(): Promise<void> {
+        return Promise.resolve();
     }
 };

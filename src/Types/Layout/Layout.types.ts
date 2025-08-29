@@ -82,7 +82,7 @@ export interface ILayout {
     bgImage: string;
     bgId: string;
     containerName: string;
-    layoutNode: Document | null;
+    layoutNode?: Document;
     regionMaxZIndex: number;
     ready: boolean;
     regionObjects: IRegion[];
@@ -101,7 +101,7 @@ export interface ILayout {
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;
-    regionEnded(): void;
+    regionEnded(): Promise<void>;
     stopAllMedia(): Promise<void>;
     resetLayout(): Promise<void>;
     index: number;
@@ -137,7 +137,7 @@ export const initialLayout: ILayout = {
     bgImage: '',
     bgId: '',
     containerName: '',
-    layoutNode: null,
+    layoutNode: undefined,
     regionMaxZIndex: 0,
     ready: false,
     regionObjects: [],
@@ -149,6 +149,16 @@ export const initialLayout: ILayout = {
     done: false,
     allEnded: false,
     path: '',
+    emitter: <Emitter<ILayoutEvents>>{},
+    index: -1,
+    actionController: undefined,
+    enableStat: false,
+    xlr: <IXlr>{},
+    inLoop: true,
+    xlfString: '',
+    ad: null,
+    isOverlay: false,
+    shareOfVoice: 0,
     prepareLayout() {
     },
     parseXlf() {
@@ -162,7 +172,8 @@ export const initialLayout: ILayout = {
     },
     end() {
     },
-    regionEnded() {
+    regionEnded(): Promise<void> {
+        return Promise.resolve();
     },
     stopAllMedia() {
         return Promise.resolve();
@@ -170,24 +181,14 @@ export const initialLayout: ILayout = {
     resetLayout() {
         return Promise.resolve();
     },
-    emitter: <Emitter<ILayoutEvents>>{},
-    index: -1,
-    actionController: undefined,
-    enableStat: false,
-    xlr: <IXlr>{},
     finishAllRegions(): Promise<void[]> {
         return Promise.resolve([]);
     },
-    inLoop: true,
     removeLayout() {
     },
-    xlfString: '',
     getXlf(): string {
         return '';
     },
-    ad: null,
-    isOverlay: false,
-    shareOfVoice: 0,
     isInterrupt: () => false,
 };
 

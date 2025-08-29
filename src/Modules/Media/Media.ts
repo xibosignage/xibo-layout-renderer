@@ -1,21 +1,21 @@
 /*
  * Copyright (C) 2025 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - https://www.xibosignage.com
+ * Xibo - Digital Signage - https://xibosignage.com
  *
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { createNanoEvents } from 'nanoevents';
@@ -74,7 +74,28 @@ export default function Media(
             mediaTimeCount++;
             if (mediaTimeCount > media.duration) {
                 console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
-                media.emitter.emit('end', media);
+
+                console.debug('Media::Emitter > End', {
+                    currentLayout: xlr.currentLayout,
+                    media,
+                    region: media.region,
+                    layout: media.region.layout,
+                })
+
+                if (media.region.layout.isOverlay) {
+                    if (media.region.mediaObjects.length > 1) {
+                        media.emitter.emit('end', media);
+                    } else {
+                        // We only have one media object
+                        // Only proceed running playNextMedia() when
+                        // currentLayout has allEnded
+                        if (xlr.currentLayout && xlr.currentLayout.allEnded) {
+                            media.emitter.emit('end', media);
+                        }
+                    }
+                } else {
+                    media.emitter.emit('end', media);
+                }
 
                 if (media.mediaType === 'video') {
                     // Dispose the video media
@@ -139,7 +160,11 @@ export default function Media(
         }
 
         // Emit media/widget end event
-        console.debug('Media::Emitter > End - Calling widgetEnd event');
+        console.debug('Media::Emitter > End - Calling widgetEnd event', {
+            mediaId: media.id,
+            regionId: media.region.id,
+            layoutId: media.region.layout.id,
+        });
         xlr.emitter.emit('widgetEnd', parseInt(media.id));
 
         media.region.playNextMedia();

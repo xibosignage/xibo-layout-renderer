@@ -29,6 +29,7 @@ import { ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback } from './Types
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
 import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
 import {hasSspLayout} from "./Modules/Generators/Generators";
+import OverlayLayout from "./Modules/Layout/OverlayLayout";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -130,7 +131,9 @@ export default function XiboLayoutRenderer(
                 xlr.currentLayout.run();
 
                 // @TODO: Implement overlay layout here
-                self.renderOverlayLayouts();
+                (async () => {
+                    await self.renderOverlayLayouts();
+                })();
             }
         } else {
             // Show splash screen
@@ -141,7 +144,8 @@ export default function XiboLayoutRenderer(
         }
     };
 
-    xlrObject.renderOverlayLayouts = function() {
+    xlrObject.renderOverlayLayouts = async function() {
+        const self = this;
         // Parse this.uniqueLayouts if overlays are available
         const overlayLayouts = Object.keys(this.uniqueLayouts).reduce((_layouts: ILayout[], _layoutId) => {
             if (Boolean(this.uniqueLayouts[_layoutId])) {
@@ -159,16 +163,17 @@ export default function XiboLayoutRenderer(
 
         console.log('XLR::renderOverlayLayouts', {overlayLayouts});
         // Check if currentLayout is not an interrupt
-        if (!this.currentLayout?.isInterrupt()) {
-            overlayLayouts.forEach(async (_overlayLayout) => {
+        if (self.currentLayout && !self.currentLayout.isInterrupt()) {
+            await Promise.all(overlayLayouts.map(async (_overlayLayout) => {
                 const _overlay = await this.prepareLayoutXlf(_overlayLayout);
 
                 console.log('XLR::renderOverlayLayouts >> prepareLayoutXlf', _overlay);
+                console.log('XLR::renderOverlayLayouts >> currentLayout.isInterrupt()', self.currentLayout?.isInterrupt());
 
                 if (_overlay) {
                     _overlay.run();
                 }
-            });
+            }));
         }
     }
 
@@ -358,11 +363,11 @@ export default function XiboLayoutRenderer(
             return;
         }
 
-        let _layout = {...initialLayout};
+        let _layout: InputLayoutType = <InputLayoutType>{};
 
         if (inputLayout) {
             if (inputLayout.layoutId === -1) {
-                _layout = {..._layout, ...inputLayout};
+                _layout = inputLayout;
                 _layout.id = inputLayout.layoutId;
             } else {
                 _layout = {..._layout, ...this.uniqueLayouts[inputLayout.layoutId]};
@@ -372,7 +377,15 @@ export default function XiboLayoutRenderer(
             }
         }
 
-        return  _layout as ILayout;
+        let iLayout: ILayout = <ILayout>initialLayout;
+
+        console.log('XLR::getLayout >> pre-assign', iLayout);
+
+        iLayout = {...iLayout, ..._layout};
+
+        console.log('XLR::getLayout >> post-assign', iLayout);
+
+        return  iLayout;
     };
 
     xlrObject.getLayoutById = function(layoutId: number, layoutIndex) {
@@ -448,9 +461,10 @@ export default function XiboLayoutRenderer(
         }
 
         let layoutXlf: string;
-        let layoutXlfNode: Document | null;
+        let layoutXlfNode: Document | undefined;
         let sspInputLayout: InputLayoutType;
-        if (inputLayout && inputLayout.layoutNode === null) {
+        let overlayLayout: InputLayoutType;
+        if (inputLayout && inputLayout.layoutNode === undefined) {
             // Check if we have an SspLayout
             if (inputLayout.layoutId === -1) {
                 await self.emitSync('adRequest', inputLayout.index);
@@ -462,6 +476,10 @@ export default function XiboLayoutRenderer(
                 layoutXlf = await getXlf(newOptions);
             }
 
+            if (Boolean(inputLayout['isOverlay'])) {
+                overlayLayout = self.uniqueLayouts[inputLayout.layoutId];
+            }
+
             const parser = new window.DOMParser();
             layoutXlfNode = parser.parseFromString(layoutXlf as string, 'text/xml');
         } else {
@@ -469,7 +487,9 @@ export default function XiboLayoutRenderer(
         }
 
         return new Promise<ILayout>((resolve) => {
-            const xlrLayoutObj = initialLayout;
+            const xlrLayoutObj: ILayout = <ILayout>{...initialLayout};
+
+            console.log('XLR::prepareLayoutXlf >> Promise', {xlrLayoutObj, inputLayout});
 
             xlrLayoutObj.id = Number(inputLayout.layoutId);
             xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
@@ -478,14 +498,31 @@ export default function XiboLayoutRenderer(
             xlrLayoutObj.index = inputLayout.index;
             xlrLayoutObj.xlfString = layoutXlf;
             xlrLayoutObj.duration = inputLayout.duration;
-            xlrLayoutObj.isOverlay = inputLayout.isOverlay;
+            xlrLayoutObj.isOverlay = !!overlayLayout;
+            xlrLayoutObj.shareOfVoice = inputLayout.shareOfVoice;
+
+            console.log('XLR::prepareLayoutXlf >> Promise >> xlrLayoutObj', xlrLayoutObj);
 
             if (sspInputLayout) {
                 xlrLayoutObj.duration = sspInputLayout.duration || 0;
                 xlrLayoutObj.ad = sspInputLayout.ad;
             }
 
-            resolve(Layout(layoutXlfNode, newOptions, self, xlrLayoutObj));
+            if (overlayLayout) {
+                resolve(new OverlayLayout(
+                  xlrLayoutObj,
+                  newOptions,
+                  self,
+                  layoutXlfNode,
+                ));
+            } else {
+                resolve(new Layout(
+                  xlrLayoutObj,
+                  newOptions,
+                  self,
+                  layoutXlfNode,
+                ));
+            }
         });
     };
 
