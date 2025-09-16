@@ -259,7 +259,7 @@ export default class Layout implements ILayout {
 
         this.on('start', (layout: ILayout) => {
             this.done = false;
-            console.debug('Layout start emitted > Layout ID > ', layout.id);
+            console.debug('>>>> XLR.debug Layout start emitted > Layout ID > ', layout.id);
 
             // Check if stats are enabled for the layout
             if (this.enableStat) {
@@ -272,12 +272,12 @@ export default class Layout implements ILayout {
             }
 
             // Emit layout start event
-            console.debug('Layout::Emitter > Start - Calling layoutStart event');
+            console.debug('>>>> XLR.debug Layout::Emitter > Start - Calling layoutStart event');
             this.xlr.emitter.emit('layoutStart', layout);
         });
 
         this.on('end', async (layout: ILayout) => {
-            console.debug('Ending layout with ID of > ', layout.layoutId);
+            console.debug('>>>> XLR.debug Ending layout with ID of > ', layout.layoutId);
             /* Remove layout that has ended */
             const $layout = <HTMLDivElement | null>(
               document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`)
@@ -289,10 +289,6 @@ export default class Layout implements ILayout {
             if ($layout !== null) {
                 $layout.parentElement?.removeChild($layout);
             }
-
-            // Emit layout end event
-            console.debug('Layout::Emitter > End - Calling layoutEnd event');
-            this.xlr.emitter.emit('layoutEnd', layout);
 
             // Check if stats are enabled for the layout
             if (layout.enableStat) {
@@ -308,7 +304,7 @@ export default class Layout implements ILayout {
                 // Transition next layout to current layout and prepare next layout if exist
                 const playback = this.xlr.parseLayouts();
                 this.xlr.prepareLayouts(playback).then((parent) => {
-                    console.log('XLR::Layout.on("end")', {playback, parent, layout});
+                    console.log('>>>> XLR.debug XLR::Layout.on("end")', {playback, parent, layout});
                     this.xlr.playSchedules(parent);
                 });
             }
@@ -560,6 +556,10 @@ export default class Layout implements ILayout {
                 }
             }
 
+            // Emit layout end event
+            console.debug('>>>> XLR.debug Awaited XLR::emitSync > End - Calling layoutEnd event');
+            await this.xlr.emitSync('layoutEnd', this);
+
             this.emitter.emit('end', this);
         }
     }
@@ -610,5 +610,4 @@ export default class Layout implements ILayout {
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
         return this.emitter.on(event, callback);
     }
-
 }

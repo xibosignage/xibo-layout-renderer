@@ -84,6 +84,8 @@ export interface IXlr {
     updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
     isSspEnabled: boolean;
     renderOverlayLayouts(): Promise<void>;
+    isInterrupted: boolean;
+    isLayoutInDOM(containerName: string, layoutId: number): boolean;
 }
 
 export const initialXlr: IXlr = {
@@ -145,5 +147,9 @@ export const initialXlr: IXlr = {
     isSspEnabled: false,
     renderOverlayLayouts(): Promise<void> {
         return Promise.resolve();
+    },
+    isInterrupted: false,
+    isLayoutInDOM(containerName: string, layoutId: number): boolean {
+        return false;
     }
 };
