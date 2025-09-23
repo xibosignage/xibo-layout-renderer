@@ -26,15 +26,14 @@ import {
     initialLayout,
     OptionsType,
 } from '../../Types/Layout';
-import { IXlr } from '../../Types/XLR';
-import { nextId } from '../Generators';
-import { Region } from '../Region';
+import {IXlr} from '../../Types/XLR';
+import {composeBgUrlByPlatform, nextId} from '../Generators';
+import {Region} from '../Region';
 
 import './layout.css';
-import {composeBgUrlByPlatform} from '../Generators';
-import ActionController, { Action } from '../ActionController';
+import ActionController, {Action} from '../ActionController';
 import {platform} from "../Platform";
-import { IRegion } from '../../types';
+import {ConsumerPlatform, IRegion} from '../../types';
 
 const playAgainClickHandle = function (ev: { preventDefault: () => void; }) {
     ev.preventDefault();
@@ -98,17 +97,19 @@ export async function getXlf(layoutOptions: OptionsType) {
     let xlfUrl = apiHost + layoutOptions.xlfUrl;
     let fetchOptions: RequestInit = {};
 
-    if (layoutOptions.platform === 'CMS') {
+    if (layoutOptions.platform === ConsumerPlatform.CMS) {
         xlfUrl = apiHost + layoutOptions.xlfUrl;
         fetchOptions.mode = 'no-cors';
-    } else if (layoutOptions.platform === 'chromeOS') {
+    } else if (layoutOptions.platform === ConsumerPlatform.CHROMEOS) {
         xlfUrl = layoutOptions.xlfUrl;
         fetchOptions.mode = 'cors';
         fetchOptions.headers = {
             'Content-Type': 'text/xml',
         };
-    } else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
-        xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
+    } else {
+        if (layoutOptions.appHost !== null) {
+            xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
+        }
     }
 
     const res = await fetch(xlfUrl);
@@ -300,7 +301,7 @@ export default class Layout implements ILayout {
                 });
             }
 
-            if (this.xlr.config.platform !== 'CMS' && layout.inLoop) {
+            if (this.xlr.config.platform !== ConsumerPlatform.CMS && layout.inLoop) {
                 // Transition next layout to current layout and prepare next layout if exist
                 const playback = this.xlr.parseLayouts();
                 this.xlr.prepareLayouts(playback).then((parent) => {
@@ -353,7 +354,7 @@ export default class Layout implements ILayout {
         if ($layout) {
             $layout.dataset.sequence = `${this.index}`;
             $layout.style.display = 'none';
-            if (this.xlr.config.platform === 'CMS') {
+            if (this.xlr.config.platform === ConsumerPlatform.CMS) {
                 $layout.style.outline = 'red solid thin';
             }
 
@@ -539,7 +540,7 @@ export default class Layout implements ILayout {
             await this.stopAllMedia();
 
             console.debug('starting to end layout . . .');
-            if (this.xlr.config.platform === 'CMS') {
+            if (this.xlr.config.platform === ConsumerPlatform.CMS) {
                 const $end = document.getElementById('play_ended');
                 const $preview = document.getElementById('screen_container');
 

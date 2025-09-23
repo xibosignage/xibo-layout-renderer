@@ -18,29 +18,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { createNanoEvents } from 'nanoevents';
+import {createNanoEvents} from 'nanoevents';
 import videojs from 'video.js';
 
-import { OptionsType } from '../../Types/Layout';
-import { IRegion } from '../../Types/Region';
-import { IMedia, initialMedia } from '../../Types/Media';
+import {OptionsType} from '../../Types/Layout';
+import {IRegion} from '../../Types/Region';
+import {IMedia, initialMedia} from '../../Types/Media';
 import {
     capitalizeStr,
+    composeMediaUrl,
+    composeResourceUrl,
+    composeResourceUrlByPlatform,
     fetchJSON,
+    getDataBlob,
     getMediaId,
     nextId,
     preloadMediaBlob,
-    composeResourceUrl,
-    composeResourceUrlByPlatform,
-    composeMediaUrl,
-    getDataBlob,
 } from '../Generators';
-import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
-import VideoMedia, { composeVideoSource } from './VideoMedia';
+import {
+    compassPoints,
+    flyTransitionKeyframes,
+    transitionElement,
+    TransitionElementOptions
+} from '../Transitions';
+import VideoMedia, {composeVideoSource} from './VideoMedia';
 import AudioMedia from './AudioMedia';
 import {IXlr} from '../../Types/XLR';
 
 import 'video.js/dist/video-js.min.css';
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -273,9 +279,9 @@ export default function Media(
 
         let tmpUrl = '';
 
-        if (xlr.config.platform === 'CMS') {
+        if (xlr.config.platform === ConsumerPlatform.CMS) {
             tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
-        } else if (xlr.config.platform === 'chromeOS') {
+        } else if (xlr.config.platform === ConsumerPlatform.CHROMEOS) {
             tmpUrl = composeResourceUrl(xlr.config, resourceUrlParams);
 
             if (self.mediaType === 'image' || self.mediaType === 'video' || self.mediaType === 'audio') {
@@ -440,7 +446,7 @@ export default function Media(
         const showCurrentMedia = async () => {
             let $mediaId = getMediaId(self);
             let $media = document.getElementById($mediaId);
-            const isCMS = xlr.config.platform === 'CMS';
+            const isCMS = xlr.config.platform === ConsumerPlatform.CMS;
 
             if (!$media) {
                 $media = getNewMedia();
@@ -468,7 +474,7 @@ export default function Media(
                         preload: 'auto',
                         autoplay: false,
                         muted: true,
-                        errorDisplay: xlr.config.platform !== 'chromeOS',
+                        errorDisplay: xlr.config.platform !== ConsumerPlatform.CHROMEOS,
                         loop: self.loop,
                     });
                 } else if (self.mediaType === 'audio' && self.url !== null) {

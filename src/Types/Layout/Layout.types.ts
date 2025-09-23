@@ -24,6 +24,7 @@ import {platform} from '../../Modules/Platform';
 import {ILayoutEvents} from '../../Modules/Layout';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
+import {ConsumerPlatform} from "../Platform";
 
 export type InputLayoutType = {
     response: any;
@@ -47,7 +48,7 @@ export type OptionsType = {
     idCounter: number;
     inPreview: boolean;
     appHost?: string | null;
-    platform: 'CMS' | 'chromeOS';
+    platform: ConsumerPlatform;
     config?: {
         cmsUrl: string | null;
         schemaVersion: number;

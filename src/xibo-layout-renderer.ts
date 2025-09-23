@@ -18,18 +18,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { createNanoEvents } from 'nanoevents';
+import {createNanoEvents} from 'nanoevents';
 
 import Layout, {getXlf, initRenderingDOM} from './Modules/Layout';
-import { platform } from './Modules/Platform';
+import {platform} from './Modules/Platform';
 import {
-    ILayout, initialLayout, InputLayoutType, OptionsType,
+    ILayout,
+    initialLayout,
+    InputLayoutType,
+    OptionsType,
 } from './Types/Layout';
-import { ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback } from './Types/XLR';
-import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
+import {
+    ELayoutType,
+    initialXlr,
+    IXlr,
+    IXlrEvents,
+    IXlrPlayback
+} from './Types/XLR';
+import SplashScreen, {
+    ISplashScreen,
+    PreviewSplashElement
+} from './Modules/SplashScreen';
 import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
 import {hasSspLayout} from "./Modules/Generators/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
+import {ConsumerPlatform} from "./Types/Platform";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -480,12 +493,12 @@ export default function XiboLayoutRenderer(
             ...props.options,
         };
 
-        if (self.config.platform ==='CMS' &&
+        if (self.config.platform === ConsumerPlatform.CMS &&
             inputLayout && Boolean(inputLayout.layoutId)
         ) {
             newOptions.xlfUrl =
                 newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
-        } else if (self.config.platform === 'chromeOS' && inputLayout !== undefined) {
+        } else if (self.config.platform === ConsumerPlatform.CHROMEOS && inputLayout !== undefined) {
             newOptions.xlfUrl = inputLayout.path as string;
         }
 

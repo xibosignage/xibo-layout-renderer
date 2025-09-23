@@ -18,9 +18,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { IMedia } from '../../Types/Media';
+import {IMedia} from '../../Types/Media';
 import {InputLayoutType, OptionsType} from '../../Types/Layout';
-import {IXlr} from "../../Types/XLR";
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -145,7 +145,7 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
         .replace(":id", params.mediaId) +
         '?preview=1&layoutPreview=1';
 
-    if (options.platform === 'chromeOS') {
+    if (options.platform === ConsumerPlatform.CHROMEOS) {
         const resourceEndpoint = '/required-files/resource/';
 
         if (!params.isGlobalContent && params.isImageOrVideo) {
@@ -185,7 +185,7 @@ export function composeBgUrlByPlatform(
         '&height=' + params.layout.sHeight +
         '&dynamic&proportional=0';
 
-    if (platform === 'chromeOS') {
+    if (platform === ConsumerPlatform.CHROMEOS) {
         bgImageUrl = composeMediaUrl({uri: params.layout.bgImage});
     }
 

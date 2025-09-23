@@ -1,29 +1,33 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2025 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - https://www.xibosignage.com
+ * Xibo - Digital Signage - https://xibosignage.com
  *
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import videojs from 'video.js';
 import {format} from "date-fns";
 
-import { IMedia } from '../../Types/Media';
-import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType, getFileExt, setExpiry } from '../Generators';
-import { IXlr } from '../../types';
+import {IMedia} from '../../Types/Media';
+import {
+    capitalizeStr,
+    getFileExt,
+    setExpiry,
+    videoFileType
+} from '../Generators';
+import {ConsumerPlatform, IXlr} from '../../types';
 import PwaSW from '../../Lib/pwa-sw';
 
 import './media.css';
@@ -137,7 +141,7 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                             this.stop();
                         } else {
                             console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
-                            if (xlr.config.platform === 'chromeOS') {
+                            if (xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                                 await playerReportFault('Media autoplay error');
                             }
                         }
@@ -145,7 +149,7 @@ export default function VideoMedia(media: IMedia, xlr: IXlr) {
                 });
                 vjsPlayer.on('error', async (err: any) => {
                     console.debug(`VideoMedia: Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
-                    if (xlr.config.platform === 'chromeOS') {
+                    if (xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                         await playerReportFault('Video file source not supported');
                     } else {
                         // End media after 5 seconds
