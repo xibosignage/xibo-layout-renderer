@@ -21,9 +21,14 @@
 import {Emitter, Unsubscribe} from 'nanoevents';
 import {IRegion} from '../Region';
 import {platform} from '../../Modules/Platform';
-import {ILayoutEvents} from '../../Modules/Layout';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
+
+export interface ILayoutEvents {
+    start: (layout: ILayout) => void;
+    end: (layout: ILayout) => void;
+    cancelled: (layout: ILayout) => void;
+}
 
 export type InputLayoutType = {
     response: any;
@@ -62,6 +67,13 @@ export type OptionsType = {
         logo: string;
     };
 };
+
+export enum ELayoutState {
+    IDLE,
+    RUNNING,
+    PLAYED,
+    CANCELLED,
+}
 
 export interface ILayout {
     id: number | null;
@@ -117,6 +129,7 @@ export interface ILayout {
     isOverlay: boolean;
     shareOfVoice: number;
     isInterrupt(): boolean;
+    state: ELayoutState;
 }
 
 export const initialLayout: ILayout = {
@@ -190,6 +203,7 @@ export const initialLayout: ILayout = {
         return '';
     },
     isInterrupt: () => false,
+    state: ELayoutState.IDLE,
 };
 
 export type GetLayoutParamType = {
