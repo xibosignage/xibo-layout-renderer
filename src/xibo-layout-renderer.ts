@@ -214,10 +214,14 @@ export default function XiboLayoutRenderer(
         this.inputLayouts = inputLayouts;
         const playback = this.parseLayouts(true);
 
-        let isCurrentLayoutValid = isLayoutValid(this.inputLayouts, this.currentLayoutId);
+        let isCurrentLayoutValid = isLayoutValid(this.inputLayouts, this.currentLayout?.layoutId);
 
         if (this.isSspEnabled && this.currentLayoutId === -1) {
             isCurrentLayoutValid = true;
+        }
+
+        if (!isCurrentLayoutValid && this.currentLayout) {
+            this.currentLayout.emitter.emit('cancelled', this.currentLayout);
         }
 
         console.debug('>>>> XLR.debug XLR::updateLoop > uniqueLayouts', this.uniqueLayouts);
