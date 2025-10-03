@@ -338,16 +338,16 @@ export default function XiboLayoutRenderer(
                                 _nextLayoutIndex = 0;
                             }
                         } else {
-                            _currentLayoutIndex = this.nextLayout.index >= this.inputLayouts.length - 1 ? 0 : this.nextLayout.index + 1;
+                            _currentLayoutIndex = this.nextLayout.index > this.inputLayouts.length - 1 ? 0 : this.nextLayout.index;
                             _currentLayout = this.getLayout(this.inputLayouts[_currentLayoutIndex]);
 
-                            _nextLayoutIndex = _currentLayoutIndex + 1 >= this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
+                            _nextLayoutIndex = _currentLayoutIndex + 1 > this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
                             _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                         }
                     } else {
                         _currentLayout = this.nextLayout;
                         _currentLayoutIndex = _currentLayout.index;
-                        _nextLayoutIndex = _currentLayoutIndex + 1 >= this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
+                        _nextLayoutIndex = _currentLayoutIndex + 1 > this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
                     }
 
                     // Since currentLayout is still in the schedule loop
