@@ -224,12 +224,18 @@ export default function XiboLayoutRenderer(
             this.currentLayout.emitter.emit('cancelled', this.currentLayout);
         }
 
-        console.debug('>>>> XLR.debug XLR::updateLoop > uniqueLayouts', this.uniqueLayouts);
-        console.debug('>>>> XLR.debug XLR::updateLoop > inputLayouts', this.inputLayouts);
-        console.debug('>>>> XLR.debug XLR::updateLoop > isCurrentLayoutValid', isCurrentLayoutValid);
-        console.debug('>>>> XLR.debug XLR::updateLoop > currentLayout', this.currentLayout);
-        console.debug('>>>> XLR.debug XLR::updateLoop > nextLayout', this.nextLayout);
-        console.debug('>>>> XLR.debug XLR::updateLoop > playback', playback);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > uniqueLayouts', this.uniqueLayouts);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > inputLayouts', this.inputLayouts);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > isCurrentLayoutValid', isCurrentLayoutValid);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > currentLayout', this.currentLayout);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > nextLayout', this.nextLayout);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > playback', playback);
+
+        const prepareNewCurrentLayout = async () => {
+            this.currentLayout = await this.prepareLayoutXlf(playback.currentLayout);
+            this.currentLayoutId = this.currentLayout.layoutId;
+            this.currentLayoutIndex = playback.currentLayoutIndex;
+        };
 
         if (!isCurrentLayoutValid) {
             if (playback.hasDefaultOnly) {
@@ -257,9 +263,7 @@ export default function XiboLayoutRenderer(
                 }
     
                 if (playback.currentLayout) {
-                    this.currentLayout = await this.prepareLayoutXlf(playback.currentLayout);
-                    this.currentLayoutId = this.currentLayout.layoutId;
-                    this.currentLayoutIndex = playback.currentLayoutIndex;
+                    await prepareNewCurrentLayout();
                 }
     
                 if (playback.nextLayout) {
@@ -269,38 +273,20 @@ export default function XiboLayoutRenderer(
 
             this.playSchedules(this);
         } else {
-            if (this.nextLayout && playback.nextLayout) {
-                if (this.nextLayout.index > playback.nextLayout.index ||
-                  (this.nextLayout.layoutId === playback.nextLayout.layoutId &&
-                    this.nextLayout.index !== playback.nextLayout.index
-                  )
-                ) {
-                    // Remove existing nextLayout
-                    this.nextLayout.removeLayout();
-                }
+            // Remove next layout if it is in the DOM
+            if (this.nextLayout &&
+                this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
+            ) {
+                this.nextLayout.removeLayout();
             }
 
+            // Prepare new current layout
+            if (playback.currentLayout) {
+                await prepareNewCurrentLayout();
+            }
+            // Prepare new next layout
             if (playback.nextLayout) {
-                if (playback.currentLayout) {
-                    if (inputLayouts.length === 1) {
-                        if (playback.currentLayout.layoutId === this.currentLayoutId &&
-                            playback.currentLayout.index === this.currentLayoutIndex
-                        ) {
-                            this.nextLayout = playback.currentLayout;
-                        } else {
-                            this.nextLayout = await this.prepareLayoutXlf(playback.currentLayout);
-                        }
-                    } else {
-                        // Clean up old nextLayout
-                        if (this.nextLayout) {
-                            if (this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)) {
-                                this.nextLayout.removeLayout();
-                            }
-                        }
-
-                        this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
-                    }
-                }
+                this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
             }
 
             console.debug('>>>> XLR.debug XLR::updateLoop > updated nextLayout', this.nextLayout);
@@ -339,17 +325,29 @@ export default function XiboLayoutRenderer(
                 } else {
                     if (loopUpdate) {
                         _currentLayout = this.currentLayout;
-                        if (this.inputLayouts.length === 1 &&
-                            _currentLayout.layoutId === this.inputLayouts[0].layoutId &&
-                            _currentLayout.index !== this.inputLayouts[0].index
-                        ) {
-                            _currentLayout = this.getLayout(this.inputLayouts[0]);
-                            _nextLayoutIndex = (this.inputLayouts[0].index as number) + 1;
+                        if (this.inputLayouts.length === 1) {
+                            if (_currentLayout.layoutId === this.inputLayouts[0].layoutId &&
+                                _currentLayout.index !== this.inputLayouts[0].index
+                            ) {
+                                _currentLayout = this.getLayout(this.inputLayouts[0]);
+
+                                if (_currentLayout) {
+                                    _currentLayoutIndex = _currentLayout.index;
+                                }
+
+                                _nextLayoutIndex = 0;
+                            }
+                        } else {
+                            _currentLayoutIndex = this.nextLayout.index >= this.inputLayouts.length - 1 ? 0 : this.nextLayout.index + 1;
+                            _currentLayout = this.getLayout(this.inputLayouts[_currentLayoutIndex]);
+
+                            _nextLayoutIndex = _currentLayoutIndex + 1 >= this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
+                            _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                         }
                     } else {
                         _currentLayout = this.nextLayout;
                         _currentLayoutIndex = _currentLayout.index;
-                        _nextLayoutIndex = _currentLayoutIndex + 1;
+                        _nextLayoutIndex = _currentLayoutIndex + 1 >= this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
                     }
 
                     // Since currentLayout is still in the schedule loop

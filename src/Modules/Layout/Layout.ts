@@ -275,11 +275,12 @@ export default class Layout implements ILayout {
         });
 
         this.on('end', async (layout: ILayout) => {
-            console.debug('>>>> XLR.debug Ending layout with ID of > ', layout.layoutId);
             // Only proceed when last layout state is RUNNING
             if (layout.state === ELayoutState.CANCELLED) {
                 return;
             }
+
+            console.debug('>>>> XLR.debug Ending layout with ID of > ', layout.layoutId);
 
             /* Remove layout that has ended */
             const $layout = <HTMLDivElement | null>(
