@@ -18,17 +18,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { createNanoEvents } from 'nanoevents';
+import {createNanoEvents} from 'nanoevents';
 
 import Layout, {getXlf, initRenderingDOM} from './Modules/Layout';
-import { platform } from './Modules/Platform';
-import {
-    ILayout, initialLayout, InputLayoutType, OptionsType,
-} from './Types/Layout';
-import { ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback } from './Types/XLR';
+import {platform} from './Modules/Platform';
+import {ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType,} from './Types/Layout';
+import {ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback} from './Types/XLR';
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
 import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
-import {hasSspLayout} from "./Modules/Generators/Generators";
+import {getLayoutIndexByLayoutId, hasSspLayout} from "./Modules/Generators/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
 
 export default function XiboLayoutRenderer(
@@ -315,10 +313,30 @@ export default function XiboLayoutRenderer(
             // Both currentLayout and nextLayout has values
             if (hasLayout) {
                 if (!isCurrentLayoutValid) {
-                    _currentLayout = this.getLayout(this.inputLayouts[0]);
+                    // Check if currentLayout.state is PLAYED,
+                    // then, validate nextLayout and if valid,
+                    // proceed to nextLayout as new currentLayout
+                    // Else, go back to first layout in the loop
+                    if (this.currentLayout.state === ELayoutState.PLAYED &&
+                        isLayoutValid(this.inputLayouts, this.nextLayout?.layoutId)
+                    ) {
+                        // Get nextLayout from updated loop
+                        const tempNextLayoutIndex = getLayoutIndexByLayoutId(
+                            this.inputLayouts, this.nextLayout.layoutId);
+                        _currentLayoutIndex = tempNextLayoutIndex ?? 0;
+                        _currentLayout = this.getLayout(this.inputLayouts[tempNextLayoutIndex ?? 0]);
+                    } else {
+                        _currentLayout = this.getLayout(this.inputLayouts[0]);
+                    }
 
                     if (this.inputLayouts.length > 1) {
-                        _nextLayout = this.getLayout(this.inputLayouts[1]);
+                        if (_currentLayoutIndex + 1 > this.inputLayouts.length - 1) {
+                            _nextLayoutIndex = 0;
+                        } else {
+                            _nextLayoutIndex = _currentLayoutIndex + 1;
+                        }
+
+                        _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                     } else {
                         _nextLayout = _currentLayout;
                     }
