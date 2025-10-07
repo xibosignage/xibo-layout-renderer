@@ -67,7 +67,7 @@ export interface IXlr {
     init(): Promise<IXlr>;
     playSchedules(xlr: IXlr): void;
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
-    prepareLayouts(playback: IXlrPlayback): Promise<IXlr>;
+    prepareLayouts(): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
     updateLoop(inputLayouts: InputLayoutType[]): Promise<void>;
     gotoPrevLayout(): void;
