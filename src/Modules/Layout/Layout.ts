@@ -315,13 +315,12 @@ export default class Layout implements ILayout {
             await layout.xlr.emitSync('layoutEnd', layout);
 
             if (this.xlr.config.platform !== 'CMS' && layout.inLoop) {
-                if (!layout.xlr.isUpdatingLoop) {
-                    // Transition next layout to current layout and prepare next layout if exist
-                    this.xlr.prepareLayouts().then((parent) => {
-                        console.log('>>>> XLR.debug XLR::Layout.on("end")', {parent, layout});
-                        this.xlr.playSchedules(parent);
-                    });
-                }
+                // Transition next layout to current layout and prepare next layout if exist
+                this.xlr.prepareLayouts().then(async (_xlr) => {
+                    console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
+
+                    this.xlr.playSchedules(_xlr);
+                });
             }
         });
 
