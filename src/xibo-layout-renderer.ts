@@ -18,17 +18,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { createNanoEvents } from 'nanoevents';
+import {createNanoEvents} from 'nanoevents';
 
 import Layout, {getXlf, initRenderingDOM} from './Modules/Layout';
-import { platform } from './Modules/Platform';
-import {
-    ILayout, initialLayout, InputLayoutType, OptionsType,
-} from './Types/Layout';
-import { ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback } from './Types/XLR';
+import {platform} from './Modules/Platform';
+import {ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType,} from './Types/Layout';
+import {ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback} from './Types/XLR';
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
 import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
-import {hasSspLayout} from "./Modules/Generators/Generators";
+import {getLayoutIndexByLayoutId, hasSspLayout} from "./Modules/Generators/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
 
 export default function XiboLayoutRenderer(
@@ -43,6 +41,10 @@ export default function XiboLayoutRenderer(
     const xlrObject: IXlr = {
         ...initialXlr,
     };
+
+    let isUpdatingLoop = false;
+
+    xlrObject.isUpdatingLoop = isUpdatingLoop;
 
     let splashScreen: ISplashScreen;
 
@@ -66,6 +68,13 @@ export default function XiboLayoutRenderer(
             xlrObject.nextLayout = await xlrObject.prepareLayoutXlf(xlrObject.nextLayout);
         }
     });
+
+    xlrObject.on('updateLoop', async (inputLayouts: InputLayoutType[]) => {
+        xlrObject.isUpdatingLoop = true;
+        await xlrObject.updateLoop(inputLayouts);
+
+        xlrObject.isUpdatingLoop = false;
+    })
 
     /**
      * Asynchronous event emitter. Extended nanoevents event emitter.
@@ -109,8 +118,7 @@ export default function XiboLayoutRenderer(
             if (self.inputLayouts.length === 1 && self.inputLayouts[0].layoutId === 0) {
                 resolve(self);
             } else {
-                const playback = this.parseLayouts();
-                self.prepareLayouts(playback).then((xlr) => {
+                self.prepareLayouts().then((xlr) => {
                     resolve(xlr);
                 });
             }
@@ -214,18 +222,28 @@ export default function XiboLayoutRenderer(
         this.inputLayouts = inputLayouts;
         const playback = this.parseLayouts(true);
 
-        let isCurrentLayoutValid = isLayoutValid(this.inputLayouts, this.currentLayoutId);
+        let isCurrentLayoutValid = isLayoutValid(this.inputLayouts, this.currentLayout?.layoutId);
 
         if (this.isSspEnabled && this.currentLayoutId === -1) {
             isCurrentLayoutValid = true;
         }
 
-        console.debug('>>>> XLR.debug XLR::updateLoop > uniqueLayouts', this.uniqueLayouts);
-        console.debug('>>>> XLR.debug XLR::updateLoop > inputLayouts', this.inputLayouts);
-        console.debug('>>>> XLR.debug XLR::updateLoop > isCurrentLayoutValid', isCurrentLayoutValid);
-        console.debug('>>>> XLR.debug XLR::updateLoop > currentLayout', this.currentLayout);
-        console.debug('>>>> XLR.debug XLR::updateLoop > nextLayout', this.nextLayout);
-        console.debug('>>>> XLR.debug XLR::updateLoop > playback', playback);
+        if (!isCurrentLayoutValid && this.currentLayout) {
+            this.currentLayout.emitter.emit('cancelled', this.currentLayout);
+        }
+
+        console.debug('>>>>> XLR.debug XLR::updateLoop > uniqueLayouts', this.uniqueLayouts);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > inputLayouts', this.inputLayouts);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > isCurrentLayoutValid', isCurrentLayoutValid);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > currentLayout', this.currentLayout);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > nextLayout', this.nextLayout);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > playback', playback);
+
+        const prepareNewCurrentLayout = async () => {
+            this.currentLayout = await this.prepareLayoutXlf(playback.currentLayout);
+            this.currentLayoutId = this.currentLayout.layoutId;
+            this.currentLayoutIndex = playback.currentLayoutIndex;
+        };
 
         if (!isCurrentLayoutValid) {
             if (playback.hasDefaultOnly) {
@@ -242,20 +260,22 @@ export default function XiboLayoutRenderer(
                 this.currentLayoutId = this.currentLayout.layoutId;
                 this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
             } else {
-                if (this.currentLayout) {
+                if (this.currentLayout &&
+                    this.isLayoutInDOM(this.currentLayout.containerName, this.currentLayout.index)
+                ) {
                     this.currentLayout.inLoop = false;
                     await this.currentLayout.finishAllRegions();
                     this.currentLayout.removeLayout();
                 }
     
-                if (this.nextLayout) {
+                if (this.nextLayout &&
+                    this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
+                ) {
                     this.nextLayout.removeLayout();
                 }
     
                 if (playback.currentLayout) {
-                    this.currentLayout = await this.prepareLayoutXlf(playback.currentLayout);
-                    this.currentLayoutId = this.currentLayout.layoutId;
-                    this.currentLayoutIndex = playback.currentLayoutIndex;
+                    await prepareNewCurrentLayout();
                 }
     
                 if (playback.nextLayout) {
@@ -265,38 +285,20 @@ export default function XiboLayoutRenderer(
 
             this.playSchedules(this);
         } else {
-            if (this.nextLayout && playback.nextLayout) {
-                if (this.nextLayout.index > playback.nextLayout.index ||
-                  (this.nextLayout.layoutId === playback.nextLayout.layoutId &&
-                    this.nextLayout.index !== playback.nextLayout.index
-                  )
-                ) {
-                    // Remove existing nextLayout
-                    this.nextLayout.removeLayout();
-                }
+            // Remove next layout if it is in the DOM
+            if (this.nextLayout &&
+                this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
+            ) {
+                this.nextLayout.removeLayout();
             }
 
+            // Prepare new current layout
+            if (playback.currentLayout) {
+                await prepareNewCurrentLayout();
+            }
+            // Prepare new next layout
             if (playback.nextLayout) {
-                if (playback.currentLayout) {
-                    if (inputLayouts.length === 1) {
-                        if (playback.currentLayout.layoutId === this.currentLayoutId &&
-                            playback.currentLayout.index === this.currentLayoutIndex
-                        ) {
-                            this.nextLayout = playback.currentLayout;
-                        } else {
-                            this.nextLayout = await this.prepareLayoutXlf(playback.currentLayout);
-                        }
-                    } else {
-                        // Clean up old nextLayout
-                        if (this.nextLayout) {
-                            if (this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)) {
-                                this.nextLayout.removeLayout();
-                            }
-                        }
-
-                        this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
-                    }
-                }
+                this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
             }
 
             console.debug('>>>> XLR.debug XLR::updateLoop > updated nextLayout', this.nextLayout);
@@ -325,38 +327,60 @@ export default function XiboLayoutRenderer(
             // Both currentLayout and nextLayout has values
             if (hasLayout) {
                 if (!isCurrentLayoutValid) {
-                    _currentLayout = this.getLayout(this.inputLayouts[0]);
+                    // Check if currentLayout.state is PLAYED,
+                    // then, validate nextLayout and if valid,
+                    // proceed to nextLayout as new currentLayout
+                    // Else, go back to first layout in the loop
+                    if (this.currentLayout.state === ELayoutState.PLAYED &&
+                        isLayoutValid(this.inputLayouts, this.nextLayout?.layoutId)
+                    ) {
+                        // Get nextLayout from updated loop
+                        const tempNextLayoutIndex = getLayoutIndexByLayoutId(
+                            this.inputLayouts, this.nextLayout.layoutId);
+                        _currentLayoutIndex = tempNextLayoutIndex ?? 0;
+                        _currentLayout = this.getLayout(this.inputLayouts[tempNextLayoutIndex ?? 0]);
+                    } else {
+                        _currentLayout = this.getLayout(this.inputLayouts[0]);
+                    }
 
                     if (this.inputLayouts.length > 1) {
-                        _nextLayout = this.getLayout(this.inputLayouts[1]);
+                        if (_currentLayoutIndex + 1 > this.inputLayouts.length - 1) {
+                            _nextLayoutIndex = 0;
+                        } else {
+                            _nextLayoutIndex = _currentLayoutIndex + 1;
+                        }
+
+                        _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                     } else {
                         _nextLayout = _currentLayout;
                     }
                 } else {
                     if (loopUpdate) {
                         _currentLayout = this.currentLayout;
-                        if (this.inputLayouts.length === 1 &&
-                            _currentLayout.layoutId === this.inputLayouts[0].layoutId &&
-                            _currentLayout.index !== this.inputLayouts[0].index
-                        ) {
-                            _currentLayout = this.getLayout(this.inputLayouts[0]);
-                            _nextLayoutIndex = (this.inputLayouts[0].index as number) + 1;
+                        if (this.inputLayouts.length === 1) {
+                            if (_currentLayout.layoutId === this.inputLayouts[0].layoutId &&
+                                _currentLayout.index !== this.inputLayouts[0].index
+                            ) {
+                                _currentLayout = this.getLayout(this.inputLayouts[0]);
+
+                                if (_currentLayout) {
+                                    _currentLayoutIndex = _currentLayout.index;
+                                }
+
+                                _nextLayoutIndex = 0;
+                                _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
+                            }
+                        } else {
+                            _currentLayoutIndex = this.nextLayout.index > this.inputLayouts.length - 1 ? 0 : this.nextLayout.index;
+                            _currentLayout = this.getLayout(this.inputLayouts[_currentLayoutIndex]);
+
+                            _nextLayoutIndex = _currentLayoutIndex + 1 > this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
+                            _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                         }
                     } else {
                         _currentLayout = this.nextLayout;
                         _currentLayoutIndex = _currentLayout.index;
-                        _nextLayoutIndex = _currentLayoutIndex + 1;
-                    }
-
-                    // Since currentLayout is still in the schedule loop
-                    // Then, we only try to validate nextLayout
-                    if (_nextLayoutIndex >= this.inputLayouts.length) {
-                        // nextLayout index is beyond the schedule loop
-                        // then, we set nextLayout to 0
-                        _nextLayout = this.getLayout(this.inputLayouts[0]);
-                        _nextLayoutIndex = 0;
-                    } else {
-                        // we set nextLayout based on next index of currentLayout
+                        _nextLayoutIndex = _currentLayoutIndex + 1 > this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
                         _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                     }
                 }
@@ -379,6 +403,11 @@ export default function XiboLayoutRenderer(
                 _currentLayout = this.getLayout(this.inputLayouts[0]);
                 _nextLayout = this.getLayout(this.inputLayouts[0]);
             }
+        }
+
+        if (_currentLayout !== undefined && _nextLayout !== undefined) {
+            _currentLayout.xlr = this;
+            _nextLayout.xlr = this;
         }
 
         return {
@@ -435,38 +464,62 @@ export default function XiboLayoutRenderer(
         return _layout as ILayout;
     };
 
-    xlrObject.prepareLayouts = async function(playback: IXlrPlayback) {
-        const self = this;
+    xlrObject.prepareLayouts = async function() {
+        const self = xlrObject;
+
+        if (this.isUpdatingLoop) {
+            return Promise.resolve(self);
+        }
+
+        let layoutPlayback = self.parseLayouts();
 
         // Don't prepare layout if it's just the splash screen
         if (self.inputLayouts.length === 1 && self.inputLayouts[0].layoutId === 0) {
             return Promise.resolve(self);
         }
 
-        console.debug('>>>> XLR.debug prepareLayouts::playback', playback);
+        console.debug('>>>> XLR.debug prepareLayouts::playback', {
+            layoutPlayback,
+            shouldParse: false,
+        });
 
-        self.currentLayoutId = playback.currentLayout?.layoutId as ILayout['layoutId'];
+        self.currentLayoutId = layoutPlayback.currentLayout?.layoutId as ILayout['layoutId'];
 
-        let currentLayoutXlf: ILayout;
-        let nextLayoutXlf: ILayout;
+        const currentLayoutXlf = await self.prepareLayoutXlf(layoutPlayback.currentLayout);
+        const nextLayoutXlf = await self.prepareLayoutXlf(layoutPlayback.nextLayout);
 
-        const layouts: ILayout[] = [];
-        currentLayoutXlf = await this.prepareLayoutXlf(playback.currentLayout);
-        layouts.push(currentLayoutXlf);
+        let layouts: ILayout[] = await Promise.all([
+            currentLayoutXlf,
+            await self.prepareForSsp(nextLayoutXlf),
+        ]);
 
-        nextLayoutXlf = await self.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
-        layouts.push(nextLayoutXlf);
+        // Return early when layout loop is updating
+        if (self.isUpdatingLoop) {
+            if (layoutPlayback.nextLayout &&
+                nextLayoutXlf &&
+                this.isLayoutInDOM(nextLayoutXlf.containerName, nextLayoutXlf.index)
+            ) {
+                nextLayoutXlf.removeLayout();
+            }
+        }
 
-        return new Promise<IXlr>(async (resolve) => {
+        console.debug('>>>>> XLR.debug prepared layout XLF', layouts);
+
+        return new Promise<IXlr>(async function(resolve) {
             self.layouts.current = layouts[0];
             self.layouts.next = layouts[1];
 
-            self.currentLayoutIndex = playback.currentLayoutIndex;
+            if (self.layouts.current && self.layouts.next) {
+                self.layouts.current.xlr = self;
+                self.layouts.next.xlr = self;
+            }
+
+            self.currentLayoutIndex = layoutPlayback.currentLayoutIndex;
             self.currentLayout = self.layouts.current;
             self.currentLayoutId = self.currentLayout.layoutId;
             self.nextLayout = self.layouts.next;
 
-            resolve(self);
+            resolve(xlrObject);
         });
     };
 
@@ -596,9 +649,8 @@ export default function XiboLayoutRenderer(
 
             // and set the previous layout as current layout
             this.currentLayoutIndex = _assumedPrevIndex;
-            const playback = this.parseLayouts();
 
-            this.prepareLayouts(playback).then((xlr) => {
+            this.prepareLayouts().then((xlr) => {
                 this.playSchedules(xlr);
             });
         }

@@ -19,8 +19,8 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Layout, {ILayoutEvents} from "./Layout";
-import {ILayout, OptionsType} from "../../Types/Layout";
+import Layout from "./Layout";
+import {ILayout, ILayoutEvents, OptionsType} from "../../Types/Layout";
 import {IXlr} from "../../Types/XLR";
 import {createNanoEvents, Emitter, Unsubscribe} from "nanoevents";
 
@@ -53,10 +53,10 @@ export default class OverlayLayout extends Layout {
       // Check if currentLayout is already done
       // If not, don't remove the overlay layout until currentLayout.done = true
       console.log('XLR::OverlayLayout >> emitter.on("end")', {
-        currentLayout: this.xlr.currentLayout,
+        currentLayout: overlay.xlr.currentLayout,
         overlay,
       });
-      if (this.xlr.currentLayout && !this.xlr.currentLayout.allEnded) {
+      if (overlay.xlr.currentLayout && !overlay.xlr.currentLayout.allEnded) {
         return;
       }
 
@@ -75,7 +75,7 @@ export default class OverlayLayout extends Layout {
 
       // Emit layout end event
       console.debug('Layout::Emitter > End - Calling layoutEnd event');
-      this.xlr.emitter.emit('layoutEnd', overlay);
+      overlay.xlr.emitter.emit('layoutEnd', overlay);
 
       // Check if stats are enabled for the layout
       if (overlay.enableStat) {
