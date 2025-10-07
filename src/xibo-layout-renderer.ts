@@ -42,6 +42,10 @@ export default function XiboLayoutRenderer(
         ...initialXlr,
     };
 
+    let isUpdatingLoop = false;
+
+    xlrObject.isUpdatingLoop = isUpdatingLoop;
+
     let splashScreen: ISplashScreen;
 
     xlrObject.emitter = createNanoEvents<IXlrEvents>();
@@ -64,6 +68,13 @@ export default function XiboLayoutRenderer(
             xlrObject.nextLayout = await xlrObject.prepareLayoutXlf(xlrObject.nextLayout);
         }
     });
+
+    xlrObject.on('updateLoop', async (inputLayouts: InputLayoutType[]) => {
+        xlrObject.isUpdatingLoop = true;
+        await xlrObject.updateLoop(inputLayouts);
+
+        xlrObject.isUpdatingLoop = false;
+    })
 
     /**
      * Asynchronous event emitter. Extended nanoevents event emitter.
@@ -354,6 +365,7 @@ export default function XiboLayoutRenderer(
                                 }
 
                                 _nextLayoutIndex = 0;
+                                _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                             }
                         } else {
                             _currentLayoutIndex = this.nextLayout.index > this.inputLayouts.length - 1 ? 0 : this.nextLayout.index;
@@ -366,17 +378,6 @@ export default function XiboLayoutRenderer(
                         _currentLayout = this.nextLayout;
                         _currentLayoutIndex = _currentLayout.index;
                         _nextLayoutIndex = _currentLayoutIndex + 1 > this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
-                    }
-
-                    // Since currentLayout is still in the schedule loop
-                    // Then, we only try to validate nextLayout
-                    if (_nextLayoutIndex >= this.inputLayouts.length) {
-                        // nextLayout index is beyond the schedule loop
-                        // then, we set nextLayout to 0
-                        _nextLayout = this.getLayout(this.inputLayouts[0]);
-                        _nextLayoutIndex = 0;
-                    } else {
-                        // we set nextLayout based on next index of currentLayout
                         _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                     }
                 }
@@ -467,15 +468,17 @@ export default function XiboLayoutRenderer(
 
         self.currentLayoutId = playback.currentLayout?.layoutId as ILayout['layoutId'];
 
-        let currentLayoutXlf: ILayout;
-        let nextLayoutXlf: ILayout;
+        const layouts: ILayout[] = await Promise.all([
+            self.prepareLayoutXlf(playback.currentLayout),
+            self.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout)),
+        ]);
 
-        const layouts: ILayout[] = [];
-        currentLayoutXlf = await this.prepareLayoutXlf(playback.currentLayout);
-        layouts.push(currentLayoutXlf);
+        // Return early when layout loop is updating
+        if (self.isUpdatingLoop) {
+            return Promise.resolve(self);
+        }
 
-        nextLayoutXlf = await self.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
-        layouts.push(nextLayoutXlf);
+        console.debug('>>>>> XLR.debug prepared layout XLF', layouts);
 
         return new Promise<IXlr>(async (resolve) => {
             self.layouts.current = layouts[0];
