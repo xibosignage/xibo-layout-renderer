@@ -23,7 +23,7 @@ import {createNanoEvents} from 'nanoevents';
 import Layout, {getXlf, initRenderingDOM} from './Modules/Layout';
 import {platform} from './Modules/Platform';
 import {ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType,} from './Types/Layout';
-import {ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback} from './Types/XLR';
+import {ELayoutType, initialXlr, IXlr, IXlrEvents} from './Types/XLR';
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
 import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
 import {getLayoutIndexByLayoutId, hasSspLayout} from "./Modules/Generators/Generators";
@@ -539,7 +539,12 @@ export default function XiboLayoutRenderer(
         ) {
             newOptions.xlfUrl =
                 newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
-        } else if (self.config.platform === ConsumerPlatform.CHROMEOS && inputLayout !== undefined) {
+        } else if (
+            (self.config.platform === ConsumerPlatform.CHROMEOS ||
+                self.config.platform === ConsumerPlatform.ELECTRON
+            ) &&
+            inputLayout !== undefined
+        ) {
             newOptions.xlfUrl = inputLayout.path as string;
         }
 

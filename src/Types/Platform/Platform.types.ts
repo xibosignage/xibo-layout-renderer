@@ -22,6 +22,10 @@
 export enum ConsumerPlatform {
   CMS = 'CMS',
   CHROMEOS = 'chromeOS',
+  ELECTRON = 'electron',
+  IOS = 'iOS',
+  MACOS = 'macOS',
+  ANDROID = 'android',
   LINUX = 'linux',
   WINDOWS = 'windows',
   WEBOS = 'webOS',

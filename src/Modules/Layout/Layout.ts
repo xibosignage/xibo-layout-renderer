@@ -108,6 +108,12 @@ export async function getXlf(layoutOptions: OptionsType) {
         fetchOptions.headers = {
             'Content-Type': 'text/xml',
         };
+    } else if (layoutOptions.platform === ConsumerPlatform.ELECTRON) {
+        xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
+        fetchOptions.mode = 'cors';
+        fetchOptions.headers = {
+            'Content-Type': 'text/xml',
+        }
     } else {
         if (layoutOptions.appHost !== null) {
             xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
