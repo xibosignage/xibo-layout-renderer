@@ -35,12 +35,7 @@ import {
     nextId,
     preloadMediaBlob,
 } from '../Generators';
-import {
-    compassPoints,
-    flyTransitionKeyframes,
-    transitionElement,
-    TransitionElementOptions
-} from '../Transitions';
+import {compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions} from '../Transitions';
 import VideoMedia, {composeVideoSource} from './VideoMedia';
 import AudioMedia from './AudioMedia';
 import {IXlr} from '../../Types/XLR';
@@ -292,6 +287,8 @@ export default function Media(
                     tmpUrl = self.uri;
                 }
             }
+        } else if (xlr.config.platform === ConsumerPlatform.ELECTRON) {
+            tmpUrl = xlr.config.appHost + self.uri;
         }
 
         self.url = tmpUrl;
