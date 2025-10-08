@@ -285,6 +285,14 @@ export function isLayoutValid(layouts: InputLayoutType[], layoutId: number | und
     return layoutIndex !== -1;
 }
 
+export function getLayoutIndexByLayoutId(layouts: InputLayoutType[], layoutId: number) {
+    if (layouts.length < 1 || !layoutId) {
+        return null;
+    }
+
+    return layouts.findIndex(l => l.layoutId === layoutId);
+}
+
 export function hasDefaultOnly(inputLayouts: InputLayoutType[]) {
     if (!inputLayouts) {
         return false;

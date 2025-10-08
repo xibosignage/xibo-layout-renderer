@@ -40,6 +40,7 @@ export type IXlrEvents = {
     widgetEnd: (widgetId: number) => void;
     widgetError: (widgetId: number) => void;
     adRequest: (sspLayoutIndex: number) => void;
+    updateLoop: (inputLayouts: InputLayoutType[]) => void;
 };
 
 export interface IXlrPlayback {
@@ -66,7 +67,7 @@ export interface IXlr {
     init(): Promise<IXlr>;
     playSchedules(xlr: IXlr): void;
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
-    prepareLayouts(playback: IXlrPlayback): Promise<IXlr>;
+    prepareLayouts(): Promise<IXlr>;
     updateLayouts(inputLayouts: InputLayoutType[]): void;
     updateLoop(inputLayouts: InputLayoutType[]): Promise<void>;
     gotoPrevLayout(): void;
@@ -86,6 +87,7 @@ export interface IXlr {
     renderOverlayLayouts(): Promise<void>;
     isInterrupted: boolean;
     isLayoutInDOM(containerName: string, layoutId: number): boolean;
+    isUpdatingLoop: boolean;
 }
 
 export const initialXlr: IXlr = {
@@ -151,5 +153,6 @@ export const initialXlr: IXlr = {
     isInterrupted: false,
     isLayoutInDOM(containerName: string, layoutId: number): boolean {
         return false;
-    }
+    },
+    isUpdatingLoop: false,
 };

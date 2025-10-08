@@ -20,9 +20,11 @@
  */
 import {createNanoEvents, Emitter} from 'nanoevents';
 import {
+    ELayoutState,
     GetLayoutParamType,
     GetLayoutType,
     ILayout,
+    ILayoutEvents,
     initialLayout,
     OptionsType,
 } from '../../Types/Layout';
@@ -193,11 +195,6 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
     }
 }
 
-export interface ILayoutEvents {
-    start: (layout: ILayout) => void;
-    end: (layout: ILayout) => void;
-}
-
 export default class Layout implements ILayout {
     id: number | null = null;
     layoutId: number = -1;
@@ -234,6 +231,7 @@ export default class Layout implements ILayout {
     ad: any = null;
     isOverlay: boolean = false;
     shareOfVoice: number = 0;
+    state: ELayoutState = ELayoutState.IDLE;
     scheduleId?: number;
     layoutNode?: Document;
     path?: string = '';
@@ -259,11 +257,12 @@ export default class Layout implements ILayout {
         this.prepareLayout();
 
         this.on('start', (layout: ILayout) => {
-            this.done = false;
+            layout.done = false;
+            layout.state = ELayoutState.RUNNING;
             console.debug('>>>> XLR.debug Layout start emitted > Layout ID > ', layout.id);
 
             // Check if stats are enabled for the layout
-            if (this.enableStat) {
+            if (layout.enableStat) {
                 this.statsBC.postMessage({
                     action: 'START_STAT',
                     layoutId: layout.id,
@@ -274,15 +273,27 @@ export default class Layout implements ILayout {
 
             // Emit layout start event
             console.debug('>>>> XLR.debug Layout::Emitter > Start - Calling layoutStart event');
-            this.xlr.emitter.emit('layoutStart', layout);
+            layout.xlr.emitter.emit('layoutStart', layout);
         });
 
         this.on('end', async (layout: ILayout) => {
+            // Only proceed when last layout state is RUNNING
+            if (layout.state === ELayoutState.CANCELLED) {
+                return;
+            }
+
             console.debug('>>>> XLR.debug Ending layout with ID of > ', layout.layoutId);
+
             /* Remove layout that has ended */
             const $layout = <HTMLDivElement | null>(
               document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`)
             );
+
+            // Only update layout.state when last state === RUNNING
+            if (layout.state === ELayoutState.RUNNING) {
+                // Update layout state
+                layout.state = ELayoutState.PLAYED;
+            }
 
             layout.done = true;
             console.debug({$layout});
@@ -301,14 +312,23 @@ export default class Layout implements ILayout {
                 });
             }
 
+            // Emit layout end event
+            console.debug('>>>>> XLR.debug Awaited XLR::emitSync > End - Calling layoutEnd event');
+            await layout.xlr.emitSync('layoutEnd', layout);
+
             if (this.xlr.config.platform !== ConsumerPlatform.CMS && layout.inLoop) {
                 // Transition next layout to current layout and prepare next layout if exist
-                const playback = this.xlr.parseLayouts();
-                this.xlr.prepareLayouts(playback).then((parent) => {
-                    console.log('>>>> XLR.debug XLR::Layout.on("end")', {playback, parent, layout});
-                    this.xlr.playSchedules(parent);
+                this.xlr.prepareLayouts().then(async (_xlr) => {
+                    console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
+
+                    this.xlr.playSchedules(_xlr);
                 });
             }
+        });
+
+        this.on('cancelled', (layout: ILayout) => {
+            console.debug('>>>>> XLR.debug / Layout cancelled > Layout ID > ', layout.id);
+            layout.state = ELayoutState.CANCELLED;
         });
     }
 
@@ -477,30 +497,26 @@ export default class Layout implements ILayout {
         const $layoutContainer = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
         const $splashScreen = document.getElementById(`splash_${this.id}`);
 
-        if ($layoutContainer) {
-            $layoutContainer.style.display = 'block';
-            // Also set the background color of the player window > body
-            // Only set the body color when this.isOverlay === false
-            if (!this.isOverlay) {
-                document.body.style.setProperty('background-color', `${this.bgColor}`);
-            }
-
-            // Emit start event
-            // Only start event emitter when this.isOverlay === false
-            if (!this.isOverlay) {
-                this.emitter.emit('start', this);
-            }
-        }
-
         if ($splashScreen) {
             $splashScreen.style.display = 'none';
         }
 
-        console.debug('Layout running > Layout ID > ', this.id);
-        console.debug('Layout Regions > ', this.regions);
-        for (let i = 0; i < this.regions.length; i++) {
-            // playLog(4, "debug", "Running region " + self.regions[i].id, false);
-            this.regions[i].run();
+        if ($layoutContainer) {
+            $layoutContainer.style.display = 'block';
+            // Only set the body color when this.isOverlay === false
+            if (!this.isOverlay) {
+                // Also set the background color of the player window > body
+                document.body.style.setProperty('background-color', `${this.bgColor}`);
+                // Emit start event
+                this.emitter.emit('start', this);
+            }
+
+            console.debug('Layout running > Layout ID > ', this.id);
+            console.debug('Layout Regions > ', this.regions);
+            for (let i = 0; i < this.regions.length; i++) {
+                // playLog(4, "debug", "Running region " + self.regions[i].id, false);
+                this.regions[i].run();
+            }
         }
     }
 
@@ -556,10 +572,6 @@ export default class Layout implements ILayout {
                     $end.style.display = 'block';
                 }
             }
-
-            // Emit layout end event
-            console.debug('>>>> XLR.debug Awaited XLR::emitSync > End - Calling layoutEnd event');
-            await this.xlr.emitSync('layoutEnd', this);
 
             this.emitter.emit('end', this);
         }
