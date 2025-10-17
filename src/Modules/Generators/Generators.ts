@@ -156,12 +156,16 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
     //     resourceUrl += '&scale_override=' + params.scaleFactor;
     // }
 
-    if (options.platform === ConsumerPlatform.ELECTRON && params.render === 'html') {
-        resourceUrl = options.appHost +
-            'layout_' + params.layoutId +
-            '_region_' + params.regionId +
-            '_media_' + params.mediaId +
-            '.html';
+    if (options.platform === ConsumerPlatform.ELECTRON) {
+        if (params.render === 'html') {
+            resourceUrl = options.appHost +
+                'layout_' + params.layoutId +
+                '_region_' + params.regionId +
+                '_media_' + params.mediaId +
+                '.html';
+        } else if (params.render === 'native' && params.isImageOrVideo) {
+            resourceUrl = options.appHost + params.uri;
+        }
     }
 
     // Default value is for CMS
