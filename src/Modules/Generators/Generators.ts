@@ -145,16 +145,26 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
         .replace(":id", params.mediaId) +
         '?preview=1&layoutPreview=1';
 
-    if (options.platform === ConsumerPlatform.CHROMEOS) {
-        const resourceEndpoint = '/required-files/resource/';
+    // if (options.platform === ConsumerPlatform.CHROMEOS) {
+    //     const resourceEndpoint = '/required-files/resource/';
+    //
+    //     if (!params.isGlobalContent && params.isImageOrVideo) {
+    //         resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+    //     }
+    // } else
+    //     if (!Boolean(params['mediaType'])) {
+    //     resourceUrl += '&scale_override=' + params.scaleFactor;
+    // }
 
-        if (!params.isGlobalContent && params.isImageOrVideo) {
-            resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
-        }
-    } else if (!Boolean(params['mediaType'])) {
-        resourceUrl += '&scale_override=' + params.scaleFactor;
+    if (options.platform === ConsumerPlatform.ELECTRON && params.render === 'html') {
+        resourceUrl = options.appHost +
+            'layout_' + params.layoutId +
+            '_region_' + params.regionId +
+            '_media_' + params.mediaId +
+            '.html';
     }
 
+    // Default value is for CMS
     return resourceUrl;
 }
 

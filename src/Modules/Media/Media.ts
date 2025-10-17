@@ -266,6 +266,7 @@ export default function Media(
             uri: self.uri,
             isGlobalContent: self.mediaType === 'global',
             isImageOrVideo: self.mediaType === 'image' || self.mediaType === 'video',
+            render: self.render,
         };
 
         if (self.mediaType === 'image' || self.mediaType === 'video') {
@@ -288,7 +289,7 @@ export default function Media(
                 }
             }
         } else if (xlr.config.platform === ConsumerPlatform.ELECTRON) {
-            tmpUrl = xlr.config.appHost + self.uri;
+            tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
         }
 
         self.url = tmpUrl;
