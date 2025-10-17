@@ -1,27 +1,28 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2025 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - https://www.xibosignage.com
+ * Xibo - Digital Signage - https://xibosignage.com
  *
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import './splash-screen.css';
 import xiboLogoImg from './img/logo.png';
 import loaderImg from './img/loader.gif';
 import {OptionsType} from '../../Types/Layout';
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export interface ISplashScreen {
     init: () => void;
@@ -45,7 +46,7 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
              $previewSplash.classList.add('preview-splash');
 
              // Don't show Xibo logo on CMS Preview
-             if (config && config.platform !== 'CMS') {
+             if (config && config.platform !== ConsumerPlatform.CMS) {
                  let splashScreenImg = xiboLogoImg;
 
                  if (config.icons?.splashScreen && config.icons.splashScreen.length > 0) {
@@ -77,7 +78,7 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
              $previewLoaderCaption.classList.add('preview-loaderCaption');
 
              // Show loader bar and text on CMS Preview
-             if (config && config.platform === 'CMS') {
+             if (config && config.platform === ConsumerPlatform.CMS) {
                  $previewLoader.style.setProperty(
                      'background-image',
                      `url(${loaderImg})`,

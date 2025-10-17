@@ -23,6 +23,7 @@ import {IRegion} from '../Region';
 import {platform} from '../../Modules/Platform';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
+import {ConsumerPlatform} from "../Platform";
 
 export interface ILayoutEvents {
     start: (layout: ILayout) => void;
@@ -59,7 +60,7 @@ export type OptionsType = {
     idCounter: number;
     inPreview: boolean;
     appHost?: string | null;
-    platform: 'CMS' | 'chromeOS';
+    platform: ConsumerPlatform;
     config?: {
         cmsUrl: string | null;
         schemaVersion: number;
