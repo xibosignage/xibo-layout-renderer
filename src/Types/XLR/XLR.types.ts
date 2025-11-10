@@ -41,6 +41,7 @@ export type IXlrEvents = {
     widgetError: (widgetId: number) => void;
     adRequest: (sspLayoutIndex: number) => void;
     updateLoop: (inputLayouts: InputLayoutType[]) => void;
+    updateOverlays: (overlays: InputLayoutType[]) => void;
 };
 
 export interface IXlrPlayback {
@@ -55,9 +56,8 @@ export interface IXlrPlayback {
 export interface IXlr {
     inputLayouts: InputLayoutType[],
     config: OptionsType,
-    layouts: {
-        [key: string]: ILayout;
-    };
+    layouts: Record<string, ILayout>;
+    overlays: InputLayoutType[];
     currentLayoutIndex: number;
     currentLayoutId: number;
     currentLayout: ILayout | undefined;
@@ -72,9 +72,7 @@ export interface IXlr {
     updateLoop(inputLayouts: InputLayoutType[]): Promise<void>;
     gotoPrevLayout(): void;
     gotoNextLayout(): void;
-    uniqueLayouts: {
-        [layoutId: string]: InputLayoutType;
-    };
+    uniqueLayouts: Record<string, InputLayoutType>;
     getLayout(inputLayout: InputLayoutType): ILayout | undefined;
     updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): Promise<void>;
     parseLayouts(loopUpdate?: boolean): IXlrPlayback;
@@ -88,12 +86,15 @@ export interface IXlr {
     isInterrupted: boolean;
     isLayoutInDOM(containerName: string, layoutId: number): boolean;
     isUpdatingLoop: boolean;
+    isUpdatingOverlays: boolean;
+    updateOverlays(overlays: InputLayoutType[]): Promise<void>;
 }
 
 export const initialXlr: IXlr = {
     inputLayouts: [],
     config: platform,
     layouts: {},
+    overlays: [],
     currentLayoutIndex: 0,
     // NOTE: Using -2 to avoid conflict with usage of -1 with SSP Layout
     currentLayoutId: -2,
@@ -155,4 +156,8 @@ export const initialXlr: IXlr = {
         return false;
     },
     isUpdatingLoop: false,
+    isUpdatingOverlays: false,
+    updateOverlays(overlays: InputLayoutType[]) {
+        return Promise.resolve();
+    }
 };
