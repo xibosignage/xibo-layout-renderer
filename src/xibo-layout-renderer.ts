@@ -31,6 +31,7 @@ import OverlayLayout from "./Modules/Layout/OverlayLayout";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
+    overlays: InputLayoutType[],
     options?: OptionsType,
 ) {
     const props = {
@@ -42,9 +43,8 @@ export default function XiboLayoutRenderer(
         ...initialXlr,
     };
 
-    let isUpdatingLoop = false;
-
-    xlrObject.isUpdatingLoop = isUpdatingLoop;
+    xlrObject.isUpdatingLoop = false;
+    xlrObject.isUpdatingOverlays = false;
 
     let splashScreen: ISplashScreen;
 
@@ -74,6 +74,12 @@ export default function XiboLayoutRenderer(
         await xlrObject.updateLoop(inputLayouts);
 
         xlrObject.isUpdatingLoop = false;
+    });
+
+    xlrObject.on('updateOverlays', async (overlays: InputLayoutType[]) => {
+        xlrObject.isUpdatingOverlays = true;
+        await xlrObject.updateOverlays(overlays);
+        xlrObject.isUpdatingOverlays = false;
     })
 
     /**
@@ -154,19 +160,19 @@ export default function XiboLayoutRenderer(
 
     xlrObject.renderOverlayLayouts = async function() {
         const self = this;
-        // Parse this.uniqueLayouts if overlays are available
-        const overlayLayouts = Object.keys(this.uniqueLayouts).reduce((_layouts: ILayout[], _layoutId) => {
-            if (Boolean(this.uniqueLayouts[_layoutId])) {
-                if (this.uniqueLayouts[_layoutId]?.isOverlay !== undefined) {
-                    // Get layout
-                    const fromUniqueLayout = this.getLayout(this.uniqueLayouts[_layoutId]);
-                    if (fromUniqueLayout !== undefined) {
-                        _layouts = [..._layouts, fromUniqueLayout];
-                    }
-                }
-            }
+        // Parse this.overlays if overlays are available
+        const overlayLayouts = this.overlays.reduce((collection: ILayout[], item) => {
+            let inputOverlay: InputLayoutType = <InputLayoutType>{};
 
-            return _layouts;
+            inputOverlay = {...inputOverlay, ...item};
+            inputOverlay.index = item.index;
+
+            const overlayLayout: ILayout = <ILayout>initialLayout;
+
+            return [...collection, {
+                ...overlayLayout,
+                ...inputOverlay,
+            }]
         }, []);
 
         console.log('XLR::renderOverlayLayouts', {overlayLayouts});
@@ -303,6 +309,10 @@ export default function XiboLayoutRenderer(
 
             console.debug('>>>> XLR.debug XLR::updateLoop > updated nextLayout', this.nextLayout);
         }
+    };
+
+    xlrObject.updateOverlays = async (overlays: InputLayoutType[]) => {
+        xlrObject.overlays = overlays;
     };
 
     xlrObject.parseLayouts = function(loopUpdate?: boolean) {
@@ -545,7 +555,6 @@ export default function XiboLayoutRenderer(
         let layoutXlf: string;
         let layoutXlfNode: Document | undefined;
         let sspInputLayout: InputLayoutType;
-        let overlayLayout: InputLayoutType;
         if (inputLayout && inputLayout.layoutNode === undefined) {
             // Check if we have an SspLayout
             if (inputLayout.layoutId === -1) {
@@ -558,15 +567,13 @@ export default function XiboLayoutRenderer(
                 layoutXlf = await getXlf(newOptions);
             }
 
-            if (Boolean(inputLayout['isOverlay'])) {
-                overlayLayout = self.uniqueLayouts[inputLayout.layoutId];
-            }
-
             const parser = new window.DOMParser();
             layoutXlfNode = parser.parseFromString(layoutXlf as string, 'text/xml');
         } else {
             layoutXlfNode = inputLayout && inputLayout.layoutNode;
         }
+
+        const isOverlayLayout = !!inputLayout?.isOverlay;
 
         return new Promise<ILayout>((resolve) => {
             const xlrLayoutObj: ILayout = <ILayout>{...initialLayout};
@@ -580,7 +587,7 @@ export default function XiboLayoutRenderer(
             xlrLayoutObj.index = inputLayout.index;
             xlrLayoutObj.xlfString = layoutXlf;
             xlrLayoutObj.duration = inputLayout.duration;
-            xlrLayoutObj.isOverlay = !!overlayLayout;
+            xlrLayoutObj.isOverlay = isOverlayLayout;
             xlrLayoutObj.shareOfVoice = inputLayout.shareOfVoice;
 
             console.log('XLR::prepareLayoutXlf >> Promise >> xlrLayoutObj', xlrLayoutObj);
@@ -590,7 +597,7 @@ export default function XiboLayoutRenderer(
                 xlrLayoutObj.ad = sspInputLayout.ad;
             }
 
-            if (overlayLayout) {
+            if (isOverlayLayout) {
                 resolve(new OverlayLayout(
                   xlrLayoutObj,
                   newOptions,
