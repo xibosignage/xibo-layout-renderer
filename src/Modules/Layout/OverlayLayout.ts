@@ -20,7 +20,7 @@
  */
 
 import Layout from "./Layout";
-import {ILayout, ILayoutEvents, OptionsType} from "../../Types/Layout";
+import {ELayoutState, ILayout, ILayoutEvents, OptionsType} from "../../Types/Layout";
 import {IXlr} from "../../Types/XLR";
 import {createNanoEvents, Emitter, Unsubscribe} from "nanoevents";
 
@@ -42,42 +42,59 @@ export default class OverlayLayout extends Layout {
       data,
     );
 
+    this.state = ELayoutState.IDLE;
+
     this.on('start', (overlay: ILayout) => {
-      super.on('start', (overlay: ILayout) => {});
-      console.log('XLR::OverlayLayout >> emitter.on("start")', {
-        overlay,
-      })
+      if (overlay.state === ELayoutState.RUNNING) return;
+      overlay.done = false;
+      overlay.state = ELayoutState.RUNNING;
+      console.debug('>>>> XLR.debug Overlay layout start emitted > Layout ID > ', overlay.id);
+
+      // Check if stats are enabled for the layout
+      if (overlay.enableStat) {
+        this.statsBC.postMessage({
+          action: 'START_STAT',
+          layoutId: overlay.id,
+          scheduleId: overlay.scheduleId,
+          type: 'layout',
+        });
+      }
+
+      // Emit overlay start event
+      console.debug('Overlay::Emitter > Start - Calling overlayStart event');
+      overlay.xlr.emitter.emit('overlayStart', overlay);
     });
 
     this.on('end', async (overlay: ILayout) => {
+      if (overlay.state === ELayoutState.PLAYED) return;
+
+      overlay.state = ELayoutState.PLAYED;
+
       // Check if currentLayout is already done
       // If not, don't remove the overlay layout until currentLayout.done = true
       console.log('XLR::OverlayLayout >> emitter.on("end")', {
         currentLayout: overlay.xlr.currentLayout,
         overlay,
       });
-      if (overlay.xlr.currentLayout && !overlay.xlr.currentLayout.allEnded) {
-        return;
-      }
 
       console.debug('XLR::OverlayLayout >> Ending overlay layout with ID of > ', overlay.layoutId);
       /* Remove layout that has ended */
-      const $layout = <HTMLDivElement | null>(
+      const $overlay = <HTMLDivElement | null>(
         document.querySelector(`#${overlay.containerName}[data-sequence="${overlay.index}"]`)
       );
 
       overlay.done = true;
-      console.debug({$layout});
+      console.debug({overlayHtml: $overlay});
 
-      if ($layout !== null) {
-        $layout.parentElement?.removeChild($layout);
+      if ($overlay !== null) {
+        $overlay.parentElement?.removeChild($overlay);
       }
 
-      // Emit layout end event
-      console.debug('Layout::Emitter > End - Calling layoutEnd event');
-      overlay.xlr.emitter.emit('layoutEnd', overlay);
+      // Emit overlay layout end event
+      console.debug('Overlay::Emitter > End - Calling overlayEnd event');
+      overlay.xlr.emitter.emit('overlayEnd', overlay);
 
-      // Check if stats are enabled for the layout
+      // Check if stats are enabled for the overlay
       if (overlay.enableStat) {
         this.statsBC.postMessage({
           action: 'END_STAT',

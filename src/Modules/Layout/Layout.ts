@@ -505,9 +505,10 @@ export default class Layout implements ILayout {
             if (!this.isOverlay) {
                 // Also set the background color of the player window > body
                 document.body.style.setProperty('background-color', `${this.bgColor}`);
-                // Emit start event
-                this.emitter.emit('start', this);
             }
+
+            // Emit start event
+            this.emitter.emit('start', this);
 
             console.debug('Layout running > Layout ID > ', this.id);
             console.debug('Layout Regions > ', this.regions);

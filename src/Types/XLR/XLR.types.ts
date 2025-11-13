@@ -42,6 +42,8 @@ export type IXlrEvents = {
     adRequest: (sspLayoutIndex: number) => void;
     updateLoop: (inputLayouts: InputLayoutType[]) => void;
     updateOverlays: (overlays: InputLayoutType[]) => void;
+    overlayStart: (overlay: ILayout) => void;
+    overlayEnd: (overlay: ILayout) => void;
 };
 
 export interface IXlrPlayback {
