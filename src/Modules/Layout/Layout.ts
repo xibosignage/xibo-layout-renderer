@@ -319,7 +319,7 @@ export default class Layout implements ILayout {
                 this.xlr.prepareLayouts().then(async (_xlr) => {
                     console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
 
-                    this.xlr.playSchedules(_xlr);
+                    this.xlr.playLayouts(_xlr);
                 });
             }
         });
@@ -510,12 +510,17 @@ export default class Layout implements ILayout {
             // Emit start event
             this.emitter.emit('start', this);
 
-            console.debug('Layout running > Layout ID > ', this.id);
-            console.debug('Layout Regions > ', this.regions);
-            for (let i = 0; i < this.regions.length; i++) {
-                // playLog(4, "debug", "Running region " + self.regions[i].id, false);
-                this.regions[i].run();
-            }
+            // Play regions
+            this.playRegions();
+        }
+    }
+
+    playRegions() {
+        console.debug('Layout running > Layout ID > ', this.id);
+        console.debug('Layout Regions > ', this.regions);
+        for (let i = 0; i < this.regions.length; i++) {
+            // playLog(4, "debug", "Running region " + self.regions[i].id, false);
+            this.regions[i].run();
         }
     }
 
@@ -572,7 +577,9 @@ export default class Layout implements ILayout {
                 }
             }
 
-            this.emitter.emit('end', this);
+            if (!this.isOverlay) {
+                this.emitter.emit('end', this);
+            }
         }
     }
 

@@ -28,6 +28,7 @@ import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/Splas
 import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
 import {getLayoutIndexByLayoutId, hasSspLayout} from "./Modules/Generators/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
+import {OverlayLayoutManager} from "./Modules/Layout/OverlayLayoutManager";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -43,8 +44,16 @@ export default function XiboLayoutRenderer(
         ...initialXlr,
     };
 
+    const runOverlayLayouts = (async () => {
+        await xlrObject.overlayLayoutManager.prepareOverlayLayouts(xlrObject.overlays, xlrObject);
+
+        // Play overlays
+        xlrObject.overlayLayoutManager.playOverlays();
+    });
+
     xlrObject.isUpdatingLoop = false;
     xlrObject.isUpdatingOverlays = false;
+    xlrObject.overlayLayoutManager = new OverlayLayoutManager();
 
     let splashScreen: ISplashScreen;
 
@@ -100,6 +109,7 @@ export default function XiboLayoutRenderer(
         const self = this;
         self.inputLayouts = !Array.isArray(props.inputLayouts) ?
             [props.inputLayouts] : props.inputLayouts;
+        self.overlays = overlays;
         self.config = JSON.parse(JSON.stringify({...platform, ...props.options}));
 
         // Prepare rendering DOM
@@ -131,8 +141,7 @@ export default function XiboLayoutRenderer(
         });
     };
 
-    xlrObject.playSchedules = function(xlr: IXlr) {
-        const self = this;
+    xlrObject.playLayouts = function(xlr: IXlr) {
         const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
         // Check if there's a current layout
         if (xlr.currentLayout !== undefined) {
@@ -143,18 +152,22 @@ export default function XiboLayoutRenderer(
             if (!xlr.currentLayout.done) {
                 console.log('>>>> XLR.debug XLR::playSchedules > Running currentLayout', xlr.currentLayout);
                 xlr.currentLayout.run();
-
-                // @TODO: Implement overlay layout here
-                (async () => {
-                    await self.renderOverlayLayouts();
-                })();
             }
+
         } else {
             // Show splash screen
             if ($splashScreen) {
                 $splashScreen?.show();
             }
+        }
+    }
 
+    xlrObject.playSchedules = function(xlr: IXlr) {
+        xlrObject.playLayouts(xlr);
+
+        if (xlr.currentLayout !== undefined) {
+            // Run overlay layouts separately
+            runOverlayLayouts();
         }
     };
 
@@ -289,7 +302,7 @@ export default function XiboLayoutRenderer(
                 }
             }
 
-            this.playSchedules(this);
+            this.playLayouts(this);
         } else {
             // Remove next layout if it is in the DOM
             if (this.nextLayout &&
@@ -313,6 +326,9 @@ export default function XiboLayoutRenderer(
 
     xlrObject.updateOverlays = async (overlays: InputLayoutType[]) => {
         xlrObject.overlays = overlays;
+
+        // Run overlay layouts separately
+        await runOverlayLayouts();
     };
 
     xlrObject.parseLayouts = function(loopUpdate?: boolean) {
@@ -658,7 +674,7 @@ export default function XiboLayoutRenderer(
             this.currentLayoutIndex = _assumedPrevIndex;
 
             this.prepareLayouts().then((xlr) => {
-                this.playSchedules(xlr);
+                this.playLayouts(xlr);
             });
         }
     };
