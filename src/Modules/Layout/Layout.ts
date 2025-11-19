@@ -320,6 +320,12 @@ export default class Layout implements ILayout {
                     console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
 
                     this.xlr.playLayouts(_xlr);
+
+                    if (layout.isInterrupt() && _xlr.currentLayout && !_xlr.currentLayout.isInterrupt()) {
+                        // Start back overlay layouts when previous layout is interrupt
+                        // and current layout is not
+                        await _xlr.overlayLayoutManager.resumeOverlays();
+                    }
                 });
             }
         });

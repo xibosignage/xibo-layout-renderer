@@ -139,23 +139,8 @@ export default function Region(
             mediaObj.index = indx;
             self.mediaObjects.push(mediaObj);
         });
-        //
-        // if (self.mediaObjects.length === 1) {
-        //     const _sourceMedia = self.mediaObjects[0];
-        //     const clonedMediaObject = new Media(
-        //         self,
-        //         _sourceMedia.mediaId,
-        //         _sourceMedia.xml as Element,
-        //         options as OptionsType & IRegion["options"],
-        //         xlr,
-        //     );
-        //     clonedMediaObject.index = 1;
-        //
-        //     self.mediaObjects.push(clonedMediaObject);
-        //     self.totalMediaObjects = self.mediaObjects.length;
-        // }
 
-        // Add media to region for targetted actions
+        // Add media to region for targeted actions
         self.layout.actionController?.actions.forEach((action) => {
             const attributes = getAllAttributes(action.xml);
 
@@ -240,7 +225,7 @@ export default function Region(
                 ($region) && $region.insertBefore(self.currEl as Node, $region.lastElementChild);
             }
 
-            if (self.nxtMedia) {
+            if (self.totalMediaObjects > 1 && self.nxtMedia) {
                 self.nxtEl = createMediaElement(self.nxtMedia, 'next');
                 self.nxtMedia.html = self.nxtEl;
 

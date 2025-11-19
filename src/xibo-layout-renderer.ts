@@ -152,6 +152,11 @@ export default function XiboLayoutRenderer(
             if (!xlr.currentLayout.done) {
                 console.log('>>>> XLR.debug XLR::playSchedules > Running currentLayout', xlr.currentLayout);
                 xlr.currentLayout.run();
+
+                // Hide overlays when current layout is interrupt
+                if (xlr.currentLayout.isInterrupt()) {
+                    xlrObject.overlayLayoutManager.stopOverlays();
+                }
             }
 
         } else {
@@ -165,7 +170,7 @@ export default function XiboLayoutRenderer(
     xlrObject.playSchedules = function(xlr: IXlr) {
         xlrObject.playLayouts(xlr);
 
-        if (xlr.currentLayout !== undefined) {
+        if (xlr.currentLayout !== undefined && !xlr.currentLayout.isInterrupt()) {
             // Run overlay layouts separately
             runOverlayLayouts();
         }
@@ -302,7 +307,7 @@ export default function XiboLayoutRenderer(
                 }
             }
 
-            this.playLayouts(this);
+            this.playSchedules(this);
         } else {
             // Remove next layout if it is in the DOM
             if (this.nextLayout &&
@@ -674,7 +679,7 @@ export default function XiboLayoutRenderer(
             this.currentLayoutIndex = _assumedPrevIndex;
 
             this.prepareLayouts().then((xlr) => {
-                this.playLayouts(xlr);
+                this.playSchedules(xlr);
             });
         }
     };

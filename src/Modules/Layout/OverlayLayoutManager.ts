@@ -19,7 +19,7 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {ILayout, initialLayout, InputLayoutType} from "../../Types/Layout";
+import {ELayoutState, ILayout, initialLayout, InputLayoutType} from "../../Types/Layout";
 import {IXlr} from "../../Types/XLR";
 import OverlayLayout from "./OverlayLayout";
 
@@ -32,6 +32,26 @@ export class OverlayLayoutManager {
         this.container = document.createElement('div');
         this.container.className = 'overlay-layouts';
         this.container.style.display = 'none';
+    }
+
+    async parseOverlays(list: any[]): Promise<Awaited<OverlayLayout[]>> {
+        return await Promise.all(list.map(async (item: any) => {
+            let inputOverlay: InputLayoutType = <InputLayoutType>{};
+
+            inputOverlay = {...inputOverlay, ...item};
+            inputOverlay.index = item.index;
+
+            const overlayLayout = await this.parent.prepareLayoutXlf(<ILayout>{...initialLayout, ...inputOverlay});
+
+            // Hide all overlays first
+            const $overlay = <HTMLDivElement | null>(document.querySelector(`#${overlayLayout.containerName}[data-sequence="${overlayLayout.index}"]`));
+
+            if ($overlay !== null) {
+                $overlay.style.setProperty('display', 'none');
+            }
+
+            return overlayLayout as OverlayLayout;
+        }));
     }
 
     async prepareOverlayLayouts(list: InputLayoutType[], parent: IXlr) {
@@ -82,29 +102,11 @@ export class OverlayLayoutManager {
             hasChanged,
         });
 
-        this.overlays = await Promise.all(list.map(async (item: InputLayoutType) => {
-            let inputOverlay: InputLayoutType = <InputLayoutType>{};
-
-            inputOverlay = {...inputOverlay, ...item};
-            inputOverlay.index = item.index;
-
-            const overlayLayout = await this.parent.prepareLayoutXlf(<ILayout>{...initialLayout, ...inputOverlay});
-
-            // Hide all overlays first
-            const $overlay = <HTMLDivElement | null>(document.querySelector(`#${overlayLayout.containerName}[data-sequence="${overlayLayout.index}"]`));
-
-            if ($overlay !== null) {
-                $overlay.style.setProperty('display', 'none');
-            }
-
-            return overlayLayout as OverlayLayout;
-        }));
+        this.overlays = await this.parseOverlays(list as InputLayoutType[]);
     }
 
     playOverlays() {
-        if (this.overlays.length === 0) {
-            // Clean up existing overlays
-        }
+        if (this.overlays.length === 0) return;
 
         if (this.parent && this.parent.currentLayout?.isInterrupt()) {
             this.container.style.setProperty('display', 'none');
@@ -114,5 +116,26 @@ export class OverlayLayoutManager {
         this.overlays.forEach((overlay) => {
             overlay.run();
         });
+    }
+
+    stopOverlays() {
+        if (this.overlays.length === 0) return;
+
+        this.overlays.forEach(async (overlay) => {
+            const overlayHtml = <HTMLDivElement | null>(document.querySelector(`#${overlay.containerName}[data-sequence="${overlay.index}"]`));
+
+            if (overlayHtml !== null) {
+                await overlay.finishAllRegions();
+                overlay.emitter.emit('end', overlay);
+            }
+        })
+    }
+
+    async resumeOverlays() {
+        if (this.overlays.length === 0) return;
+
+        this.overlays = await this.parseOverlays(this.overlays);
+
+        this.playOverlays();
     }
 }

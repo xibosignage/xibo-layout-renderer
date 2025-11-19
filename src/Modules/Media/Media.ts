@@ -44,6 +44,7 @@ import {IXlr} from '../../Types/XLR';
 import {MediaState} from "../../Types/Media/Media.types";
 
 import 'video.js/dist/video-js.min.css';
+import {createMediaElement} from "../Generators/Generators";
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -111,7 +112,7 @@ export class Media implements IMedia {
 
         this.fileId = this.xml?.getAttribute('fileId') || '';
         this.idCounter = nextId(this.options);
-        this.containerName = `M-${this.id}-${this.idCounter}_uid${nanoid(16)}`;
+        this.containerName = `M-${this.id}-${this.idCounter}`;
         this.iframeName = `${this.containerName}-iframe`;
         this.mediaType = this.xml?.getAttribute('type') || '';
         this.render = this.xml?.getAttribute('render') || '';

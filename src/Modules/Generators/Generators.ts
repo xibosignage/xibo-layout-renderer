@@ -329,7 +329,8 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
     $mediaIframe.height = `${self.divHeight}px`;
     $mediaIframe.style.cssText = `border: 0;`;
 
-    let $media = <HTMLElement>(self.region.html.querySelector!(`#${self.containerName}`));
+    const mediaSelector = `.media--item[data-role="${role}"][data-media-id="${mediaObject.id}"]`;
+    let $media = <HTMLElement>(self.region.html.querySelector!(mediaSelector));
 
     if ($media === null) {
         if (self.mediaType === 'video') {
@@ -345,6 +346,11 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
 
     $media.dataset.role = role;
     $media.dataset.mediaId = self.id;
+    $media.dataset.mediaType = self.mediaType;
+    $media.dataset.type = self.type;
+    $media.dataset.render = self.render;
+    $media.dataset.duration = String(self.duration);
+    $media.dataset.fileId = self.fileId;
     $media.className = 'media--item';
 
     /* Scale the Content Container */
