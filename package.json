@@ -7,6 +7,7 @@
   "typings": "dist/xibo-layout-renderer.d.ts",
   "type": "module",
   "scripts": {
+    "prepare": "npm run build",
     "build": "rimraf dist && rollup --config rollup.config.prod.ts --configPlugin @rollup/plugin-typescript",
     "dev": "rimraf dist && rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
   },
