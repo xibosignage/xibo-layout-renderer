@@ -434,6 +434,8 @@ export default function Layout(
         });
 
         layout.actionController.initTouchActions();
+
+        layout.actionController.initKeyboardActions();
     };
 
     layoutObject.regionExpired = function() {
