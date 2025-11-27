@@ -21,6 +21,7 @@
 import {Emitter, Unsubscribe} from 'nanoevents';
 import {ILayout, InputLayoutType, OptionsType} from '../Layout';
 import {platform} from '../../Modules/Platform';
+import {OverlayLayoutManager} from "../../Modules/Layout/OverlayLayoutManager";
 
 export type PrepareLayoutsType = {
     moveNext?: boolean;
@@ -56,59 +57,119 @@ export interface IXlrPlayback {
 }
 
 export interface IXlr {
-    inputLayouts: InputLayoutType[],
+    bootstrap(): void,
+
     config: OptionsType,
-    layouts: Record<string, ILayout>;
-    overlays: InputLayoutType[];
-    currentLayoutIndex: number;
-    currentLayoutId: number;
     currentLayout: ILayout | undefined;
-    nextLayout: ILayout | undefined;
-    emitter: Emitter<IXlrEvents>;
-    bootstrap(): void;
-    init(): Promise<IXlr>;
-    playSchedules(xlr: IXlr): void;
-    prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
-    prepareLayouts(): Promise<IXlr>;
-    updateLayouts(inputLayouts: InputLayoutType[]): void;
-    updateLoop(inputLayouts: InputLayoutType[]): Promise<void>;
-    gotoPrevLayout(): void;
-    gotoNextLayout(): void;
-    uniqueLayouts: Record<string, InputLayoutType>;
-    getLayout(inputLayout: InputLayoutType): ILayout | undefined;
-    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): Promise<void>;
-    parseLayouts(loopUpdate?: boolean): IXlrPlayback;
-    getLayoutById(layoutId: number, layoutIndex?: number): ILayout | undefined;
-    on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe;
-    prepareForSsp(nextLayout: ILayout): Promise<ILayout>;
+    currentLayoutId: number;
+    currentLayoutIndex: number;
+
     emitSync<E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>): Promise<void>;
-    updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
-    isSspEnabled: boolean;
-    renderOverlayLayouts(): Promise<void>;
+
+    emitter: Emitter<IXlrEvents>;
+
+    getLayout(inputLayout: InputLayoutType): ILayout | undefined;
+
+    getLayoutById(layoutId: number, layoutIndex?: number): ILayout | undefined;
+
+    gotoNextLayout(): void;
+
+    gotoPrevLayout(): void;
+
+    init(): Promise<IXlr>;
+
+    inputLayouts: InputLayoutType[];
     isInterrupted: boolean;
+
     isLayoutInDOM(containerName: string, layoutId: number): boolean;
+
+    isSspEnabled: boolean;
     isUpdatingLoop: boolean;
     isUpdatingOverlays: boolean;
+    layouts: Record<string, ILayout>;
+    nextLayout: ILayout | undefined;
+
+    on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe;
+
+    overlayLayoutManager: OverlayLayoutManager;
+    overlays: InputLayoutType[];
+
+    parseLayouts(loopUpdate?: boolean): IXlrPlayback;
+
+    playLayouts(xlr: IXlr): void;
+
+    playSchedules(xlr: IXlr): void;
+
+    prepareForSsp(nextLayout: ILayout): Promise<ILayout>;
+
+    prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
+
+    prepareLayouts(): Promise<IXlr>;
+
+    renderOverlayLayouts(): Promise<void>;
+
+    uniqueLayouts: Record<string, InputLayoutType>;
+
+    updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
+
+    updateLayouts(inputLayouts: InputLayoutType[]): void;
+
+    updateLoop(inputLayouts: InputLayoutType[]): Promise<void>;
+
     updateOverlays(overlays: InputLayoutType[]): Promise<void>;
+
+    updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): Promise<void>;
 }
 
 export const initialXlr: IXlr = {
-    inputLayouts: [],
+    bootstrap() {
+    },
     config: platform,
-    layouts: {},
-    overlays: [],
+    currentLayout: undefined,
+    currentLayoutId: -2,
     currentLayoutIndex: 0,
     // NOTE: Using -2 to avoid conflict with usage of -1 with SSP Layout
-    currentLayoutId: -2,
-    currentLayout: undefined,
-    nextLayout: undefined,
+    emitSync<E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>): Promise<void> {
+        return Promise.resolve();
+    },
     emitter: <Emitter<IXlrEvents>>{},
-    bootstrap() {
+    getLayout(inputLayout: InputLayoutType): ILayout | undefined {
+        return;
+    },
+    getLayoutById(layoutId: number): ILayout | undefined {
+        return <ILayout>{};
+    },
+    gotoNextLayout() {
+    },
+    gotoPrevLayout() {
     },
     init() {
         return Promise.resolve(<IXlr>{});
     },
+    inputLayouts: [],
+    isInterrupted: false,
+    isLayoutInDOM(containerName: string, layoutId: number): boolean {
+        return false;
+    },
+    isSspEnabled: false,
+    isUpdatingLoop: false,
+    isUpdatingOverlays: false,
+    layouts: {},
+    nextLayout: undefined,
+    on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe {
+        return <Unsubscribe>{};
+    },
+    overlayLayoutManager: new OverlayLayoutManager(),
+    overlays: [],
+    parseLayouts(): IXlrPlayback {
+        return <IXlrPlayback>{};
+    },
+    playLayouts(xlr: IXlr) {
+    },
     playSchedules() {
+    },
+    prepareForSsp(nextLayout: ILayout): Promise<ILayout> {
+        return Promise.resolve(<ILayout>{});
     },
     prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout> {
         return Promise.resolve(<ILayout>{});
@@ -116,50 +177,21 @@ export const initialXlr: IXlr = {
     prepareLayouts(): Promise<IXlr> {
         return Promise.resolve(<IXlr>{});
     },
+    renderOverlayLayouts(): Promise<void> {
+        return Promise.resolve();
+    },
+    uniqueLayouts: {},
+    updateInputLayout(layoutIndex: number, layout: InputLayoutType) {
+    },
     updateLayouts(inputLayouts: InputLayoutType[]) {
     },
     updateLoop(inputLayouts) {
         return Promise.resolve();
     },
-    gotoPrevLayout() {
-    },
-    gotoNextLayout() {
-    },
-    uniqueLayouts: {},
-    getLayout(inputLayout: InputLayoutType): ILayout | undefined {
-        return;
+    updateOverlays(overlays: InputLayoutType[]) {
+        return Promise.resolve();
     },
     updateScheduleLayouts(scheduleLayouts) {
         return Promise.resolve();
     },
-    parseLayouts(): IXlrPlayback {
-        return <IXlrPlayback>{};
-    },
-    getLayoutById(layoutId: number): ILayout | undefined {
-        return <ILayout>{};
-    },
-    on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe {
-        return <Unsubscribe>{};
-    },
-    prepareForSsp(nextLayout: ILayout): Promise<ILayout> {
-        return Promise.resolve(<ILayout>{});
-    },
-    emitSync<E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>): Promise<void> {
-        return Promise.resolve();
-    },
-    updateInputLayout(layoutIndex: number, layout: InputLayoutType) {
-    },
-    isSspEnabled: false,
-    renderOverlayLayouts(): Promise<void> {
-        return Promise.resolve();
-    },
-    isInterrupted: false,
-    isLayoutInDOM(containerName: string, layoutId: number): boolean {
-        return false;
-    },
-    isUpdatingLoop: false,
-    isUpdatingOverlays: false,
-    updateOverlays(overlays: InputLayoutType[]) {
-        return Promise.resolve();
-    }
 };
