@@ -452,7 +452,8 @@ export default function XiboLayoutRenderer(
     };
 
     xlrObject.getLayout = function(inputLayout: InputLayoutType) {
-        if (Object.keys(this.uniqueLayouts).length === 0) {
+        const isCMS = this.config.platform === 'CMS';
+        if (!isCMS && Object.keys(this.uniqueLayouts).length === 0) {
             return;
         }
 
@@ -463,7 +464,6 @@ export default function XiboLayoutRenderer(
                 _layout = inputLayout;
                 _layout.id = inputLayout.layoutId;
             } else {
-                const isCMS = this.config.platform === 'CMS';
                 let activeLayout = inputLayout;
 
                 if (isCMS) {
