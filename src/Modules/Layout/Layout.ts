@@ -494,9 +494,9 @@ export default class Layout implements ILayout {
             this.regions.push(regionObj);
         });
 
-        layout.actionController.initTouchActions();
+        this.actionController.initTouchActions();
 
-        layout.actionController.initKeyboardActions();
+        this.actionController.initKeyboardActions();
     };
 
     run(): void {
