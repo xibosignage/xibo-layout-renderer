@@ -463,10 +463,19 @@ export default function XiboLayoutRenderer(
                 _layout = inputLayout;
                 _layout.id = inputLayout.layoutId;
             } else {
-                _layout = {..._layout, ...this.uniqueLayouts[inputLayout.layoutId]};
+                const isCMS = this.config.platform === 'CMS';
+                let activeLayout = inputLayout;
+
+                if (isCMS) {
+                    activeLayout.index = 0;
+                } else {
+                    activeLayout = {...this.uniqueLayouts[inputLayout.layoutId]};
+                }
+
+                _layout = {..._layout, ...activeLayout};
 
                 // Must set index/sequence from schedule loop
-                _layout.index = inputLayout.index as number;
+                _layout.index = activeLayout.index as number;
             }
         }
 
