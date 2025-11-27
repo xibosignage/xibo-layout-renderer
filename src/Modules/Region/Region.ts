@@ -120,6 +120,11 @@ export default function Region(
         `;
         $region.className = 'region--item';
 
+        // Set visibility when zIndex = 0
+        if (self.zIndex <= 0) {
+            $region.style.setProperty('visibility', 'hidden');
+        }
+
         // Save region html
         self.html = $region;
 
