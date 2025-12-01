@@ -120,8 +120,9 @@ export default function Region(
         `;
         $region.className = 'region--item';
 
-        // Set visibility when zIndex = 0
-        if (self.zIndex <= 0) {
+        // Set visibility when zIndex = 0 and
+        // only when layout has background image
+        if (String(self.layout.bgImage).length > 0 && self.zIndex <= 0) {
             $region.style.setProperty('visibility', 'hidden');
         }
 
@@ -145,9 +146,16 @@ export default function Region(
             self.mediaObjects.push(mediaObj);
         });
 
+        console.debug('[XLR::Region] prepareRegion > ', {
+            actions: self.layout.actionController?.actions,
+        })
         // Add media to region for targeted actions
         self.layout.actionController?.actions.forEach((action) => {
             const attributes = getAllAttributes(action.xml);
+
+            console.debug('[XLR::Region] prepareRegion > ', {
+                attributes,
+            });
 
             if (attributes.target.value === 'region' &&
                 attributes.actionType.value === 'navWidget' &&
@@ -156,7 +164,7 @@ export default function Region(
                 const drawerMediaItems = Array.from(self.layout.drawer?.getElementsByTagName('media') || []);
                 
                 drawerMediaItems.forEach((drawerMedia) => {
-                    if (drawerMedia.id === attributes.widgetId.value) {
+                    if (drawerMedia.id === attributes.widgetId?.value) {
                         // Add drawer media to the region
                         self.mediaObjectsActions.push(new Media(
                             self,
