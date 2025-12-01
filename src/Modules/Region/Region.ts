@@ -146,16 +146,9 @@ export default function Region(
             self.mediaObjects.push(mediaObj);
         });
 
-        console.debug('[XLR::Region] prepareRegion > ', {
-            actions: self.layout.actionController?.actions,
-        })
         // Add media to region for targeted actions
         self.layout.actionController?.actions.forEach((action) => {
             const attributes = getAllAttributes(action.xml);
-
-            console.debug('[XLR::Region] prepareRegion > ', {
-                attributes,
-            });
 
             if (attributes.target.value === 'region' &&
                 attributes.actionType.value === 'navWidget' &&
