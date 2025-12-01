@@ -120,6 +120,12 @@ export default function Region(
         `;
         $region.className = 'region--item';
 
+        // Set visibility when zIndex = 0 and
+        // only when layout has background image
+        if (String(self.layout.bgImage).length > 0 && self.zIndex <= 0) {
+            $region.style.setProperty('visibility', 'hidden');
+        }
+
         // Save region html
         self.html = $region;
 
@@ -151,7 +157,7 @@ export default function Region(
                 const drawerMediaItems = Array.from(self.layout.drawer?.getElementsByTagName('media') || []);
                 
                 drawerMediaItems.forEach((drawerMedia) => {
-                    if (drawerMedia.id === attributes.widgetId.value) {
+                    if (drawerMedia.id === attributes.widgetId?.value) {
                         // Add drawer media to the region
                         self.mediaObjectsActions.push(new Media(
                             self,

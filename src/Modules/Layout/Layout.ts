@@ -94,7 +94,7 @@ export function initRenderingDOM(targetContainer: Element | null) {
 }
 
 export async function getXlf(layoutOptions: OptionsType) {
-    let apiHost = window.location.origin;
+    let apiHost = window.location.href.split("/layout")[0];
 
     let xlfUrl = apiHost + layoutOptions.xlfUrl;
     let fetchOptions: RequestInit = {};
@@ -495,7 +495,9 @@ export default class Layout implements ILayout {
         });
 
         this.actionController.initTouchActions();
-    }
+
+        this.actionController.initKeyboardActions();
+    };
 
     run(): void {
         const $layoutContainer = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
