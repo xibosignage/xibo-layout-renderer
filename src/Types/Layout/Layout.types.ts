@@ -1,29 +1,41 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2025 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - https://www.xibosignage.com
+ * Xibo - Digital Signage - https://xibosignage.com
  *
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {Emitter, Unsubscribe} from 'nanoevents';
 import {IRegion} from '../Region';
 import {platform} from '../../Modules/Platform';
-import {ILayoutEvents} from '../../Modules/Layout';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
+
+export interface ILayoutEvents {
+    start: (layout: ILayout) => void;
+    end: (layout: ILayout) => void;
+    cancelled: (layout: ILayout) => void;
+}
+
+export enum ELayoutState {
+    IDLE,
+    RUNNING,
+    PLAYED,
+    CANCELLED,
+}
 
 export type InputLayoutType = {
     response: any;
@@ -31,6 +43,10 @@ export type InputLayoutType = {
     path?: string;
     index?: number;
     id?: number;
+    ad?: any;
+    getXlf?(): string;
+    duration?: number;
+    isOverlay?: boolean;
 };
 
 export type OptionsType = {
@@ -67,6 +83,7 @@ export interface ILayout {
     sh: number | null;
     xw: number | null;
     xh: number | null;
+    duration: number;
     zIndex: number | null;
     scaleFactor: number;
     sWidth: number;
@@ -77,7 +94,7 @@ export interface ILayout {
     bgImage: string;
     bgId: string;
     containerName: string;
-    layoutNode: Document | null;
+    layoutNode?: Document;
     regionMaxZIndex: number;
     ready: boolean;
     regionObjects: IRegion[];
@@ -96,7 +113,7 @@ export interface ILayout {
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;
-    regionEnded(): void;
+    regionEnded(): Promise<void>;
     stopAllMedia(): Promise<void>;
     resetLayout(): Promise<void>;
     index: number;
@@ -106,6 +123,13 @@ export interface ILayout {
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
     removeLayout(): void;
+    xlfString: string;
+    getXlf(): string;
+    ad: any;
+    isOverlay: boolean;
+    shareOfVoice: number;
+    isInterrupt(): boolean;
+    state: ELayoutState;
 }
 
 export const initialLayout: ILayout = {
@@ -115,6 +139,7 @@ export const initialLayout: ILayout = {
     sh: 0,
     xw: 0,
     xh: 0,
+    duration: 0,
     zIndex: 0,
     scaleFactor: 1,
     sWidth: 0,
@@ -125,7 +150,7 @@ export const initialLayout: ILayout = {
     bgImage: '',
     bgId: '',
     containerName: '',
-    layoutNode: null,
+    layoutNode: undefined,
     regionMaxZIndex: 0,
     ready: false,
     regionObjects: [],
@@ -137,6 +162,16 @@ export const initialLayout: ILayout = {
     done: false,
     allEnded: false,
     path: '',
+    emitter: <Emitter<ILayoutEvents>>{},
+    index: -1,
+    actionController: undefined,
+    enableStat: false,
+    xlr: <IXlr>{},
+    inLoop: true,
+    xlfString: '',
+    ad: null,
+    isOverlay: false,
+    shareOfVoice: 0,
     prepareLayout() {
     },
     parseXlf() {
@@ -150,7 +185,8 @@ export const initialLayout: ILayout = {
     },
     end() {
     },
-    regionEnded() {
+    regionEnded(): Promise<void> {
+        return Promise.resolve();
     },
     stopAllMedia() {
         return Promise.resolve();
@@ -158,17 +194,16 @@ export const initialLayout: ILayout = {
     resetLayout() {
         return Promise.resolve();
     },
-    emitter: <Emitter<ILayoutEvents>>{},
-    index: -1,
-    actionController: undefined,
-    enableStat: false,
-    xlr: <IXlr>{},
     finishAllRegions(): Promise<void[]> {
         return Promise.resolve([]);
     },
-    inLoop: true,
     removeLayout() {
-    }
+    },
+    getXlf(): string {
+        return '';
+    },
+    isInterrupt: () => false,
+    state: ELayoutState.IDLE,
 };
 
 export type GetLayoutParamType = {

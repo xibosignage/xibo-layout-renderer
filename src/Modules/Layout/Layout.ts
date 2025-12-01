@@ -1,40 +1,43 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2025 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - https://www.xibosignage.com
+ * Xibo - Digital Signage - https://xibosignage.com
  *
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {createNanoEvents} from 'nanoevents';
+import {createNanoEvents, Emitter} from 'nanoevents';
 import {
+    ELayoutState,
     GetLayoutParamType,
     GetLayoutType,
     ILayout,
+    ILayoutEvents,
     initialLayout,
     OptionsType,
 } from '../../Types/Layout';
-import { IXlr } from '../../Types/XLR';
-import { nextId } from '../Generators';
-import { Region } from '../Region';
+import {IXlr} from '../../Types/XLR';
+import {composeBgUrlByPlatform, nextId} from '../Generators';
+import {Region} from '../Region';
 
 import './layout.css';
-import {composeBgUrlByPlatform} from '../Generators';
-import ActionController, { Action } from '../ActionController';
+import ActionController, {Action} from '../ActionController';
+import {platform} from "../Platform";
+import {IRegion} from '../../types';
 
-const playAgainClickHandle = function(ev: { preventDefault: () => void; }) {
+const playAgainClickHandle = function (ev: { preventDefault: () => void; }) {
     ev.preventDefault();
     history.go(0);
 };
@@ -190,284 +193,382 @@ export function getLayout(params: GetLayoutParamType): GetLayoutType {
     }
 }
 
-export interface ILayoutEvents {
-    start: (layout: ILayout) => void;
-    end: (layout: ILayout) => void;
-}
+export default class Layout implements ILayout {
+    id: number | null = null;
+    layoutId: number = -1;
+    sw: number = 0;
+    sh: number = 0;
+    xw: number = 0;
+    xh: number = 0;
+    duration: number = 0;
+    zIndex: number = 0;
+    scaleFactor: number = 1;
+    sWidth: number = 0;
+    sHeight: number = 0;
+    offsetX: number = 0;
+    offsetY: number = 0;
+    bgColor: string = '';
+    bgImage: string = '';
+    bgId: string = '';
+    containerName: string = '';
+    regionMaxZIndex: number = 0;
+    ready: boolean = false;
+    regionObjects: IRegion[] = <IRegion[]>[];
+    drawer: Element | null = null;
+    allExpired: boolean = false;
+    regions: IRegion[] = <IRegion[]>[];
+    actions: Action[] = <Action[]>[];
+    done: boolean = false;
+    allEnded: boolean = false;
+    emitter: Emitter<ILayoutEvents> = createNanoEvents<ILayoutEvents>();
+    index: number = -1;
+    actionController: ActionController | undefined = undefined;
+    enableStat: boolean = false;
+    inLoop: boolean = true;
+    xlfString: string = '';
+    ad: any = null;
+    isOverlay: boolean = false;
+    shareOfVoice: number = 0;
+    state: ELayoutState = ELayoutState.IDLE;
+    scheduleId?: number;
+    layoutNode?: Document;
+    path?: string = '';
 
-export default function Layout(
-    data: Document | null,
-    options: OptionsType,
-    xlr: IXlr,
-    layout?: ILayout
-) {
-    const props = {
-        data: data,
-        options: options,
-        layout: layout || initialLayout,
+    options: OptionsType = platform;
+    xlr: IXlr = <IXlr>{};
+
+    private readonly layoutObj: ILayout = <ILayout>{};
+    protected readonly statsBC = new BroadcastChannel('statsBC');
+
+    constructor(
+      xlrLayoutObj: ILayout,
+      options: OptionsType,
+      xlr: IXlr,
+      data?: Document,
+    ) {
+        this.layoutNode = data;
+        this.options = options;
+        this.xlr = xlr;
+        this.layoutObj = xlrLayoutObj;
+
+        // Prepare and parse layout node
+        this.prepareLayout();
+
+        this.on('start', (layout: ILayout) => {
+            layout.done = false;
+            layout.state = ELayoutState.RUNNING;
+            console.debug('>>>> XLR.debug Layout start emitted > Layout ID > ', layout.id);
+
+            // Check if stats are enabled for the layout
+            if (layout.enableStat) {
+                this.statsBC.postMessage({
+                    action: 'START_STAT',
+                    layoutId: layout.id,
+                    scheduleId: layout.scheduleId,
+                    type: 'layout',
+                });
+            }
+
+            // Emit layout start event
+            console.debug('>>>> XLR.debug Layout::Emitter > Start - Calling layoutStart event');
+            layout.xlr.emitter.emit('layoutStart', layout);
+        });
+
+        this.on('end', async (layout: ILayout) => {
+            // Only proceed when last layout state is RUNNING
+            if (layout.state === ELayoutState.CANCELLED) {
+                return;
+            }
+
+            console.debug('>>>> XLR.debug Ending layout with ID of > ', layout.layoutId);
+
+            /* Remove layout that has ended */
+            const $layout = <HTMLDivElement | null>(
+              document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`)
+            );
+
+            // Only update layout.state when last state === RUNNING
+            if (layout.state === ELayoutState.RUNNING) {
+                // Update layout state
+                layout.state = ELayoutState.PLAYED;
+            }
+
+            layout.done = true;
+            console.debug({$layout});
+
+            if ($layout !== null) {
+                $layout.parentElement?.removeChild($layout);
+            }
+
+            // Check if stats are enabled for the layout
+            if (layout.enableStat) {
+                this.statsBC.postMessage({
+                    action: 'END_STAT',
+                    layoutId: layout.id,
+                    scheduleId: layout.scheduleId,
+                    type: 'layout',
+                });
+            }
+
+            // Emit layout end event
+            console.debug('>>>>> XLR.debug Awaited XLR::emitSync > End - Calling layoutEnd event');
+            await layout.xlr.emitSync('layoutEnd', layout);
+
+            if (this.xlr.config.platform !== 'CMS' && layout.inLoop) {
+                // Transition next layout to current layout and prepare next layout if exist
+                this.xlr.prepareLayouts().then(async (_xlr) => {
+                    console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
+
+                    this.xlr.playLayouts(_xlr);
+
+                    if (layout.isInterrupt() && _xlr.currentLayout && !_xlr.currentLayout.isInterrupt()) {
+                        // Start back overlay layouts when previous layout is interrupt
+                        // and current layout is not
+                        await _xlr.overlayLayoutManager.resumeOverlays();
+                    }
+                });
+            }
+        });
+
+        this.on('cancelled', (layout: ILayout) => {
+            console.debug('>>>>> XLR.debug / Layout cancelled > Layout ID > ', layout.id);
+            layout.state = ELayoutState.CANCELLED;
+        });
     }
-    const emitter = createNanoEvents<ILayoutEvents>();
-    const statsBC = new BroadcastChannel('statsBC');
 
-    emitter.on('start', (layout: ILayout) => {
-        layout.done = false;
-        console.debug('Layout start emitted > Layout ID > ', layout.id);
+    prepareLayout(): void {
+        this.parseXlf();
+    }
 
-        // Check if stats are enabled for the layout
-        if (layout.enableStat) {
-            statsBC.postMessage({
-                action: 'START_STAT',
-                layoutId: layout.id,
-                scheduleId: layout.scheduleId,
-                type: 'layout',
-            });
-        }
-    });
-
-    emitter.on('end', async (layout: ILayout) => {
-        console.debug('Ending layout with ID of > ', layout.layoutId);
-        /* Remove layout that has ended */
-        const $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
-
-        layout.done = true;
-        console.debug({$layout});
-
-        if ($layout !== null) {
-            $layout.parentElement?.removeChild($layout);
+    parseXlf(): void {
+        if (this.options.idCounter === 0) {
+            this.options.idCounter = nextId(this.options);
         }
 
-        // Check if stats are enabled for the layout
-        if (layout.enableStat) {
-            statsBC.postMessage({
-                action: 'END_STAT',
-                layoutId: layout.id,
-                scheduleId: layout.scheduleId,
-                type: 'layout',
-            });
-        }
+        this.id = this.layoutObj.id;
+        this.layoutId = this.layoutObj.layoutId;
+        this.scheduleId = this.layoutObj.scheduleId;
+        this.index = this.layoutObj.index;
+        this.xlfString = this.layoutObj.xlfString;
+        this.duration = this.layoutObj.duration;
+        this.ad = this.layoutObj.ad;
+        this.isOverlay = this.layoutObj.isOverlay;
+        this.shareOfVoice = this.layoutObj.shareOfVoice;
 
-        if (xlr.config.platform !== 'CMS' && layout.inLoop) {
-            // Transition next layout to current layout and prepare next layout if exist
-            const playback = xlr.parseLayouts();
-            xlr.prepareLayouts(playback).then((parent) => {
-                xlr.playSchedules(parent);
-            });
-        }
-    });
+        this.done = false;
+        this.allEnded = false;
+        this.allExpired = false;
+        this.containerName = "L" + this.id + "-" + this.options.idCounter;
+        this.regions = [];
+        this.actions = [];
 
-    const layoutObject: ILayout = {
-        ...props.layout,
-        options: props.options,
-    };
-
-    layoutObject.xlr = xlr;
-
-    layoutObject.on = function<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
-        return emitter.on(event, callback);
-    };
-    layoutObject.emitter = emitter;
-
-    layoutObject.run = function() {
-        const layout = layoutObject;
-        const $layoutContainer = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
-        const $splashScreen = document.getElementById(`splash_${layout.id}`);
-
-        if ($layoutContainer) {
-            $layoutContainer.style.display = 'block';
-            // Also set the background color of the player window > body
-            document.body.style.setProperty('background-color', `${layout.bgColor}`);
-
-            // Emit start event
-            layout.emitter.emit('start', layout);
-        }
-
-        if ($splashScreen) {
-            $splashScreen.style.display = 'none';
-        }
-
-        console.debug('Layout running > Layout ID > ', layout.id);
-        console.debug('Layout Regions > ', layout.regions);
-        for (let i = 0; i < layout.regions.length; i++) {
-            // playLog(4, "debug", "Running region " + self.regions[i].id, false);
-            layout.regions[i].run();
-        }
-    };
-
-    layoutObject.prepareLayout = function(){
-        layoutObject.parseXlf();
-    };
-
-    layoutObject.parseXlf = function() {
-        const layout = this;
-        const {options} = layout;
-
-        if (options.idCounter === 0) {
-            options.idCounter = nextId(options);
-        }
-
-        layout.done = false;
-        layout.allEnded = false;
-        layout.allExpired = false;
-        layout.containerName = "L" + layout.id + "-" + options.idCounter;
-        layout.regions = [];
-        layout.actions = [];
+        console.log('XLR::Layout/parseXlf', this);
 
         /* Create a hidden div to show the layout in */
-        let $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
+        let $layout = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
 
         if ($layout === null) {
             $layout = document.createElement('div');
-            $layout.id = layout.containerName;
+            $layout.id = this.containerName;
         }
 
         let $screen = document.getElementById('screen_container');
         ($screen) && $screen.append($layout);
 
         if ($layout) {
-            $layout.dataset.sequence = `${layout.index}`;
+            $layout.dataset.sequence = `${this.index}`;
             $layout.style.display = 'none';
-            if (xlr.config.platform === 'CMS') {
+            if (this.xlr.config.platform === 'CMS') {
                 $layout.style.outline = 'red solid thin';
+            }
+
+            // Add is-overlay className
+            if (this.isOverlay) {
+                $layout.classList.add('is-overlay');
             }
         }
 
-        layout.layoutNode = props.data;
-
         /* Calculate the screen size */
-        layout.sw = $screen?.offsetWidth || 0;
-        layout.sh = $screen?.offsetHeight || 0;
+        this.sw = $screen?.offsetWidth || 0;
+        this.sh = $screen?.offsetHeight || 0;
 
-        layout.xw = Number(layout.layoutNode?.firstElementChild?.getAttribute('width'));
-        layout.xh = Number(layout.layoutNode?.firstElementChild?.getAttribute('height'));
-        layout.zIndex = Number(layout.layoutNode?.firstElementChild?.getAttribute('zindex')) || 0;
-        layout.enableStat = Boolean(layout.layoutNode?.firstElementChild?.getAttribute('enableStat') || false);
+        this.xw = Number(this.layoutNode?.firstElementChild?.getAttribute('width'));
+        this.xh = Number(this.layoutNode?.firstElementChild?.getAttribute('height'));
+        this.zIndex = Number(this.layoutNode?.firstElementChild?.getAttribute('zindex')) || 0;
+        this.enableStat = Boolean(this.layoutNode?.firstElementChild?.getAttribute('enableStat') || false);
 
         /* Calculate Scale Factor */
-        layout.scaleFactor = Math.min((layout.sw / layout.xw), (layout.sh / layout.xh));
-        layout.sWidth = layout.xw * layout.scaleFactor;
-        layout.sHeight = layout.xh * layout.scaleFactor;
-        layout.offsetX = Math.abs(layout.sw - layout.sWidth) / 2;
-        layout.offsetY = Math.abs(layout.sh - layout.sHeight) / 2;
+        this.scaleFactor = Math.min((this.sw / this.xw), (this.sh / this.xh));
+        this.sWidth = this.xw * this.scaleFactor;
+        this.sHeight = this.xh * this.scaleFactor;
+        this.offsetX = Math.abs(this.sw - this.sWidth) / 2;
+        this.offsetY = Math.abs(this.sh - this.sHeight) / 2;
 
         /* Scale the Layout Container */
         if ($layout) {
-            $layout.style.width = `${layout.sWidth}px`;
-            $layout.style.height = `${layout.sHeight}px`;
+            $layout.style.width = `${this.sWidth}px`;
+            $layout.style.height = `${this.sHeight}px`;
             $layout.style.position = 'absolute';
-            $layout.style.left = `${layout.offsetX}px`;
-            $layout.style.top = `${layout.offsetY}px`;
+            $layout.style.left = `${this.offsetX}px`;
+            $layout.style.top = `${this.offsetY}px`;
             $layout.style.overflow = 'hidden';
         }
 
-        if ($layout && layout.zIndex !== null) {
-            $layout.style.zIndex = `${layout.zIndex}`;
+        if ($layout && this.zIndex !== null) {
+            $layout.style.zIndex = this.isOverlay ? '999' : `${this.zIndex}`;
         }
 
         /* Set the layout background */
-        layout.bgColor = layout.layoutNode?.firstElementChild?.getAttribute('bgcolor') || '';
-        layout.bgImage = layout.layoutNode?.firstElementChild?.getAttribute('background') || '';
+        this.bgColor = this.layoutNode?.firstElementChild?.getAttribute('bgcolor') || '';
+        this.bgImage = this.layoutNode?.firstElementChild?.getAttribute('background') || '';
 
-        if (!(layout.bgImage === "" || typeof layout.bgImage === 'undefined')) {
+        if (!(this.bgImage === "" || typeof this.bgImage === 'undefined')) {
             /* Extract the image ID from the filename */
-            layout.bgId = layout.bgImage.substring(0, layout.bgImage.indexOf('.'));
+            this.bgId = this.bgImage.substring(0, this.bgImage.indexOf('.'));
 
             const bgImageUrl = composeBgUrlByPlatform(
-                xlr.config.platform,
-                {
-                    ...options,
-                    layout,
-                }
+              this.xlr.config.platform,
+              {
+                  ...this.options,
+                  layout: this,
+              },
             );
 
             if ($layout) {
-                $layout.style.backgroundImage = `url("${bgImageUrl}")`;
-                $layout.style.backgroundRepeat = 'no-repeat';
-                $layout.style.backgroundSize = `${layout.sWidth}px ${layout.sHeight}px`;
-                $layout.style.backgroundPosition = '0px 0px';
+                if (!this.isOverlay) {
+                    $layout.style.backgroundImage = `url("${bgImageUrl}")`;
+                    $layout.style.backgroundRepeat = 'no-repeat';
+                    $layout.style.backgroundSize = `${this.sWidth}px ${this.sHeight}px`;
+                    $layout.style.backgroundPosition = '0px 0px';
+                }
             }
         }
 
         // Set the background color
-        if ($layout && layout.bgColor) {
-            $layout.style.backgroundColor = `${layout.bgColor}`;
+        if ($layout && this.bgColor) {
+            $layout.style.backgroundColor = this.isOverlay ? 'transparent' : `${this.bgColor}`;
         }
 
         // Hide if layout is not the currentLayout
-        if ($layout && xlr.currentLayoutId !== undefined && xlr.currentLayoutId !== layout.id) {
+        if ($layout && this.xlr.currentLayoutId !== undefined && this.xlr.currentLayoutId !== this.id) {
             $layout.style.display = 'none';
         }
 
+        // For overlay layout
+        if (this.isOverlay && $layout) {
+        }
+
         // Create actions
-        const layoutActions = Array.from(layout?.layoutNode?.getElementsByTagName('action') || []);
-        Array.from(layoutActions).forEach((actionXml, indx) => {
-            layout.actions.push(new Action(actionXml?.getAttribute('id') || '', actionXml));
+        const layoutActions = Array.from(this.layoutNode?.getElementsByTagName('action') || []);
+        Array.from(layoutActions).forEach((actionXml) => {
+            this.actions.push(new Action(actionXml?.getAttribute('id') || '', actionXml));
         });
 
         // Create interactive actions
-        layout.actionController = new ActionController(
-            layout,
-            layout.actions,
-            options,
+        this.actionController = new ActionController(
+          this,
+          this.actions,
+          this.options,
         );
 
         // Create drawer
-        const layoutDrawers = Array.from(layout?.layoutNode?.getElementsByTagName('drawer') || []);
+        const layoutDrawers = Array.from(this.layoutNode?.getElementsByTagName('drawer') || []);
 
         Array.from(layoutDrawers).forEach((layoutDrawerXml) => {
-            layout.drawer = layoutDrawerXml;
+            this.drawer = layoutDrawerXml;
         });
 
         // Create regions
-        const layoutRegions = Array.from(layout?.layoutNode?.getElementsByTagName('region') || []);
+        const layoutRegions = Array.from(this?.layoutNode?.getElementsByTagName('region') || []);
 
-        Array.from(layoutRegions).forEach((regionXml, indx) => {
+        Array.from(layoutRegions).forEach((regionXml, regionIndex) => {
             const regionObj = Region(
-                layout,
-                regionXml,
-                regionXml?.getAttribute('id') || '',
-                options,
-                xlr,
+              this,
+              regionXml,
+              regionXml?.getAttribute('id') || '',
+              this.options,
+              this.xlr,
             );
 
-            regionObj.index = indx;
-            layout.regions.push(regionObj);
+            regionObj.index = regionIndex;
+            this.regions.push(regionObj);
         });
 
-        layout.actionController.initTouchActions();
+        this.actionController.initTouchActions();
 
-        layout.actionController.initKeyboardActions();
+        this.actionController.initKeyboardActions();
     };
 
-    layoutObject.regionExpired = function() {
-        const self = layoutObject;
-        self.allExpired = true;
+    run(): void {
+        const $layoutContainer = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
+        const $splashScreen = document.getElementById(`splash_${this.id}`);
 
-        for (let layoutRegion of self.regions) {
+        if ($splashScreen) {
+            $splashScreen.style.display = 'none';
+        }
+
+        if ($layoutContainer) {
+            $layoutContainer.style.display = 'block';
+            // Only set the body color when this.isOverlay === false
+            if (!this.isOverlay) {
+                // Also set the background color of the player window > body
+                document.body.style.setProperty('background-color', `${this.bgColor}`);
+            }
+
+            // Emit start event
+            this.emitter.emit('start', this);
+
+            // Play regions
+            this.playRegions();
+        }
+    }
+
+    playRegions() {
+        console.debug('Layout running > Layout ID > ', this.id);
+        console.debug('Layout Regions > ', this.regions);
+        for (let i = 0; i < this.regions.length; i++) {
+            // playLog(4, "debug", "Running region " + self.regions[i].id, false);
+            this.regions[i].run();
+        }
+    }
+
+    regionExpired(): void {
+        this.allExpired = true;
+
+        for (let layoutRegion of this.regions) {
             if (!layoutRegion.complete) {
-                self.allExpired = false;
+                this.allExpired = false;
             }
         }
 
-        if (self.allExpired) {
-            self.end();
+        if (this.allExpired) {
+            this.end();
         }
-    };
+    }
 
-    layoutObject.regionEnded = async function() {
-        const self = layoutObject;
-        self.allEnded = true;
-        
-        for (let i = 0; i < self.regions.length; i++) {
-            if (! self.regions[i].ended) {
-                self.allEnded = false;
+    end(): void {
+        console.debug('Executing Layout::end and Calling Region::end ', this);
+
+        /* Ask the layout to gracefully stop running now */
+        for (let layoutRegion of this.regions) {
+            layoutRegion.end();
+        }
+    }
+
+    async regionEnded(): Promise<void> {
+        this.allEnded = true;
+
+        for (let i = 0; i < this.regions.length; i++) {
+            if (! this.regions[i].ended) {
+                this.allEnded = false;
             }
         }
-        
-        if (self.allEnded) {
-            await self.stopAllMedia();
+
+        if (this.allEnded) {
+            await this.stopAllMedia();
 
             console.debug('starting to end layout . . .');
-            if (xlr.config.platform === 'CMS') {
+            if (this.xlr.config.platform === 'CMS') {
                 const $end = document.getElementById('play_ended');
                 const $preview = document.getElementById('screen_container');
 
@@ -484,24 +585,17 @@ export default function Layout(
                 }
             }
 
-            self.emitter.emit('end', self);
+            if (!this.isOverlay) {
+                this.emitter.emit('end', this);
+            }
         }
-    };
+    }
 
-    layoutObject.end = function() {
-        console.debug('Executing Layout::end and Calling Region::end ', layoutObject);
-
-        /* Ask the layout to gracefully stop running now */
-        for (let layoutRegion of layoutObject.regions) {
-            layoutRegion.end();
-        }
-    };
-
-    layoutObject.stopAllMedia = function() {
+    stopAllMedia(): Promise<void> {
         console.debug('Stopping all media . . .');
         return new Promise(async (resolve) => {
-            for(let i = 0;i < layoutObject.regions.length;i++) {
-                let region = layoutObject.regions[i];
+            for(let i = 0;i < this.regions.length;i++) {
+                let region = this.regions[i];
                 for(let j = 0;j < region.mediaObjects.length;j++) {
                     let media = region.mediaObjects[j];
                     await media.stop();
@@ -510,26 +604,37 @@ export default function Layout(
 
             resolve();
         });
-    };
+    }
 
-    layoutObject.finishAllRegions = function() {
-        return Promise.all(layoutObject.regions.map(region => region.finished()));
-    };
+    resetLayout(): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
 
-    layoutObject.removeLayout = function() {
-        const layout = this;
+    finishAllRegions(): Promise<void[]> {
+        return Promise.all(this.regions.map(region => region.finished()));
+    }
+
+    removeLayout(): void {
         /* Remove layout that does not exist */
-        const $layout = <HTMLDivElement | null>(document.querySelector(`#${layout.containerName}[data-sequence="${layout.index}"]`));
+        const $layout = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
 
-        layout.done = true;
+        this.done = true;
         console.debug({$layout});
 
         if ($layout !== null) {
             $layout.parentElement?.removeChild($layout);
         }
-    };
+    }
 
-    layoutObject.prepareLayout();
+    getXlf(): string {
+        return this.xlfString;
+    }
 
-    return layoutObject;
+    isInterrupt(): boolean {
+        return this.shareOfVoice > 0;
+    }
+
+    on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
+        return this.emitter.on(event, callback);
+    }
 }

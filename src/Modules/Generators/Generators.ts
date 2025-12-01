@@ -1,26 +1,29 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2025 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - https://www.xibosignage.com
+ * Xibo - Digital Signage - https://xibosignage.com
  *
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { IMedia } from '../../Types/Media';
 import {InputLayoutType, OptionsType} from '../../Types/Layout';
 import {IXlr} from "../../Types/XLR";
+import {nanoid} from "nanoid";
+import {composeVideoSource} from "../Media/VideoMedia";
+import {transitionElement} from "../Transitions";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -275,12 +278,22 @@ export function setExpiry(numDays: number) {
  *
  * @return boolean
  */
-export function isLayoutValid(layouts: { [p: string]: InputLayoutType }, layoutId: number | undefined) {
-    if (Object.keys(layouts).length < 1 || !layoutId) {
+export function isLayoutValid(layouts: InputLayoutType[], layoutId: number | undefined) {
+    if (layouts.length < 1 || !layoutId) {
         return false;
     }
 
-    return Object.keys(layouts).includes(`${layoutId}`);
+    const layoutIndex = layouts.findIndex(l => l.layoutId === layoutId);
+
+    return layoutIndex !== -1;
+}
+
+export function getLayoutIndexByLayoutId(layouts: InputLayoutType[], layoutId: number) {
+    if (layouts.length < 1 || !layoutId) {
+        return null;
+    }
+
+    return layouts.findIndex(l => l.layoutId === layoutId);
 }
 
 export function hasDefaultOnly(inputLayouts: InputLayoutType[]) {
@@ -297,4 +310,168 @@ export function isDefaultLayout(inputLayout: InputLayoutType) {
     }
 
     return inputLayout.response?.nodeName === 'default';
+}
+
+export function hasSspLayout(inputLayouts: InputLayoutType[], defaultValue = false) {
+    if (!inputLayouts || inputLayouts.length === 0) {
+        return defaultValue;
+    }
+
+    return inputLayouts.find(layout => layout.layoutId === -1) !== undefined;
+}
+
+export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next') {
+    const self = mediaObject;
+    const $mediaIframe = document.createElement('iframe');
+    $mediaIframe.scrolling = 'no';
+    $mediaIframe.id = self.iframeName;
+    $mediaIframe.width = `${self.divWidth}px`;
+    $mediaIframe.height = `${self.divHeight}px`;
+    $mediaIframe.style.cssText = `border: 0;`;
+
+    const mediaSelector = `.media--item[data-role="${role}"][data-media-id="${mediaObject.id}"]`;
+    let $media = <HTMLElement>(self.region.html.querySelector!(mediaSelector));
+
+    if ($media === null) {
+        if (self.mediaType === 'video') {
+            $media = document.createElement('video');
+        } else if (self.mediaType === 'audio') {
+            $media = new Audio();
+        } else {
+            $media = document.createElement('div');
+        }
+
+        $media.id = self.containerName;
+    }
+
+    $media.dataset.role = role;
+    $media.dataset.mediaId = self.id;
+    $media.dataset.mediaType = self.mediaType;
+    $media.dataset.type = self.type;
+    $media.dataset.render = self.render;
+    $media.dataset.duration = String(self.duration);
+    $media.dataset.fileId = self.fileId;
+    $media.className = 'media--item';
+
+    /* Scale the Content Container */
+    $media.style.cssText = `
+            display: none;
+            width: ${self.divWidth}px;
+            height: ${self.divHeight}px;
+            position: absolute;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        `;
+
+    if ((self.render === 'html' || self.render === 'webpage') && self.url !== null) {
+        $mediaIframe.src = self.url;
+    } else {
+        $mediaIframe.src = `${self.url}&width=${self.divWidth}&height=${self.divHeight}`;
+    }
+
+    if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
+        self.checkIframeStatus = true;
+        self.iframe = $mediaIframe;
+    }  else if (self.mediaType === "image") {
+        if (self.options['scaletype'] === 'stretch') {
+            $media.style.cssText = $media.style.cssText.concat(`background-size: 100% 100%;`);
+        } else if (self.options['scaletype'] === 'fit') {
+            $media.style.cssText = $media.style.cssText.concat(`background-size: cover;`);
+        } else {
+            // Center scale type, do we have align or valign?
+            const align = (self.options['align'] == "") ? "center" : self.options['align'];
+            const valign = (self.options['valign'] == "" || self.options['valign'] == "middle") ? "center" : self.options['valign'];
+            $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
+        }
+    } else if (self.mediaType === 'video') {
+        const $videoMedia = composeVideoSource($media as HTMLVideoElement, self);
+
+        let isMuted = false;
+        if (Boolean(self.options['mute'])) {
+            isMuted = self.options.mute === '1';
+        }
+
+        if (Boolean(self.options['scaletype'])) {
+            if (self.options.scaletype === 'stretch') {
+                $videoMedia.style.objectFit = 'fill';
+            }
+        }
+
+        $videoMedia.classList.add('video-js', 'vjs-default-skin');
+
+        if (self.loop) {
+            self.loop = true;
+            $videoMedia.loop = true;
+        }
+
+        self.muted = isMuted;
+
+        $media = $videoMedia;
+    } else if (self.mediaType === 'audio') {
+        const $audioMedia = $media as HTMLAudioElement;
+
+        $audioMedia.preload = 'auto';
+        $audioMedia.textContent = 'Unsupported Audio';
+        $audioMedia.autoplay = true;
+
+        if (self.loop) {
+            $audioMedia.loop = true;
+        }
+
+        $media = $audioMedia;
+    }
+
+    // Duration is per item condition
+    if ((self.render === 'html' || self.mediaType === 'ticker') && self.url !== null) {
+        /* Check if the ticker duration is based on the number of items in the feed */
+        if (self.options['durationisperitem'] === '1') {
+            const regex = new RegExp('<!-- NUMITEMS=(.*?) -->');
+
+            (async () => {
+                let html = await fetchJSON(`${self.url}&width=${self.divWidth}&height=${self.divHeight}`);
+                console.debug({html});
+                const res = regex.exec(html);
+
+                if (res !== null) {
+                    self.duration = parseInt(String(self.duration)) * parseInt(res[1]);
+                }
+            })();
+        }
+    }
+
+    // Check if the media has fade-in/out transitions
+    if (Boolean(self.options['transin']) && Boolean(self.options['transinduration'])) {
+        const transInDuration = Number(self.options.transinduration);
+        const fadeInTrans = transitionElement('fadeIn', { duration: transInDuration });
+        $media.animate(fadeInTrans.keyframes, fadeInTrans.timing);
+    }
+
+    // Add media to the region
+    // Second media if exists, will be off-canvas
+    // All added media will be hidden by default
+    // It will start showing when region.nextMedia() function is called
+
+    // When there's only 1 item and loop = false, don't remove the item but leave it at its last state
+    // For image, and only 1 item, it should still have the transition for next state
+    // Add conditions for video duration being 0 or 1 and also the loop property
+    // For video url, we have to create a URL out of the XLF video URL
+
+    /**
+     * @DONE
+     * Case 1: Video duration = 0, this will play the video for its entire duration
+     * Case 2: Video duration is set > 0 and loop = false
+     * E.g. Set duration = 100s, video duration = 62s
+     * the video will play until 62s and will stop to its last frame until 100s
+     * After 100s, it will expire
+     * Case 3: Video duration is set > 0 and loop = true
+     * E.g. Set duration = 100s, video duration = 62s, loop = true
+     * the video will play until 62s and will loop through until the remaining 38s
+     * to complete the 100s set duration
+     */
+
+    // Add html node to media for
+    // self.html = $media;
+
+    return $media;
 }
