@@ -18,12 +18,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { createNanoEvents } from 'nanoevents';
-import {nanoid} from "nanoid";
+import {createNanoEvents, Emitter} from 'nanoevents';
+import xml2js from 'xml2js';
 
 import { ILayout, OptionsType } from '../../Types/Layout';
-import { initialRegion, IRegion, IRegionEvents } from '../../Types/Region';
-import { IMedia } from '../../Types/Media';
+import { IRegion, IRegionEvents } from '../../Types/Region';
 import { getMediaId, nextId } from '../Generators';
 import { platform } from '../Platform';
 import { Media } from '../Media';
@@ -36,74 +35,115 @@ import {
 } from '../Transitions';
 import {IXlr} from '../../Types/XLR';
 import {createMediaElement, getAllAttributes} from '../Generators/Generators';
+import {MediaFactory} from "../Media/MediaFactory";
+// import {MediaVideo} from "../Media/MediaVideo";
 
-export default function Region(
-    layout: ILayout,
-    xml: Element,
-    regionId: string,
-    options: OptionsType,
-    xlr: IXlr,
-) {
-    const props = {
-        layout: layout,
-        xml: xml,
-        regionId: regionId,
-        options: options,
+export class Region {
+    activeMediaIndex = 0;
+    complete: boolean = false;
+    containerName: string = '';
+    ended: boolean = false;
+    ending: boolean = false;
+    html?: HTMLElement;
+    id: string | null = null;
+    index = 0;
+    mediaItems: (Media)[] = [];
+    mediaItemsActions: (Media)[] = [];
+    offsetX = 0;
+    offsetY = 0;
+    oldMedia?: Media;
+    oneMedia = false;
+    ready = false;
+    sHeight = 0;
+    sWidth = 0;
+    totalMediaItems = 0;
+    uniqueId: string = '';
+    zIndex = 0;
+
+    options: Record<string, any> = {};
+    emitter: Emitter<IRegionEvents> = createNanoEvents<IRegionEvents>();
+
+    activeMedia?: Media;
+    nextMedia?: Media;
+
+    activeMediaEl?: HTMLElement;
+    nextMediaEl?: HTMLElement;
+
+    readonly layout: ILayout | null = null;
+    readonly regionId: string = '';
+    private readonly xml: Element = <Element>{};
+    private readonly xlr: IXlr = <IXlr>{};
+
+    constructor(
+        layout: ILayout,
+        xml: Element,
+        regionId: string,
+        options: OptionsType,
+        xlr: IXlr
+    ) {
+        this.layout = layout;
+        this.xml = xml;
+        this.regionId = regionId;
+        this.options = {...platform, ...options};
+        this.xlr = xlr;
+
+        this.prepareRegion();
     }
-    const emitter = createNanoEvents<IRegionEvents>();
-    let regionObject: IRegion = {
-        ...initialRegion,
-        ...props,
-    };
 
-    regionObject.currEl = undefined;
-    regionObject.nxtEl = undefined;
+    on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]) {
+        return this.emitter.on(event, callback);
+    }
 
-    regionObject.prepareRegion = function() {
-        const self = regionObject;
-        const {layout, options} = self;
-        self.complete = false;
-        self.ending = false;
-        self.ended = false;
-        self.currMedia = undefined;
-        self.nxtMedia = undefined;
-        self.oldMedia = undefined;
-        self.currentMediaIndex = 0;
-        self.id = props.regionId;
-        self.uniqueId = `${nextId(self.options as OptionsType & IRegion["options"])}`;
-        self.options = {...platform, ...props.options};
-        self.containerName = `R-${self.id}-${self.uniqueId}`;
-        self.xml = props.xml;
-        self.mediaObjects = [];
+    prepareRegion() {
+        this.complete = false;
+        this.ended = false;
+        this.ending = false;
+        this.activeMedia = undefined;
+        this.activeMediaEl = undefined;
+        this.nextMedia = undefined;
+        this.nextMediaEl = undefined;
+        this.oldMedia = undefined;
+        this.activeMediaIndex = 0;
+        this.id = this.regionId;
+        this.uniqueId = `${nextId(this.options as OptionsType & IRegion["options"])}`;
+        this.containerName = `R-${this.id}-${this.uniqueId}`;
+        this.mediaItems = [];
+        this.mediaItemsActions = [];
 
-        self.sWidth = (self.xml) && Number(self.xml?.getAttribute('width')) * layout.scaleFactor;
-        self.sHeight = (self.xml) && Number(self.xml?.getAttribute('height')) * layout.scaleFactor;
-        self.offsetX = (self.xml) && Number(self.xml?.getAttribute('left')) * layout.scaleFactor;
-        self.offsetY = (self.xml) && Number(self.xml?.getAttribute('top')) * layout.scaleFactor;
-        self.zIndex = (self.xml) && Number(self.xml?.getAttribute('zindex'));
-        
-        const regionOptions = self.xml?.getElementsByTagName('options');
+        let regionOptions;
+        if (this.layout !== null && this.xml) {
+            this.sWidth = parseInt(this.xml.getAttribute('width') ?? '0') * this.layout.scaleFactor;
+            this.sHeight = parseInt(this.xml.getAttribute('height') ?? '0') * this.layout.scaleFactor;
+            this.offsetX = parseInt(this.xml.getAttribute('left') ?? '0') * this.layout.scaleFactor;
+            this.offsetY = parseInt(this.xml.getAttribute('top') ?? '0') * this.layout.scaleFactor;
+            this.zIndex = parseInt(this.xml.getAttribute('zindex') ?? '0');
 
-        if (regionOptions) {
+            regionOptions = this.xml.getElementsByTagName('options');
+        }
+
+        if (regionOptions && this.options) {
             for (let _options of Array.from(regionOptions)) {
                 // Get options
                 const _regionOptions = _options.children;
                 for (let regionOption of Array.from(_regionOptions)) {
-                    self.options[regionOption.nodeName.toLowerCase()] = regionOption.textContent;
+                    this.options[regionOption.nodeName.toLowerCase()] = regionOption.textContent;
                 }
             }
         }
 
-        const $layout = <HTMLDivElement | null>(document.querySelector(`#${self.layout.containerName}[data-sequence="${self.layout.index}"]`));
+        let $layout = null;
+        if (this.layout) {
+            $layout = <HTMLDivElement | null>(document.querySelector(`#${this.layout.containerName}[data-sequence="${this.layout.index}"]`));
+        }
 
         let $region = null;
         if ($layout !== null) {
-            $region = $layout.querySelector('#' + self.containerName) as HTMLDivElement;
+            $region = $layout.querySelector('#' + this.containerName) as HTMLDivElement;
         }
 
         if ($region === null) {
             $region = document.createElement('div');
-            $region.id = self.containerName;
+            $region.id = this.containerName;
         }
 
         ($layout) && $layout.appendChild($region);
@@ -111,152 +151,183 @@ export default function Region(
         /* Scale the Layout Container */
         /* Add region styles */
         $region.style.cssText = `
-            width: ${self.sWidth}px;
-            height: ${self.sHeight}px;
+            width: ${this.sWidth}px;
+            height: ${this.sHeight}px;
             position: absolute;
-            left: ${self.offsetX}px;
-            top: ${self.offsetY}px;
-            z-index: ${Math.round(self.zIndex)};
+            left: ${this.offsetX}px;
+            top: ${this.offsetY}px;
+            z-index: ${Math.round(this.zIndex)};
         `;
         $region.className = 'region--item';
 
         // Set visibility when zIndex = 0 and
         // only when layout has background image
-        if (String(self.layout.bgImage).length > 0 && self.zIndex <= 0) {
+        if (this.layout &&
+            String(this.layout.bgImage).length > 0 &&
+            this.zIndex <= 0
+        ) {
             $region.style.setProperty('visibility', 'hidden');
         }
 
         // Save region html
-        self.html = $region;
+        this.html = $region;
 
         /* Parse region media objects */
-        const regionMediaItems = Array.from(self.xml.getElementsByTagName('media'));
-        self.totalMediaObjects = regionMediaItems.length;
+        const regionMediaItems = Array.from(this.xml.getElementsByTagName('media'));
+        this.totalMediaItems = regionMediaItems.length;
 
-        Array.from(regionMediaItems).forEach((mediaXml, indx) => {
+        Array.from(regionMediaItems).forEach(async (mediaXml, indx) => {
             const mediaObj = new Media(
-                self,
+                this,
                 mediaXml?.getAttribute('id') || '',
                 mediaXml,
-                options as OptionsType & IRegion["options"],
-                xlr,
+                this.options as OptionsType & IRegion["options"],
+                this.xlr,
             );
 
+            const mediaItem = new MediaFactory(mediaXml.outerHTML);
+            console.debug('XLR::debug', {
+                mediaItem,
+            })
+
             mediaObj.index = indx;
-            self.mediaObjects.push(mediaObj);
+            this.mediaItems.push(mediaObj);
         });
 
         // Add media to region for targeted actions
-        self.layout.actionController?.actions.forEach((action) => {
+        this.layout?.actionController?.actions.forEach((action) => {
             const attributes = getAllAttributes(action.xml);
 
             if (attributes.target.value === 'region' &&
                 attributes.actionType.value === 'navWidget' &&
-                attributes.targetId.value == self.id
+                attributes.targetId.value == this.id
             ) {
-                const drawerMediaItems = Array.from(self.layout.drawer?.getElementsByTagName('media') || []);
-                
+                const drawerMediaItems = Array.from(this.layout?.drawer?.getElementsByTagName('media') || []);
+
                 drawerMediaItems.forEach((drawerMedia) => {
                     if (drawerMedia.id === attributes.widgetId?.value) {
                         // Add drawer media to the region
-                        self.mediaObjectsActions.push(new Media(
-                            self,
+                        this.mediaItemsActions.push(new Media(
+                            this,
                             drawerMedia?.getAttribute('id') || '',
                             drawerMedia as Element,
-                            options as OptionsType & IRegion['options'],
-                            xlr,
+                            this.options as OptionsType & IRegion['options'],
+                            this.xlr,
                         ));
                     }
                 });
             }
         });
 
-        self.prepareMediaObjects();
-    };
+        this.prepareMediaObjects();
+    }
 
-    regionObject.finished = function() {
-        const self = regionObject;
+    finished()  {
         console.debug('<> XLR.debug Region::finished called . . . ', {
-            regionId: self.id,
+            regionId: this.id,
         });
 
         // Mark as complete
-        self.complete = true;
-        self.layout.regions[regionObject.index] = self;
-        self.layout.regionExpired();
+        this.complete = true;
+
+        if (this.layout) {
+            this.layout.regions[this.index] = this;
+        }
+        this.layout?.regionExpired();
     };
 
-    regionObject.prepareMediaObjects = function() {
-        const self = regionObject;
+    get nextMediaIndex() {
+        return this.activeMediaIndex + 1 % this.mediaItems.length;
+    }
+
+    prepareInitial() {
+        if (this.mediaItems.length === 0) {
+            console.error(`Region ${this.regionId} has no media`);
+            return;
+        }
+
+        const firstMedia = this.mediaItems[0];
+        const nextMedia = this.mediaItems[1] || this.mediaItems[0];
+
+        this.activeMediaIndex = 0;
+
+
+    }
+
+    prepareNext() {
+
+    }
+
+    prepareMediaObjects()  {
         let nextMediaIndex;
 
-        if (self.mediaObjects.length > 0) {
+        if (this.mediaItems.length > 0) {
 
-            if (self.currentMediaIndex >= self.mediaObjects.length) {
-                self.currentMediaIndex = 0;
+            if (this.activeMediaIndex >= this.mediaItems.length) {
+                this.activeMediaIndex = 0;
             }
 
-            self.currMedia = self.mediaObjects[self.currentMediaIndex];
+            this.activeMedia = this.mediaItems[this.activeMediaIndex];
 
-            nextMediaIndex = self.currentMediaIndex + 1;
+            nextMediaIndex = this.activeMediaIndex + 1;
 
-            if (nextMediaIndex >= self.mediaObjects.length ||
+            if (nextMediaIndex >= this.mediaItems.length ||
                 (
-                    !Boolean(self.mediaObjects[nextMediaIndex]) &&
-                    self.mediaObjects.length === 1
+                    !Boolean(this.mediaItems[nextMediaIndex]) &&
+                    this.mediaItems.length === 1
                 )
             ) {
                 nextMediaIndex = 0;
             }
 
-            if (Boolean(self.mediaObjects[nextMediaIndex])) {
-                self.nxtMedia = self.mediaObjects[nextMediaIndex];
+            if (Boolean(this.mediaItems[nextMediaIndex])) {
+                this.nextMedia = this.mediaItems[nextMediaIndex];
             }
 
             console.debug('<> XLR.debug prepareMediaObjects::oldMedia', {
-                regionId: self.id,
-                oldMedia: self.oldMedia?.containerName,
+                regionId: this.id,
+                oldMedia: this.oldMedia?.containerName,
             });
 
-            const $region = document.getElementById(`${self.containerName}`);
+            const $region = document.getElementById(`${this.containerName}`);
             // Append available media to region DOM
-            if (self.currMedia) {
-                self.currEl = createMediaElement(self.currMedia, 'current');
-                self.currMedia.html = self.currEl;
+            if (this.activeMedia) {
+                this.activeMediaEl = createMediaElement(this.activeMedia, 'current');
+                this.activeMedia.html = this.activeMediaEl;
 
                 console.debug('<> XLR.debug prepareMediaObjects::currMedia', {
-                    currentMedia: self.currMedia.containerName,
-                    regionId: self.id,
+                    currentMedia: this.activeMedia.containerName,
+                    regionId: this.id,
                 });
-                ($region) && $region.insertBefore(self.currEl as Node, $region.lastElementChild);
+                ($region) && $region.insertBefore(this.activeMediaEl as Node, $region.lastElementChild);
             }
 
-            if (self.totalMediaObjects > 1 && self.nxtMedia) {
-                self.nxtEl = createMediaElement(self.nxtMedia, 'next');
-                self.nxtMedia.html = self.nxtEl;
+            if (this.totalMediaItems > 1 && this.nextMedia) {
+                this.nextMediaEl = createMediaElement(this.nextMedia, 'next');
+                this.nextMedia.html = this.nextMediaEl;
 
                 console.debug('<> XLR.debug prepareMediaObjects::nxtMedia', {
-                    nextMedia: self.nxtMedia.containerName,
-                    regionId: self.id,
+                    nextMedia: this.nextMedia.containerName,
+                    regionId: this.id,
                 });
-                ($region) && $region.insertBefore(self.nxtEl as Node, $region.lastElementChild);
+                ($region) && $region.insertBefore(this.nextMediaEl as Node, $region.lastElementChild);
             }
         }
     };
 
-    regionObject.run = function() {
-        console.debug('Called Region::run > ', regionObject.id);
+    run()  {
+        console.debug('Called Region::run > ', this.id);
 
         // Reset region states
-        regionObject.reset();
+        this.reset();
 
-        if (regionObject.currMedia) {
-            regionObject.transitionNodes(regionObject.oldMedia, regionObject.currMedia);
+        if (this.activeMedia) {
+            this.transitionNodes(this.oldMedia, this.activeMedia);
         }
     };
 
-    regionObject.transitionNodes = function(oldMedia: IMedia | undefined, newMedia: IMedia | undefined) {
-        const self = regionObject;
+    transitionNodes(oldMedia: Media | undefined, newMedia: Media | undefined) {
+
         let transOutDuration = 1;
         let transOutDirection: compassPoints = 'E';
 
@@ -268,14 +339,14 @@ export default function Region(
             if (oldMedia && Boolean(oldMedia.options['transoutdirection'])) {
                 transOutDirection = oldMedia.options.transoutdirection;
             }
-    
+
             let defaultTransOutOptions: TransitionElementOptions = {duration: transOutDuration};
             let transOut = transitionElement('defaultOut', {duration: defaultTransOutOptions.duration});
-    
+
             let transOutName: TransitionNameType | string;
             if (oldMedia && Boolean(oldMedia.options['transout'])) {
                 transOutName = oldMedia.options['transout'];
-    
+
                 if (transOutName === 'fly') {
                     transOutName = `${transOutName}Out`;
                     defaultTransOutOptions.keyframes = flyTransitionKeyframes({
@@ -285,10 +356,10 @@ export default function Region(
                         width: oldMedia.divWidth,
                     });
                 }
-                
+
                 transOut = transitionElement(transOutName as TransitionNameType, defaultTransOutOptions);
             }
-            
+
             const hideOldMedia = new Promise((resolve) => {
                 // Hide oldMedia
                 if (oldMedia) {
@@ -304,7 +375,7 @@ export default function Region(
                             oldMediaAnimate = $oldMedia.animate(transOut.keyframes, transOut.timing);
                         }
 
-                        if (Boolean(oldMedia.options['transout']) && self.totalMediaObjects > 1) {
+                        if (Boolean(oldMedia.options['transout']) && this.totalMediaItems > 1) {
                             if (transOutName === 'flyOut') {
                                 // Reset last item to original position and state
                                 oldMediaAnimate ? oldMediaAnimate.finished
@@ -328,7 +399,7 @@ export default function Region(
                     }
                 }
             });
-    
+
             if (oldMedia) {
                 hideOldMedia.then((isDone) => {
                     if (isDone) {
@@ -341,35 +412,33 @@ export default function Region(
         }
     };
 
-    regionObject.playNextMedia = function() {
-        const self = regionObject;
-
+    playNextMedia()  {
         console.debug('<> XLR.debug Region playing next media', {
-            regionId: self.id,
-            currentMediaIndex: self.currentMediaIndex,
-            mediaItemsLn: self.mediaObjects.length,
-            oldMedia: self.oldMedia?.containerName,
-            currMedia: self.currMedia?.containerName,
-            nxtMedia: self.nxtMedia?.containerName,
+            regionId: this.id,
+            currentMediaIndex: this.activeMediaIndex,
+            mediaItemsLn: this.mediaItems.length,
+            oldMedia: this.oldMedia?.containerName,
+            currMedia: this.activeMedia?.containerName,
+            nxtMedia: this.nextMedia?.containerName,
         })
 
         /* The current media has finished running */
-        if (self.ended) {
+        if (this.ended) {
             return;
         }
 
-        if (!self.layout.isOverlay && self.currentMediaIndex === self.mediaObjects.length - 1) {
-            self.finished();
+        if (!this.layout?.isOverlay && this.activeMediaIndex === this.mediaItems.length - 1) {
+            this.finished();
 
-            if (self.layout.allEnded) {
+            if (this.layout?.allEnded) {
                 return;
             }
         }
 
         // When the region has completed and when currentMedia is html
         // Then, preserve the currentMedia state
-        if (self.complete &&
-            self.currMedia?.render === 'html'
+        if (this.complete &&
+            this.activeMedia?.render === 'html'
         ) {
             return;
         }
@@ -377,91 +446,84 @@ export default function Region(
         // When the region has completed and mediaObjects.length = 1
         // and curMedia.loop = false, then put the media on
         // its current state
-        if (self.complete && self.mediaObjects.length === 1 &&
-            self.currMedia?.render !== 'html' &&
-            (self.currMedia?.mediaType === 'image' ||
-            self.currMedia?.mediaType === 'video') &&
-            !self.currMedia?.loop
+        if (this.complete && this.mediaItems.length === 1 &&
+            this.activeMedia?.render !== 'html' &&
+            (this.activeMedia?.mediaType === 'image' ||
+                this.activeMedia?.mediaType === 'video') &&
+            !this.activeMedia?.loop
         ) {
             return;
         }
 
-        if (self.currMedia) {
-            self.oldMedia = self.currMedia;
+        if (this.activeMedia) {
+            this.oldMedia = this.activeMedia;
         } else {
-            self.oldMedia = undefined;
+            this.oldMedia = undefined;
         }
 
-        self.currentMediaIndex = self.currentMediaIndex + 1;
-        self.prepareMediaObjects();
+        this.activeMediaIndex = this.activeMediaIndex + 1;
+        this.prepareMediaObjects();
 
         console.debug('region::playNextMedia', self);
-        self.transitionNodes(self.oldMedia, self.currMedia);
+        this.transitionNodes(this.oldMedia, this.activeMedia);
     };
-    
-    regionObject.playPreviousMedia = function() {
-        const self = regionObject;
-        self.currentMediaIndex = self.currentMediaIndex - 1;
 
-        if(self.currentMediaIndex < 0 || self.ended) {
-            self.currentMediaIndex = 0;
+    playPreviousMedia()  {
+
+        this.activeMediaIndex = this.activeMediaIndex - 1;
+
+        if(this.activeMediaIndex < 0 || this.ended) {
+            this.activeMediaIndex = 0;
             return;
         }
 
-        self.prepareMediaObjects();
+        this.prepareMediaObjects();
 
         console.debug('region::playPreviousMedia', self);
         /* Do the transition */
-        self.transitionNodes(self.oldMedia, self.currMedia);
+        this.transitionNodes(this.oldMedia, this.activeMedia);
     };
 
-    regionObject.end = function() {
-        const self = regionObject;
-        self.ending = true;
+    end()  {
+        this.ending = true;
         /* The Layout has finished running */
         /* Do any region exit transition then clean up */
-        self.layout.regions[self.index] = self;
+        if (this.layout) {
+            this.layout.regions[this.index] = this;
+        }
 
         console.debug('Calling Region::end ', self);
-        self.exitTransition();
+        this.exitTransition();
     };
 
-    regionObject.exitTransition = function() {
-        const self = regionObject;
+    exitTransition()  {
+
         /* TODO: Actually implement region exit transitions */
-        const $region = document.getElementById(`${self.containerName}`);
+        const $region = document.getElementById(`${this.containerName}`);
 
         if ($region) {
             $region.style.display = 'none';
         }
 
-        console.debug('Called Region::exitTransition ', self.id);
+        console.debug('Called Region::exitTransition ', this.id);
 
-        self.exitTransitionComplete();
+        this.exitTransitionComplete();
     };
 
-    regionObject.exitTransitionComplete = function() {
-        const self = regionObject;
-        console.debug('Called Region::exitTransitionComplete ', self.id);
-        self.ended = true;
-        self.layout.regions[self.index] = self;
-        self.layout.regionEnded();
+    exitTransitionComplete()  {
+        console.debug('Called Region::exitTransitionComplete ', this.id);
+        this.ended = true;
+
+        if (this.layout) {
+            this.layout.regions[this.index] = this;
+        }
+        this.layout?.regionEnded();
     };
 
-    regionObject.reset = function() {
-        regionObject.ended = false;
-        regionObject.complete = false;
-        regionObject.ending = false;
-        console.debug('Resetting region states', regionObject);
+    reset()  {
+        this.ended = false;
+        this.complete = false;
+        this.ending = false;
+        console.debug('Resetting region states', this);
     };
-
-    regionObject.on = function<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]) {
-        return emitter.on(event, callback);
-    };
-
-    regionObject.emitter = emitter;
-
-    regionObject.prepareRegion();
-
-    return regionObject;
 }

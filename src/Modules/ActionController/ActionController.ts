@@ -1,21 +1,21 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2025 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - https://www.xibosignage.com
+ * Xibo - Digital Signage - https://xibosignage.com
  *
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 // import Moveable from 'moveable';
@@ -24,6 +24,9 @@ import { getAllAttributes, nextId } from '../Generators/Generators';
 import './action-controller.css';
 import {PreviewTranslations} from "../../Lib/translations";
 import Layout from "../Layout";
+import {Region} from "../Region/Region";
+import {Media} from "../Media";
+// import {MediaVideo} from "../Media/MediaVideo";
 
 export class Action {
     readonly id: string;
@@ -247,7 +250,7 @@ export default class ActionController {
     loadMediaInRegion(regionId: string, widgetId: string) {
         const self = this;
         // Find target region
-        let targetRegion: IRegion | undefined;
+        let targetRegion: Region | undefined;
         
         self.parent.regions.forEach((regionObj) => {
             if (regionObj.id === regionId) {
@@ -256,9 +259,9 @@ export default class ActionController {
         });
 
         // Find media in actions
-        let targetMedia: IMedia | undefined;
+        let targetMedia: Media | undefined;
         if (targetRegion) {
-            targetRegion.mediaObjectsActions.forEach((media) => {
+            targetRegion.mediaItemsActions.forEach((media) => {
                 if (media.id === widgetId) {
                     targetMedia = media;
                 }
@@ -271,12 +274,12 @@ export default class ActionController {
         }
 
         // If region is empty, remove the background color and empty message
-        if (targetRegion?.mediaObjects.length === 0) {
+        if (targetRegion?.mediaItems.length === 0) {
             targetRegion.complete = false;
         }
 
         // Create media in region and play it next
-        targetRegion?.mediaObjects.splice(targetRegion.currentMediaIndex + 1, 0, targetMedia as IMedia);
+        targetRegion?.mediaItems.splice(targetRegion?.activeMediaIndex + 1, 0, targetMedia as (Media));
         targetRegion?.playNextMedia();
     }
 
@@ -326,7 +329,7 @@ export default class ActionController {
                         }
                     } else if (dataset.source === 'widget') {
                         // Try to find widget/media
-                        const mediaObjects = Array.from(regionObj.mediaObjects);
+                        const mediaObjects = Array.from(regionObj.mediaItems);
 
                         for (const mediaObject of mediaObjects) {
                             if (mediaObject.id === dataset.sourceid) {

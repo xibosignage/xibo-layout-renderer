@@ -45,13 +45,15 @@ import {MediaState} from "../../Types/Media/Media.types";
 
 import 'video.js/dist/video-js.min.css';
 import {createMediaElement} from "../Generators/Generators";
+import {Region} from "../Region/Region";
+// import {MediaVideo} from "./MediaVideo";
 
 export interface IMediaEvents {
-    start: (media: IMedia) => void;
-    end: (media: IMedia) => void;
+    start: (media: Media) => void;
+    end: (media: Media) => void;
 }
 
-export class Media implements IMedia {
+export class Media {
     attachedAudio: boolean = false;
     checkIframeStatus: boolean = false;
     containerName: string = '';
@@ -78,7 +80,7 @@ export class Media implements IMedia {
     } = <OptionsType>{};
     player?: Player = undefined;
     ready: boolean = true;
-    region: IRegion = <IRegion>{};
+    region?: Region;
     render: string = 'html';
     schemaVersion: string = '1';
     singlePlay: boolean = false;
@@ -97,7 +99,7 @@ export class Media implements IMedia {
     private readonly statsBC = new BroadcastChannel('statsBC');
 
     constructor(
-        region: IRegion,
+        region: Region,
         mediaId: string,
         xml: Element,
         options: OptionsType,
@@ -119,20 +121,20 @@ export class Media implements IMedia {
         this.duration = parseInt(this.xml?.getAttribute('duration') as string) || 0;
         this.enableStat = Boolean(this.xml?.getAttribute('enableStat') || false);
 
-        this.on('start', (media: IMedia) => {
+        this.on('start', (media: Media) => {
             if (media.state === MediaState.PLAYING) return;
 
             media.state = MediaState.PLAYING;
             if (media.mediaType === 'video') {
-                const videoMedia = VideoMedia(media, xlr);
-
-                videoMedia.init();
-
-                if (media.duration > 0) {
-                    this.startMediaTimer(media);
-                }
+                // const videoMedia = new VideoMedia(media, xlr);
+                //
+                // videoMedia.init();
+                //
+                // if (media.duration > 0) {
+                //     this.startMediaTimer(media);
+                // }
             } else if (media.mediaType === 'audio') {
-                AudioMedia(media).init();
+                AudioMedia(media as Media).init();
                 if (media.duration > 0) {
                     this.startMediaTimer(media);
                 }
@@ -141,7 +143,7 @@ export class Media implements IMedia {
             }
 
             // Check if stats are enabled for the layout
-            if (media.enableStat) {
+            if (media.enableStat && media.region && media.region.layout) {
                 this.statsBC.postMessage({
                     action: 'START_STAT',
                     mediaId: parseInt(media.id),
@@ -156,7 +158,7 @@ export class Media implements IMedia {
             this.xlr.emitter.emit('widgetStart', parseInt(media.id));
         });
 
-        this.on('end', (media: IMedia) => {
+        this.on('end', (media: Media) => {
             if (media.state === MediaState.ENDED) return;
             media.state = MediaState.ENDED;
 
@@ -166,7 +168,7 @@ export class Media implements IMedia {
             }
 
             // Check if stats are enabled for the layout
-            if (media.enableStat) {
+            if (media.enableStat && media.region && media.region.layout) {
                 this.statsBC.postMessage({
                     action: 'END_STAT',
                     mediaId: parseInt(media.id),
@@ -179,29 +181,29 @@ export class Media implements IMedia {
             // Emit media/widget end event
             console.debug('Media::Emitter > End - Calling widgetEnd event', {
                 mediaId: media.id,
-                regionId: media.region.id,
-                layoutId: media.region.layout.id,
+                regionId: media.region?.id,
+                layoutId: media.region?.layout?.id,
             });
             this.xlr.emitter.emit('widgetEnd', parseInt(media.id));
 
-            media.region.playNextMedia();
+            media.region?.playNextMedia();
         });
 
         // Initialize Media object
         this.init();
     }
 
-    private startMediaTimer(media: IMedia) {
+    private startMediaTimer(media: Media) {
         this.mediaTimer = setInterval(() => {
             this.mediaTimeCount++;
             if (this.mediaTimeCount > media.duration) {
-                console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
+                console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region?.regionId);
 
                 console.debug('Media::Emitter > End', {
                     currentLayout: this.xlr.currentLayout,
                     media,
                     region: media.region,
-                    layout: media.region.layout,
+                    layout: media.region?.layout,
                 })
 
                 media.emitter.emit('end', media);
@@ -209,12 +211,12 @@ export class Media implements IMedia {
                 if (media.mediaType === 'video') {
                     // Dispose the video media
                     console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    VideoMedia(media, this.xlr).stop(true);
+                    // VideoMedia(media, this.xlr).stop(true);
                 }
             }
         }, 1000);
 
-        console.debug('startMediaTimer: Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
+        console.debug('startMediaTimer: Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region?.regionId);
     };
 
     private on<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]) {
@@ -242,22 +244,22 @@ export class Media implements IMedia {
         // Show in fullscreen?
         if(this.options.showfullscreen === "1") {
             // Set dimensions as the layout ones
-            this.divWidth = this.region.layout.sWidth;
-            this.divHeight = this.region.layout.sHeight;
+            this.divWidth = this.region?.layout?.sWidth || 0;
+            this.divHeight = this.region?.layout?.sHeight || 0;
         } else {
             // Set dimensions as the region ones
-            this.divWidth = this.region.sWidth;
-            this.divHeight = this.region.sHeight;
+            this.divWidth = this.region?.sWidth || 0;
+            this.divHeight = this.region?.sHeight || 0;
         }
 
-        const resourceUrlParams: any = {
+        const resourceUrlParams: Record<string, any> = {
             ...this.xlr.config.config,
-            regionOptions: this.region.options,
-            layoutId: this.region.layout.layoutId,
-            regionId: this.region.id,
+            regionOptions: this.region?.options,
+            layoutId: this.region?.layout?.layoutId,
+            regionId: this.region?.id,
             mediaId: this.id,
             fileId: this.fileId,
-            scaleFactor: this.region.layout.scaleFactor,
+            scaleFactor: this.region?.layout?.scaleFactor,
             uri: this.uri,
             isGlobalContent: this.mediaType === 'global',
             isImageOrVideo: this.mediaType === 'image' || this.mediaType === 'video',
@@ -278,7 +280,7 @@ export class Media implements IMedia {
                 tmpUrl = composeMediaUrl(resourceUrlParams);
 
                 // this is an SSP Layout
-                if (this.region.layout.layoutId === -1) {
+                if (this.region?.layout?.layoutId === -1) {
                     tmpUrl = this.uri;
                 }
             }
@@ -289,7 +291,7 @@ export class Media implements IMedia {
         // Loop if media has loop, or if region has loop and a single media
         this.loop =
             this.options['loop'] == '1' ||
-            (this.region.options['loop'] == '1' && this.region.totalMediaObjects == 1);
+            (this.region?.options['loop'] == '1' && this.region?.totalMediaItems == 1);
     }
 
     run() {
@@ -325,7 +327,7 @@ export class Media implements IMedia {
         }
 
         const showCurrentMedia = async () => {
-            let $mediaId = getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName});
+            let $mediaId = getMediaId(<Media>{mediaType: this.mediaType, containerName: this.containerName});
             let $media = document.getElementById($mediaId);
             const isCMS = this.xlr.config.platform === 'CMS';
 
@@ -381,19 +383,19 @@ export class Media implements IMedia {
                     // });
                 }
 
-                if (!this.region.layout.isOverlay ||
-                    (this.region.layout.isOverlay && this.region.totalMediaObjects > 1)
+                if (!this.region?.layout?.isOverlay ||
+                    (this.region?.layout?.isOverlay && this.region?.totalMediaItems > 1)
                 ) {
-                    this.emitter.emit('start', <IMedia>this);
+                    this.emitter.emit('start', this);
                 }
             }
         };
         const getNewMedia = (): HTMLElement | null => {
-            const $region = document.getElementById(`${this.region.containerName}`);
+            const $region = document.getElementById(`${this.region?.containerName}`);
             // This function is for checking whether
             // the region still has to show a media item
             // when another region is not finished yet
-            if (this.region.complete && !this.region.layout.allEnded) {
+            if (this.region?.complete && !this.region?.layout?.allEnded) {
                 // Add currentMedia to the region
 
                 ($region) && $region.insertBefore(this.html as Node, $region.lastElementChild);
@@ -409,7 +411,7 @@ export class Media implements IMedia {
 
     async stop() {
         const $media = document.getElementById(
-            getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName})
+            getMediaId(<Media>{mediaType: this.mediaType, containerName: this.containerName})
         );
 
         if ($media) {
