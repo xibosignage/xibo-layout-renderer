@@ -23,6 +23,7 @@ import Player from "video.js/dist/types/player";
 import { IMediaEvents } from '../../Modules/Media/Media';
 import {initialRegion, IRegion} from '../Region';
 import {OptionsType} from '../Layout';
+import {Region} from "../../Modules/Region/Region";
 
 export type MediaState = 'idle' | 'playing' | 'ended';
 
@@ -31,6 +32,12 @@ export const MediaState = {
     PLAYING: 'playing',
     ENDED: 'ended',
 } as const;
+
+export interface VideoMediaItem extends IMedia {
+
+}
+
+export type AnyMediaItem = IMedia | VideoMediaItem;
 
 export interface IMedia {
     attachedAudio: boolean;
@@ -61,7 +68,7 @@ export interface IMedia {
     };
     player?: Player;
     ready: boolean;
-    region: IRegion;
+    region?: Region;
     render: string;
 
     run(): void;
@@ -106,7 +113,7 @@ export const initialMedia: IMedia = {
     options: <OptionsType>{},
     player: undefined,
     ready: true,
-    region: initialRegion,
+    region: undefined,
     render: 'html',
     run() {
     },

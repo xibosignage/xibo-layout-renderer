@@ -22,8 +22,9 @@ import { IMedia } from '../../Types/Media';
 import { capitalizeStr, getMediaId } from '../Generators';
 
 import './media.css';
+import {Media} from "./Media";
 
-export function AudioMedia(media: IMedia) {
+export function AudioMedia(media: Media) {
     const audioMediaObject = {
         init() {
             const $audioMedia = document.getElementById(getMediaId(media)) as HTMLAudioElement;
@@ -72,7 +73,7 @@ export function AudioMedia(media: IMedia) {
                 }
                 if (media.duration === 0) {
                     $audioMedia.ondurationchange = () => {
-                        console.debug('Showing Media ' + media.id + ' for ' + $audioMedia.duration + 's of Region ' + media.region.regionId);
+                        console.debug('Showing Media ' + media.id + ' for ' + $audioMedia.duration + 's of Region ' + media.region?.regionId);
                     };
                     $audioMedia.onended = () => {
                         console.debug(`${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);

@@ -24,6 +24,8 @@ import {IXlr} from "../../Types/XLR";
 import {nanoid} from "nanoid";
 import {composeVideoSource} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
+// import {MediaVideo} from "../Media/MediaVideo";
+import {Media} from "../Media";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -34,7 +36,7 @@ export function nextId(options: { idCounter: number; }) {
     return options.idCounter;
 }
 
-export const getMediaId = ({mediaType, containerName}: IMedia) => {
+export const getMediaId = ({mediaType, containerName}: Media) => {
     let mediaId = containerName;
 
     if (mediaType === 'video') {
@@ -320,7 +322,7 @@ export function hasSspLayout(inputLayouts: InputLayoutType[], defaultValue = fal
     return inputLayouts.find(layout => layout.layoutId === -1) !== undefined;
 }
 
-export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next') {
+export function createMediaElement(mediaObject: Media, role: 'current' | 'next') {
     const self = mediaObject;
     const $mediaIframe = document.createElement('iframe');
     $mediaIframe.scrolling = 'no';
@@ -330,7 +332,7 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
     $mediaIframe.style.cssText = `border: 0;`;
 
     const mediaSelector = `.media--item[data-role="${role}"][data-media-id="${mediaObject.id}"]`;
-    let $media = <HTMLElement>(self.region.html.querySelector!(mediaSelector));
+    let $media = <HTMLElement>(self.region?.html?.querySelector!(mediaSelector));
 
     if ($media === null) {
         if (self.mediaType === 'video') {
