@@ -23,6 +23,7 @@ import {IRegion} from '../Region';
 import {platform} from '../../Modules/Platform';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
+import {Region} from "../../Modules/Region";
 
 export interface ILayoutEvents {
     start: (layout: ILayout) => void;
@@ -100,7 +101,7 @@ export interface ILayout {
     regionObjects: IRegion[];
     drawer: Element | null;
     allExpired: boolean;
-    regions: IRegion[];
+    regions: Region[];
     actions: Action[];
     options: OptionsType;
     done: boolean;

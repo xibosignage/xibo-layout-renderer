@@ -19,4 +19,14 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-export * from './Region';
+// Check if video.js has wrapped the element
+export function isVideoJsInitialized(el: HTMLElement): boolean {
+    return !!el.closest('.video-js');
+}
+
+
+// Retrieve wrapper or fallback to element
+export function getVideoJsWrapper(el: HTMLElement): HTMLElement {
+    const wrapper = el.closest('.video-js') as HTMLElement | null;
+    return wrapper || el;
+}

@@ -22,11 +22,12 @@ import { IMedia } from '../../Types/Media';
 import { capitalizeStr, getMediaId } from '../Generators';
 
 import './media.css';
+import {Media} from "./Media";
 
-export function AudioMedia(media: IMedia) {
+export function AudioMedia(media: Media) {
     const audioMediaObject = {
         init() {
-            const $audioMedia = document.getElementById(getMediaId(media)) as HTMLAudioElement;
+            const $audioMedia = document.getElementById(media.containerName) as HTMLAudioElement | null;
             let $playBtn: HTMLButtonElement | null = null;
 
             if ($audioMedia) {
