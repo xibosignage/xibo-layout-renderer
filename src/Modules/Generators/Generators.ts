@@ -18,11 +18,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { IMedia } from '../../Types/Media';
+import {MediaItem} from '../../Types/Media';
 import {InputLayoutType, OptionsType} from '../../Types/Layout';
-import {IXlr} from "../../Types/XLR";
-import {nanoid} from "nanoid";
-import {composeVideoSource} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
 
 export function nextId(options: { idCounter: number; }) {
@@ -34,7 +31,7 @@ export function nextId(options: { idCounter: number; }) {
     return options.idCounter;
 }
 
-export const getMediaId = ({mediaType, containerName}: IMedia) => {
+export const getMediaId = ({mediaType, containerName}: { mediaType: string; containerName: string}) => {
     let mediaId = containerName;
 
     if (mediaType === 'video') {
@@ -320,7 +317,7 @@ export function hasSspLayout(inputLayouts: InputLayoutType[], defaultValue = fal
     return inputLayouts.find(layout => layout.layoutId === -1) !== undefined;
 }
 
-export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next') {
+export function createMediaElement(mediaObject: MediaItem) {
     const self = mediaObject;
     const $mediaIframe = document.createElement('iframe');
     $mediaIframe.scrolling = 'no';
@@ -329,8 +326,8 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
     $mediaIframe.height = `${self.divHeight}px`;
     $mediaIframe.style.cssText = `border: 0;`;
 
-    const mediaSelector = `.media--item[data-role="${role}"][data-media-id="${mediaObject.id}"]`;
-    let $media = <HTMLElement>(self.region.html.querySelector!(mediaSelector));
+    const mediaSelector = `.media--item[data-media-id="${mediaObject.id}"]`;
+    let $media = <HTMLElement>(self.region?.html!.querySelector!(mediaSelector));
 
     if ($media === null) {
         if (self.mediaType === 'video') {
@@ -344,7 +341,6 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
         $media.id = self.containerName;
     }
 
-    $media.dataset.role = role;
     $media.dataset.mediaId = self.id;
     $media.dataset.mediaType = self.mediaType;
     $media.dataset.type = self.type;
@@ -385,7 +381,10 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
             $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
         }
     } else if (self.mediaType === 'video') {
-        const $videoMedia = composeVideoSource($media as HTMLVideoElement, self);
+        const $videoMedia = $media as HTMLVideoElement;
+
+        $videoMedia.playsInline = true;
+        $videoMedia.preload = 'metadata';
 
         let isMuted = false;
         if (Boolean(self.options['mute'])) {
@@ -394,11 +393,11 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
 
         if (Boolean(self.options['scaletype'])) {
             if (self.options.scaletype === 'stretch') {
-                $videoMedia.style.objectFit = 'fill';
+                $media.style.objectFit = 'fill';
             }
         }
 
-        $videoMedia.classList.add('video-js', 'vjs-default-skin');
+        $videoMedia.className = 'video-js vjs-default-skin';
 
         if (self.loop) {
             self.loop = true;
