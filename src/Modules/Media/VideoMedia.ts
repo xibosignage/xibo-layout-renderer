@@ -18,12 +18,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import videojs from 'video.js';
 import {format} from "date-fns";
 
-import { IMedia } from '../../Types/Media';
-import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType, getFileExt, setExpiry } from '../Generators';
-import { IXlr } from '../../types';
+import {IMedia} from '../../Types/Media';
+import {
+    capitalizeStr,
+    getFileExt,
+    setExpiry,
+    videoFileType
+} from '../Generators';
+import {ConsumerPlatform, IXlr} from '../../types';
 import PwaSW from '../../Lib/pwa-sw';
 
 import './media.css';
@@ -137,7 +141,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                             this.stop();
                         } else {
                             console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
-                            if (xlr.config.platform === 'chromeOS') {
+                            if (xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                                 await playerReportFault('Media autoplay error');
                             }
                         }
@@ -145,7 +149,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                 });
                 vjsPlayer.on('error', async (err: any) => {
                     console.debug(`VideoMedia: Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
-                    if (xlr.config.platform === 'chromeOS') {
+                    if (xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                         await playerReportFault('Video file source not supported');
                     } else {
                         // End media after 5 seconds

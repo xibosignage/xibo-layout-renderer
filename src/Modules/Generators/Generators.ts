@@ -18,11 +18,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { IMedia } from '../../Types/Media';
+import {IMedia} from '../../Types/Media';
 import {InputLayoutType, OptionsType} from '../../Types/Layout';
-import {IXlr} from "../../Types/XLR";
-import {nanoid} from "nanoid";
-import {composeVideoSource} from "../Media/VideoMedia";
+import {ConsumerPlatform} from "../../Types/Platform";
+import {composeVideoSource} from "../Media";
 import {transitionElement} from "../Transitions";
 
 export function nextId(options: { idCounter: number; }) {
@@ -148,16 +147,30 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
         .replace(":id", params.mediaId) +
         '?preview=1&layoutPreview=1';
 
-    if (options.platform === 'chromeOS') {
-        const resourceEndpoint = '/required-files/resource/';
+    // if (options.platform === ConsumerPlatform.CHROMEOS) {
+    //     const resourceEndpoint = '/required-files/resource/';
+    //
+    //     if (!params.isGlobalContent && params.isImageOrVideo) {
+    //         resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+    //     }
+    // } else
+    //     if (!Boolean(params['mediaType'])) {
+    //     resourceUrl += '&scale_override=' + params.scaleFactor;
+    // }
 
-        if (!params.isGlobalContent && params.isImageOrVideo) {
-            resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+    if (options.platform === ConsumerPlatform.ELECTRON) {
+        if (params.render === 'html') {
+            resourceUrl = options.appHost +
+                'layout_' + params.layoutId +
+                '_region_' + params.regionId +
+                '_media_' + params.mediaId +
+                '.html';
+        } else if (params.render === 'native' && params.isImageOrVideo) {
+            resourceUrl = options.appHost + params.uri;
         }
-    } else if (!Boolean(params['mediaType'])) {
-        resourceUrl += '&scale_override=' + params.scaleFactor;
     }
 
+    // Default value is for CMS
     return resourceUrl;
 }
 
@@ -188,7 +201,7 @@ export function composeBgUrlByPlatform(
         '&height=' + params.layout.sHeight +
         '&dynamic&proportional=0';
 
-    if (platform === 'chromeOS') {
+    if (platform === ConsumerPlatform.CHROMEOS) {
         bgImageUrl = composeMediaUrl({uri: params.layout.bgImage});
     }
 

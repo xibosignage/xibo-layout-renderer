@@ -23,11 +23,12 @@ import {createNanoEvents} from 'nanoevents';
 import Layout, {getXlf, initRenderingDOM} from './Modules/Layout';
 import {platform} from './Modules/Platform';
 import {ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType,} from './Types/Layout';
-import {ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback} from './Types/XLR';
+import {ELayoutType, initialXlr, IXlr, IXlrEvents} from './Types/XLR';
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
 import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
 import {getLayoutIndexByLayoutId, hasSspLayout} from "./Modules/Generators/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
+import {ConsumerPlatform} from "./Types/Platform";
 import {OverlayLayoutManager} from "./Modules/Layout/OverlayLayoutManager";
 
 export default function XiboLayoutRenderer(
@@ -573,12 +574,17 @@ export default function XiboLayoutRenderer(
             ...props.options,
         };
 
-        if (self.config.platform ==='CMS' &&
+        if (self.config.platform === ConsumerPlatform.CMS &&
             inputLayout && Boolean(inputLayout.layoutId)
         ) {
             newOptions.xlfUrl =
                 newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
-        } else if (self.config.platform === 'chromeOS' && inputLayout !== undefined) {
+        } else if (
+            (self.config.platform === ConsumerPlatform.CHROMEOS ||
+                self.config.platform === ConsumerPlatform.ELECTRON
+            ) &&
+            inputLayout !== undefined
+        ) {
             newOptions.xlfUrl = inputLayout.path as string;
         }
 

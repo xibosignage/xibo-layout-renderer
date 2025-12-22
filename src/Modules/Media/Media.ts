@@ -28,14 +28,14 @@ import { IRegion } from '../../Types/Region';
 import { IMedia } from '../../Types/Media';
 import {
     capitalizeStr,
+    composeMediaUrl,
+    composeResourceUrl,
+    composeResourceUrlByPlatform,
     fetchJSON,
+    getDataBlob,
     getMediaId,
     nextId,
     preloadMediaBlob,
-    composeResourceUrl,
-    composeResourceUrlByPlatform,
-    composeMediaUrl,
-    getDataBlob,
 } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
 import { VideoMedia } from './VideoMedia';
@@ -44,7 +44,7 @@ import {IXlr} from '../../Types/XLR';
 import {MediaState} from "../../Types/Media/Media.types";
 
 import 'video.js/dist/video-js.min.css';
-import {createMediaElement} from "../Generators/Generators";
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -261,6 +261,7 @@ export class Media implements IMedia {
             uri: this.uri,
             isGlobalContent: this.mediaType === 'global',
             isImageOrVideo: this.mediaType === 'image' || this.mediaType === 'video',
+            render: this.render,
         };
 
         if (this.mediaType === 'image' || this.mediaType === 'video') {
@@ -269,9 +270,9 @@ export class Media implements IMedia {
 
         let tmpUrl = '';
 
-        if (this.xlr.config.platform === 'CMS') {
+        if (this.xlr.config.platform === ConsumerPlatform.CMS) {
             tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
-        } else if (this.xlr.config.platform === 'chromeOS') {
+        } else if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
             tmpUrl = composeResourceUrl(this.xlr.config, resourceUrlParams);
 
             if (this.mediaType === 'image' || this.mediaType === 'video' || this.mediaType === 'audio') {
@@ -282,6 +283,8 @@ export class Media implements IMedia {
                     tmpUrl = this.uri;
                 }
             }
+        } else if (this.xlr.config.platform === ConsumerPlatform.ELECTRON) {
+            tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
         }
 
         this.url = tmpUrl;
@@ -327,7 +330,7 @@ export class Media implements IMedia {
         const showCurrentMedia = async () => {
             let $mediaId = getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName});
             let $media = document.getElementById($mediaId);
-            const isCMS = this.xlr.config.platform === 'CMS';
+            const isCMS = this.xlr.config.platform === ConsumerPlatform.CMS;
 
             if (!$media) {
                 $media = getNewMedia();
@@ -355,7 +358,7 @@ export class Media implements IMedia {
                         preload: 'auto',
                         autoplay: false,
                         muted: true,
-                        errorDisplay: this.xlr.config.platform !== 'chromeOS',
+                        errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
                         loop: this.loop,
                     });
                 } else if (this.mediaType === 'audio' && this.url !== null) {
