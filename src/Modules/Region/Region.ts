@@ -35,7 +35,7 @@ import {
 import {IXlr} from '../../Types/XLR';
 import {createMediaElement, getAllAttributes} from '../Generators/Generators';
 import Layout from "../Layout";
-// import {MediaVideo} from "../Media/MediaVideo";
+import {MediaItem} from "../../Types/Media";
 
 export class Region {
     activeMediaIndex = 0;
@@ -46,11 +46,11 @@ export class Region {
     html?: HTMLElement;
     id: string | null = null;
     index = 0;
-    mediaItems: (Media | VideoMedia)[] = [];
-    mediaItemsActions: (Media | VideoMedia)[] = [];
+    mediaItems: MediaItem[] = [];
+    mediaItemsActions: MediaItem[] = [];
     offsetX = 0;
     offsetY = 0;
-    oldMedia?: Media;
+    oldMedia?: MediaItem;
     oneMedia = false;
     ready = false;
     sHeight = 0;
@@ -62,8 +62,8 @@ export class Region {
     options: Record<string, any> = {};
     emitter: Emitter<IRegionEvents> = createNanoEvents<IRegionEvents>();
 
-    activeMedia?: Media;
-    nextMedia?: Media;
+    activeMedia?: MediaItem;
+    nextMedia?: MediaItem;
 
     activeMediaEl?: HTMLElement;
     nextMediaEl?: HTMLElement;
@@ -241,7 +241,7 @@ export class Region {
     };
 
     get nextMediaIndex() {
-        return this.activeMediaIndex + 1 % this.mediaItems.length;
+        return (this.activeMediaIndex + 1) % this.mediaItems.length;
     }
 
     prepareMediaObjects()  {
@@ -255,57 +255,62 @@ export class Region {
 
             this.activeMedia = this.mediaItems[this.activeMediaIndex];
 
-            nextMediaIndex = this.activeMediaIndex + 1;
-
-            if (nextMediaIndex >= this.mediaItems.length ||
-                (
-                    !Boolean(this.mediaItems[nextMediaIndex]) &&
-                    this.mediaItems.length === 1
-                )
-            ) {
-                nextMediaIndex = 0;
-            }
+            nextMediaIndex = this.nextMediaIndex;
 
             if (Boolean(this.mediaItems[nextMediaIndex])) {
                 if (nextMediaIndex === this.activeMediaIndex) {
-                    this.nextMedia = this.activeMedia.mediaType === 'video'
-                        ? (this.activeMedia as VideoMedia).clone()
-                        : this.activeMedia.clone();
+                    this.nextMedia = this.activeMedia;
+                    this.nextMedia.html = null;
+                    this.nextMediaEl = undefined;
                 } else {
                     this.nextMedia = this.mediaItems[nextMediaIndex];
+                    this.nextMedia.html = null;
+                    this.nextMediaEl = undefined;
                 }
             }
 
-            console.debug('<> XLR.debug prepareMediaObjects::oldMedia', {
+            console.debug('<IAK> XLR.debug prepareMediaObjects::oldMedia', {
                 regionId: this.id,
                 oldMedia: this.oldMedia?.containerName,
             });
 
             const $region = document.getElementById(`${this.containerName}`);
+
+            // Empty $region
+            // if ($region) {
+            //     $region.innerHTML = '';
+            // }
+
             // Append available media to region DOM
             if (this.activeMedia) {
                 this.activeMediaEl = createMediaElement(this.activeMedia);
                 this.activeMedia.html = this.activeMediaEl;
 
-                console.debug('<> XLR.debug prepareMediaObjects::currMedia', {
+                console.debug('<IAK> XLR.debug prepareMediaObjects::currMedia', {
                     currentMedia: this.activeMedia.containerName,
                     regionId: this.id,
                 });
-                ($region) && $region.appendChild(this.activeMediaEl);
+
+                ($region) && $region.appendChild(this.activeMedia.html);
             }
 
+            console.debug('<IAK> Region::prepareMediaObjects >> ', {
+                totalMediaItems: this.totalMediaItems,
+                nextMedia: this.nextMedia,
+                nextMediaIndex,
+            })
             if (this.nextMedia && this.totalMediaItems > 1) {
                 this.nextMediaEl = createMediaElement(this.nextMedia);
                 this.nextMedia.html = this.nextMediaEl;
 
-                console.debug('<> XLR.debug prepareMediaObjects::nxtMedia', {
+                console.debug('<IAK> XLR.debug prepareMediaObjects::nxtMedia', {
                     nextMedia: this.nextMedia.containerName,
                     regionId: this.id,
                 });
-                ($region) && $region.appendChild(this.nextMediaEl);
+                ($region) && $region.appendChild(this.nextMedia.html);
 
                 if (this.nextMedia.mediaType === 'video') {
-                    (this.nextMedia as VideoMedia).prepare(this.nextMedia as VideoMedia);
+                    ((this.nextMedia as unknown) as VideoMedia).prepare((this.nextMedia as unknown) as VideoMedia);
                 }
             }
         }
@@ -322,8 +327,12 @@ export class Region {
         }
     };
 
-    transitionNodes(oldMedia: Media | undefined, newMedia: Media | undefined) {
+    transitionNodes(oldMedia: MediaItem | undefined, newMedia: MediaItem | undefined) {
 
+        console.debug('<IAK> Region::transitionNodes', {
+            oldMedia,
+            newMedia,
+        })
         let transOutDuration = 1;
         let transOutDirection: compassPoints = 'E';
 
@@ -360,13 +369,14 @@ export class Region {
                 // Hide oldMedia
                 if (oldMedia) {
                     const $oldMedia = document.getElementById(oldMedia.containerName);
+                    console.debug('<IAK> Region::transitionNodes >> $oldMedia', {
+                        $oldMedia,
+                        oldMediaHtml: oldMedia.html,
+                    })
                     if ($oldMedia) {
                         const removeOldMedia = () => {
+                            console.debug('<IAK> Region::transitionNodes >> removeOldMedia()');
                             if (oldMedia.mediaType === 'video') {
-                                const oldVideoMedia = (oldMedia as VideoMedia);
-
-                                oldVideoMedia.stop();
-                                oldVideoMedia.disposePlayer();
                             } else {
                                 $oldMedia.style.setProperty('display', 'none');
                                 $oldMedia.remove();
@@ -405,10 +415,13 @@ export class Region {
 
             if (oldMedia) {
                 hideOldMedia.then(async (isDone) => {
+                    console.debug('<IAK> Region::transitionNodes >> hideOldMedia::isDone: ', isDone);
                     if (isDone) {
                         if (newMedia.mediaType === 'video') {
+                            console.debug('<IAK> Region::transitionNodes >> hideOldMedia::isVideo');
                             await (newMedia as VideoMedia).play(newMedia as VideoMedia);
                         } else {
+                            console.debug('<IAK> Region::transitionNodes >> hideOldMedia::otherMedia: ', newMedia.mediaType);
                             newMedia.run();
                         }
                     }
@@ -425,8 +438,8 @@ export class Region {
         }
     };
 
-    playNextMedia()  {
-        console.debug('<> XLR.debug Region playing next media', {
+    playNextMedia(caller: string = '')  {
+        console.debug('<IAK> XLR.debug Region playing next media', {
             regionId: this.id,
             currentMediaIndex: this.activeMediaIndex,
             mediaItemsLn: this.mediaItems.length,
@@ -474,10 +487,10 @@ export class Region {
             this.oldMedia = undefined;
         }
 
-        this.activeMediaIndex = this.activeMediaIndex + 1;
+        this.activeMediaIndex = (this.activeMediaIndex + 1) % this.totalMediaItems;
         this.prepareMediaObjects();
 
-        console.debug('region::playNextMedia', self);
+        console.debug(`${caller} region::playNextMedia`, this);
         this.transitionNodes(this.oldMedia, this.activeMedia);
     };
 
@@ -505,7 +518,7 @@ export class Region {
             this.layout.regions[this.index] = this;
         }
 
-        console.debug('Calling Region::end ', self);
+        console.debug('Calling Region::end ', this);
         this.exitTransition();
     };
 
@@ -539,4 +552,24 @@ export class Region {
         this.ending = false;
         console.debug('Resetting region states', this);
     };
+
+    removeSinglePlayItem(media: MediaItem) {
+        console.debug('<IAK> Region::removeSinglePlayItem >> isSinglePlay: ', media.singlePlay);
+        console.debug('<IAK> Region::removeSinglePlayItem >> available media items', {
+            mediaItems: this.mediaItems,
+        })
+
+        // Add check if media is just a singleplay = true
+        // Due to interactivity, then remove it from the list
+        const activeMediaFromIndex = this.mediaItems[this.activeMediaIndex];
+
+        if (activeMediaFromIndex.id === media.id) {
+            this.mediaItems.splice(this.activeMediaIndex, 1);
+            this.totalMediaItems = this.mediaItems.length;
+        }
+
+        console.debug('<IAK> Region::removeSinglePlayItem >> updated media items', {
+            mediaItems: this.mediaItems,
+        })
+    }
 }

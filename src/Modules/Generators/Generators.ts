@@ -18,13 +18,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { IMedia } from '../../Types/Media';
+import {MediaItem} from '../../Types/Media';
 import {InputLayoutType, OptionsType} from '../../Types/Layout';
-import {IXlr} from "../../Types/XLR";
-import {nanoid} from "nanoid";
-import {composeVideoSource} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
-import {Media} from "../Media";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -321,7 +317,7 @@ export function hasSspLayout(inputLayouts: InputLayoutType[], defaultValue = fal
     return inputLayouts.find(layout => layout.layoutId === -1) !== undefined;
 }
 
-export function createMediaElement(mediaObject: Media) {
+export function createMediaElement(mediaObject: MediaItem) {
     const self = mediaObject;
     const $mediaIframe = document.createElement('iframe');
     $mediaIframe.scrolling = 'no';
@@ -401,7 +397,7 @@ export function createMediaElement(mediaObject: Media) {
             }
         }
 
-        $videoMedia.classList.add('video-js', 'vjs-default-skin');
+        $videoMedia.className = 'video-js vjs-default-skin';
 
         if (self.loop) {
             self.loop = true;

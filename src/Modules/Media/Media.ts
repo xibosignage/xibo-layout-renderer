@@ -171,6 +171,11 @@ export class Media {
             });
             this.xlr.emitter.emit('widgetEnd', parseInt(media.id));
 
+            // Remove singlePlay media
+            if (media.singlePlay) {
+                media.region.removeSinglePlayItem(media);
+            }
+
             media.region.playNextMedia();
         });
 
@@ -274,7 +279,6 @@ export class Media {
     }
 
     run() {
-        const self = this;
         let transInDuration = 1;
         let transInDirection: compassPoints = 'E';
 
@@ -314,11 +318,11 @@ export class Media {
             }
 
             if ($media) {
-                $media.style.setProperty('display', 'block');
-
-                if (Boolean(this.options['transin'])) {
-                    $media.animate(transIn.keyframes, transIn.timing);
-                }
+                this.html = $media;
+                console.debug('<IAK> Media::run >> showCurrentMedia', {
+                    $media: $media,
+                    containerName: this.containerName,
+                })
 
                 if (this.mediaType === 'image' && this.url !== null) {
                     ($media as HTMLImageElement).style
@@ -328,9 +332,11 @@ export class Media {
                                 ? this.url
                                 : await getDataBlob(this.url)}`
                         );
+                    this.show();
                 } else if (this.mediaType === 'audio' && this.url !== null) {
                     ($media as HTMLAudioElement).src =
                         isCMS ? await preloadMediaBlob(this.url, this.mediaType) : this.url;
+                    this.show();
                 } else if ((this.render === 'html' || this.mediaType === 'webpage') &&
                     this.iframe && this.checkIframeStatus
                 ) {
@@ -340,6 +346,7 @@ export class Media {
                     // Append iframe
                     $media.innerHTML = '';
                     $media.appendChild(this.iframe as Node);
+                    this.show();
 
                     // On iframe load, set state as ready to play full preview
                     // (self.iframe) && self.iframe.addEventListener('load', function(){
@@ -349,6 +356,10 @@ export class Media {
                     //         self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
                     //     }
                     // });
+                }
+
+                if (Boolean(this.options['transin'])) {
+                    $media.animate(transIn.keyframes, transIn.timing);
                 }
 
                 if (this.region && !this.region.layout?.isOverlay ||
@@ -377,16 +388,21 @@ export class Media {
         showCurrentMedia();
     }
 
-    async stop() {
-        const $media = document.getElementById(this.containerName);
+    show() {
+        const $mediaHtml = document.getElementById(this.containerName);
+        $mediaHtml!.style.display = 'block';
+    }
 
-        if ($media) {
-            $media.style.display = 'none';
-            $media.remove();
+    async stop() {
+        const $mediaHtml = document.getElementById(this.containerName);
+
+        if ($mediaHtml) {
+            $mediaHtml.style.display = 'none';
+            $mediaHtml.remove();
         }
     }
 
-    clone() {
+    public clone(): Media {
         return new Media(
             this.region,
             this.mediaId,

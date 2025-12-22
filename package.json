@@ -9,8 +9,10 @@
   "type": "module",
   "scripts": {
     "prepare": "npm run build",
-    "build": "rimraf dist && rollup --config rollup.config.prod.ts --configPlugin @rollup/plugin-typescript",
-    "dev": "rimraf dist && rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "prebuild": "npm run clean",
+    "build": "rollup --config rollup.config.prod.ts --configPlugin @rollup/plugin-typescript",
+    "dev": "rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
   },
   "repository": {
     "type": "git",
@@ -40,7 +42,6 @@
     "date-fns": "^4.1.0",
     "nanoevents": "^9.0.0",
     "path": "^0.12.7",
-    "rimraf": "^5.0.5",
     "rollup": "^4.18.0",
     "rollup-plugin-analyzer": "^4.0.0",
     "rollup-plugin-dts": "^6.1.0",
@@ -52,6 +53,7 @@
   "dependencies": {
     "@types/xml2js": "^0.4.14",
     "nanoid": "^5.1.6",
+    "rimraf": "^6.1.2",
     "xml2js": "^0.6.2"
   }
 }

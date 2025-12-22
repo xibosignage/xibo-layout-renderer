@@ -61,6 +61,8 @@ export type VideoMediaEvents = {
 export class VideoMedia extends Media {
     override emitter: Emitter<VideoMediaEvents> = createNanoEvents<VideoMediaEvents>();
     private mediaDuration = 0;
+    private manualEndTimerId?: NodeJS.Timeout;
+    private $vidEl: HTMLElement | null = null;
 
     constructor(
         region: Region,
@@ -76,6 +78,7 @@ export class VideoMedia extends Media {
             options,
             xlr,
         );
+        this.$vidEl = this.html;
 
         this.on('start', () => {
             if (this.state === MediaState.PLAYING) return;
@@ -97,7 +100,7 @@ export class VideoMedia extends Media {
                 videoMedia: this,
             })
             // Emit media/widget start event
-            console.debug('Media::Emitter > Start - Calling widgetStart event', {
+            console.debug('VideoMedia::Emitter > Start - Calling widgetStart event', {
                 mediaId: this.id,
                 regionId: this.region?.id,
                 layoutId: this.region?.layout?.id,
@@ -116,7 +119,7 @@ export class VideoMedia extends Media {
                     this.region.playNextMedia();
                     return;
                 } else {
-                    this.player?.pause();
+                    if (this.isInitialized()) this.player?.pause();
                 }
             } else {
                 this.stop();
@@ -135,12 +138,16 @@ export class VideoMedia extends Media {
             }
 
             // Emit media/widget end event
-            console.debug('Media::Emitter > End - Calling widgetEnd event', {
+            console.debug('VideoMedia::Emitter > End - Calling widgetEnd event', {
                 mediaId: this.id,
                 regionId: this.region?.id,
                 layoutId: this.region?.layout?.id,
             });
             this.xlr.emitter.emit('widgetEnd', parseInt(this.id));
+
+            if (this.manualEndTimerId) {
+                clearTimeout(this.manualEndTimerId);
+            }
 
             this.region.playNextMedia();
         });
@@ -154,19 +161,19 @@ export class VideoMedia extends Media {
                 setTimeout(() => {
                     console.debug(`VideoMedia: ${capitalizeStr(this.mediaType)} for media > ${this.id} has ended . . .`);
                     this.stop();
-                    this.disposePlayer();
                     this.emitter.emit('end');
+                    this.disposePlayer();
                 }, 5000);
             }
         })
     }
 
     private isInitialized(): boolean {
-        return isVideoJsInitialized(this.html as HTMLElement);
+        return isVideoJsInitialized(document.getElementById(this.containerName) as HTMLElement);
     }
 
     private getWrapper(): HTMLElement {
-        return getVideoJsWrapper(this.html as HTMLElement);
+        return getVideoJsWrapper(document.getElementById(this.containerName) as HTMLElement);
     }
 
     async playerReportFault(msg: string) {
@@ -198,7 +205,10 @@ export class VideoMedia extends Media {
     }
 
     private initPlayer() {
-        console.debug('VideoMedia::initPlayer >> Initializing video player');
+        console.debug('<IAK> VideoMedia::initPlayer >> Initializing video player');
+
+        this.$vidEl = document.getElementById(this.containerName);
+        this.html = this.$vidEl;
 
         this.player = videojs(this.html as Element, {
             autoplay: false,
@@ -210,27 +220,20 @@ export class VideoMedia extends Media {
             // Race promise between a 0.5s play and a 5s skip
             Promise.race([
                 new Promise((resolve, reject) => setTimeout(async () => {
-                    console.debug(`VideoMedia: ${capitalizeStr(this.mediaType)} for media > ${this.id} : Trying to force play after 0.1 seconds`);
+                    console.debug(`<IAK> VideoMedia: ${capitalizeStr(this.mediaType)} for media > ${this.id} : Trying to force play after 0.1 seconds`);
                     // Try to force play here
                     try {
                         // Set video mute/unmute based on setting once playing
                         this.player?.muted(this.muted);
 
-                        console.debug('VideoMedia::ready >> Video will play for ' +
+                        console.debug('<IAK> VideoMedia::ready >> Video will play for ' +
                             (this.duration > 0 ? this.duration : this.mediaDuration) +
                             ' seconds'
                         );
+                        console.debug('<IAK> VideoMedia::ready', {
+                            mediaDuration: this.mediaDuration,
+                        });
 
-                        // Let's put a manual stop of the video when duration is set
-                        if (this.duration > 0 && this.mediaDuration > this.duration) {
-                            setTimeout(() => {
-                                this.player?.pause();
-                                this.player?.currentTime(0);
-
-                                // Manually trigger ended event
-                                this.player?.trigger('ended');
-                            }, this.duration * 1000)
-                        }
                         // Resolve if play works
                         resolve(true);
                     } catch (error) {
@@ -241,7 +244,7 @@ export class VideoMedia extends Media {
                 new Promise((_, reject) => setTimeout(() => reject('Timeout'), 5000))
             ])
             .then(() => {
-                console.debug(`VideoMedia: ${capitalizeStr(this.mediaType)} for media > ${this.id} : Autoplay started`);
+                console.debug(`<IAK> VideoMedia: ${capitalizeStr(this.mediaType)} for media > ${this.id} : Autoplay started`);
             })
             .catch(async (error) => {
                 if (error === 'Timeout') {
@@ -258,12 +261,37 @@ export class VideoMedia extends Media {
 
         // Hook video.js events to Nanoevents
         this.player.on("play", () => {
-            console.debug('VideoMedia::initPlayer >> player.play()');
+            console.debug('<IAK> VideoMedia::initPlayer >> player.play()');
+
+            // Let's put a manual stop of the video when duration is set
+            if (this.duration > 0 && this.mediaDuration > this.duration) {
+                if (this.manualEndTimerId) clearTimeout(this.manualEndTimerId);
+
+                this.manualEndTimerId = setTimeout(() => {
+                    console.log('<IAK> VideoMedia::initPlayer >> Force end media with custom duration', {
+                        customDuration: this.duration,
+                        originalDuration: this.mediaDuration,
+                    })
+                    this.player?.pause();
+                    this.player?.currentTime(0);
+
+                    // Manually trigger ended event
+                    this.player?.trigger('ended');
+                }, this.duration * 1000)
+            }
+
             this.emitter.emit("start");
         });
 
+        this.player.on('playing', () => {
+            console.debug('<IAK> VideoMedia::initPlayer >> player.playing()', {
+                currentTime: this.player?.currentTime(),
+            })
+        })
+
         // "ended" triggers reliably when playback finishes
         this.player.on("ended", () => {
+            console.debug('<IAK> VideoMedia::initPlayer >> player.on("ended")')
             this.emitter.emit("end");
         });
         // Media/tech errors
@@ -287,36 +315,41 @@ export class VideoMedia extends Media {
     }
 
     async prepare(media: VideoMedia) {
+        // Wait until video.js has wrapped the element
+        await this.waitForWrapper();
+
         if (!this.player) this.initPlayer();
 
         if (this.player?.currentSrc() === media.url) return;
-        console.debug('VideoMedia::prepare >> currentSrc() === media.url', {
+        console.debug('<IAK> VideoMedia::prepare >> currentSrc() === media.url', {
             currentSrc: this.player?.currentSrc(),
             mediaUrl: media.url,
         })
 
-        // Wait until video.js has wrapped the element
-        await this.waitForWrapper();
-        console.debug('VideoMedia::prepare >> Done waiting for wrapper');
+        console.debug('<IAK> VideoMedia::prepare >> Done waiting for wrapper');
 
         await new Promise<void>((resolve, reject) => {
-            const player = this.player;
-            if (!player) return reject('Video player not initialized');
+            if (!this.player) {
+                // return reject('Video player not initialized');
+                // try to initialize player
+                this.initPlayer();
+            }
+            let player = this.player;
 
             const onMeta = () => {
-                this.mediaDuration = player.duration() as number;
+                this.mediaDuration = player!.duration() as number;
 
-                console.debug('VideoMedia::prepare >> onMeta - loadedmetadata', {
+                console.debug('<IAK> VideoMedia::prepare >> onMeta - loadedmetadata', {
                     player,
                 })
-                player.off('error', onErr);
+                player!.off('error', onErr);
                 resolve();
             };
 
             const onErr = () => {
-                console.debug('VideoMedia::prepare >> onErr - error');
-                player.off('loadedmetadata', onMeta);
-                reject(player.error());
+                console.debug('<IAK> VideoMedia::prepare >> onErr - error');
+                player!.off('loadedmetadata', onMeta);
+                reject(player!.error());
             };
 
             player!.one('loadedmetadata', onMeta);
@@ -327,72 +360,9 @@ export class VideoMedia extends Media {
         })
     }
 
-    override run() {
-        let transInDuration = 1;
-        let transInDirection: compassPoints = 'E';
-
-        if (Boolean(this.options['transinduration'])) {
-            transInDuration = Number(this.options.transinduration);
-        }
-
-        if (Boolean(this.options['transindirection'])) {
-            transInDirection = this.options.transindirection;
-        }
-
-        let defaultTransInOptions: TransitionElementOptions = {duration: transInDuration};
-        let transIn = transitionElement('defaultIn', {duration: defaultTransInOptions.duration});
-
-        if (Boolean(this.options['transin'])) {
-            let transInName = this.options['transin'];
-
-            if (transInName === 'fly') {
-                transInName = `${transInName}In`;
-                defaultTransInOptions.keyframes = flyTransitionKeyframes({
-                    trans: 'in',
-                    direction: transInDirection,
-                    height: this.divHeight,
-                    width: this.divWidth,
-                });
-            }
-
-            transIn = transitionElement(transInName, defaultTransInOptions);
-        }
-
-        const getNewMedia = (): HTMLElement | null => {
-            const $region = document.getElementById(`${this.region.containerName}`);
-            // This function is for checking whether
-            // the region still has to show a media item
-            // when another region is not finished yet
-            if (this.region && this.region.complete && !this.region.layout?.allEnded) {
-                // Add currentMedia to the region
-
-                ($region) && $region.insertBefore(this.html as Node, $region.lastElementChild);
-
-                return this.html as HTMLElement;
-            }
-
-            return null;
-        };
-
-        const showCurrentMedia = async () => {
-            let $media = document.getElementById(this.containerName);
-            const isCMS = this.xlr.config.platform === 'CMS';
-
-            if (!$media) {
-                $media = getNewMedia();
-            }
-
-            if ($media) {
-                if (Boolean(this.options['transin'])) {
-                    $media.animate(transIn.keyframes, transIn.timing);
-
-                    // await this.play(this);
-                }
-            }
-        }
-    }
     /** Called when region activates media */
     async play(media: VideoMedia) {
+        console.debug('<IAK> VideoMedia::play()');
         // Ensure metadata is prepared
         await this.prepare(media);
 
@@ -430,7 +400,7 @@ export class VideoMedia extends Media {
         wrapper!.style.display = "none";
     }
 
-    private show() {
+    override show() {
         const wrapper = this.getWrapper();
         console.debug('VideoMedia::show', {
             wrapper,
@@ -438,10 +408,10 @@ export class VideoMedia extends Media {
 
         wrapper!.style.display = "block";
 
-        this.html!.style.display = "block";
+        this.$vidEl!.style.display = "block";
     }
 
-    override clone() {
+    public override clone(): VideoMedia {
         return new VideoMedia(
             this.region,
             this.mediaId,
@@ -452,8 +422,15 @@ export class VideoMedia extends Media {
     }
 
     stopAndEnd() {
+        console.debug('<IAK> VideoMedia::stopAndEnd >> state', this.state);
+
+        // Only proceed when last known state is "playing"
+        if (this.state !== MediaState.PLAYING) return;
+
         this.stop();
-        this.disposePlayer();
-        this.emitter.emit('end');
+        if (this.player) {
+            this.player.trigger('ended');
+            this.disposePlayer();
+        }
     }
 }
