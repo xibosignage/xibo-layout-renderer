@@ -49,7 +49,7 @@ export function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
     return $media;
 }
 
-export default function VideoMedia(media: IMedia, xlr: IXlr) {
+export function VideoMedia(media: IMedia, xlr: IXlr) {
     return {
         duration: 0,
         init: function () {

@@ -94,7 +94,7 @@ export function initRenderingDOM(targetContainer: Element | null) {
 }
 
 export async function getXlf(layoutOptions: OptionsType) {
-    let apiHost = window.location.origin;
+    let apiHost = window.location.href.split("/layout")[0];
 
     let xlfUrl = apiHost + layoutOptions.xlfUrl;
     let fetchOptions: RequestInit = {};
@@ -327,7 +327,13 @@ export default class Layout implements ILayout {
                 this.xlr.prepareLayouts().then(async (_xlr) => {
                     console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
 
-                    this.xlr.playSchedules(_xlr);
+                    this.xlr.playLayouts(_xlr);
+
+                    if (layout.isInterrupt() && _xlr.currentLayout && !_xlr.currentLayout.isInterrupt()) {
+                        // Start back overlay layouts when previous layout is interrupt
+                        // and current layout is not
+                        await _xlr.overlayLayoutManager.resumeOverlays();
+                    }
                 });
             }
         });
@@ -497,7 +503,9 @@ export default class Layout implements ILayout {
         });
 
         this.actionController.initTouchActions();
-    }
+
+        this.actionController.initKeyboardActions();
+    };
 
     run(): void {
         const $layoutContainer = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
@@ -513,16 +521,22 @@ export default class Layout implements ILayout {
             if (!this.isOverlay) {
                 // Also set the background color of the player window > body
                 document.body.style.setProperty('background-color', `${this.bgColor}`);
-                // Emit start event
-                this.emitter.emit('start', this);
             }
 
-            console.debug('Layout running > Layout ID > ', this.id);
-            console.debug('Layout Regions > ', this.regions);
-            for (let i = 0; i < this.regions.length; i++) {
-                // playLog(4, "debug", "Running region " + self.regions[i].id, false);
-                this.regions[i].run();
-            }
+            // Emit start event
+            this.emitter.emit('start', this);
+
+            // Play regions
+            this.playRegions();
+        }
+    }
+
+    playRegions() {
+        console.debug('Layout running > Layout ID > ', this.id);
+        console.debug('Layout Regions > ', this.regions);
+        for (let i = 0; i < this.regions.length; i++) {
+            // playLog(4, "debug", "Running region " + self.regions[i].id, false);
+            this.regions[i].run();
         }
     }
 
@@ -579,7 +593,9 @@ export default class Layout implements ILayout {
                 }
             }
 
-            this.emitter.emit('end', this);
+            if (!this.isOverlay) {
+                this.emitter.emit('end', this);
+            }
         }
     }
 

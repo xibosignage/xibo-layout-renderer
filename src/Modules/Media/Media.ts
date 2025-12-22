@@ -18,12 +18,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {createNanoEvents} from 'nanoevents';
+import {createNanoEvents, Emitter} from 'nanoevents';
 import videojs from 'video.js';
+import { nanoid } from 'nanoid';
+import Player from "video.js/dist/types/player";
 
-import {OptionsType} from '../../Types/Layout';
-import {IRegion} from '../../Types/Region';
-import {IMedia, initialMedia} from '../../Types/Media';
+import { OptionsType } from '../../Types/Layout';
+import { IRegion } from '../../Types/Region';
+import { IMedia } from '../../Types/Media';
 import {
     capitalizeStr,
     composeMediaUrl,
@@ -35,10 +37,11 @@ import {
     nextId,
     preloadMediaBlob,
 } from '../Generators';
-import {compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions} from '../Transitions';
-import VideoMedia, {composeVideoSource} from './VideoMedia';
-import AudioMedia from './AudioMedia';
+import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
+import { VideoMedia } from './VideoMedia';
+import { AudioMedia } from './AudioMedia';
 import {IXlr} from '../../Types/XLR';
+import {MediaState} from "../../Types/Media/Media.types";
 
 import 'video.js/dist/video-js.min.css';
 import {ConsumerPlatform} from "../../Types/Platform";
@@ -48,60 +51,165 @@ export interface IMediaEvents {
     end: (media: IMedia) => void;
 }
 
-export default function Media(
-    region: IRegion,
-    mediaId: string,
-    xml: Element,
-    options: OptionsType,
-    xlr: IXlr,
-) {
-    const props = {
-        region: region,
-        mediaId: mediaId,
-        xml: xml,
-        options: options,
-    };
-    let mediaTimer: string | number | NodeJS.Timeout | null | undefined = null;
-    let mediaTimeCount = 0;
-    const emitter = createNanoEvents<IMediaEvents>();
-    const mediaObject: IMedia = {
-        ...initialMedia,
-        ...props,
-    };
-    const statsBC = new BroadcastChannel('statsBC');
+export class Media implements IMedia {
+    attachedAudio: boolean = false;
+    checkIframeStatus: boolean = false;
+    containerName: string = '';
+    divHeight: number = 0;
+    divWidth: number = 0;
+    duration: number = 0;
+    emitter: Emitter<IMediaEvents> = createNanoEvents<IMediaEvents>();
+    enableStat: boolean = false;
+    fileId: string = '';
+    finished: boolean = false;
+    html: HTMLElement | null = null;
+    id: string = '';
+    idCounter: number = 0;
+    iframe: HTMLIFrameElement | null = null;
+    iframeName: string = '';
+    index: number = 0;
+    loadIframeOnRun: boolean = false;
+    loop: boolean = false;
+    mediaId: string = '';
+    mediaType: string = '';
+    muted?: boolean = false;
+    options: OptionsType & {
+        [k: string]: any;
+    } = <OptionsType>{};
+    player?: Player = undefined;
+    ready: boolean = true;
+    region: IRegion = <IRegion>{};
+    render: string = 'html';
+    schemaVersion: string = '1';
+    singlePlay: boolean = false;
+    state: MediaState = MediaState.IDLE;
+    tempSrc: string = '';
+    timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {}, 0);
+    type: string = '';
+    uri: string = '';
+    url: string | null = null;
+    useDuration: boolean = false;
+    xml: Element | null = null;
 
-    const startMediaTimer = (media: IMedia) => {
-        mediaTimer = setInterval(() => {
-            mediaTimeCount++;
-            if (mediaTimeCount > media.duration) {
+    private mediaTimer: ReturnType<typeof setInterval> | undefined;
+    private mediaTimeCount = 0;
+    private xlr: IXlr = <IXlr>{};
+    private readonly statsBC = new BroadcastChannel('statsBC');
+
+    constructor(
+        region: IRegion,
+        mediaId: string,
+        xml: Element,
+        options: OptionsType,
+        xlr: IXlr
+    ) {
+        this.region = region;
+        this.id = mediaId;
+        this.mediaId = this.id;
+        this.xml = xml;
+        this.options = options;
+        this.xlr = xlr;
+
+        this.fileId = this.xml?.getAttribute('fileId') || '';
+        this.idCounter = nextId(this.options);
+        this.containerName = `M-${this.id}-${this.idCounter}`;
+        this.iframeName = `${this.containerName}-iframe`;
+        this.mediaType = this.xml?.getAttribute('type') || '';
+        this.render = this.xml?.getAttribute('render') || '';
+        this.duration = parseInt(this.xml?.getAttribute('duration') as string) || 0;
+        this.enableStat = Boolean(this.xml?.getAttribute('enableStat') || false);
+
+        this.on('start', (media: IMedia) => {
+            if (media.state === MediaState.PLAYING) return;
+
+            media.state = MediaState.PLAYING;
+            if (media.mediaType === 'video') {
+                const videoMedia = VideoMedia(media, xlr);
+
+                videoMedia.init();
+
+                if (media.duration > 0) {
+                    this.startMediaTimer(media);
+                }
+            } else if (media.mediaType === 'audio') {
+                AudioMedia(media).init();
+                if (media.duration > 0) {
+                    this.startMediaTimer(media);
+                }
+            } else {
+                this.startMediaTimer(media);
+            }
+
+            // Check if stats are enabled for the layout
+            if (media.enableStat) {
+                this.statsBC.postMessage({
+                    action: 'START_STAT',
+                    mediaId: parseInt(media.id),
+                    layoutId: media.region.layout.id,
+                    scheduleId: media.region.layout.scheduleId,
+                    type: 'media',
+                });
+            }
+
+            // Emit media/widget start event
+            console.debug('Media::Emitter > Start - Calling widgetStart event');
+            this.xlr.emitter.emit('widgetStart', parseInt(media.id));
+        });
+
+        this.on('end', (media: IMedia) => {
+            if (media.state === MediaState.ENDED) return;
+            media.state = MediaState.ENDED;
+
+            if (this.mediaTimer) {
+                clearInterval(this.mediaTimer);
+                this.mediaTimeCount = 0;
+            }
+
+            // Check if stats are enabled for the layout
+            if (media.enableStat) {
+                this.statsBC.postMessage({
+                    action: 'END_STAT',
+                    mediaId: parseInt(media.id),
+                    layoutId: media.region.layout.id,
+                    scheduleId: media.region.layout.scheduleId,
+                    type: 'media',
+                });
+            }
+
+            // Emit media/widget end event
+            console.debug('Media::Emitter > End - Calling widgetEnd event', {
+                mediaId: media.id,
+                regionId: media.region.id,
+                layoutId: media.region.layout.id,
+            });
+            this.xlr.emitter.emit('widgetEnd', parseInt(media.id));
+
+            media.region.playNextMedia();
+        });
+
+        // Initialize Media object
+        this.init();
+    }
+
+    private startMediaTimer(media: IMedia) {
+        this.mediaTimer = setInterval(() => {
+            this.mediaTimeCount++;
+            if (this.mediaTimeCount > media.duration) {
                 console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
 
                 console.debug('Media::Emitter > End', {
-                    currentLayout: xlr.currentLayout,
+                    currentLayout: this.xlr.currentLayout,
                     media,
                     region: media.region,
                     layout: media.region.layout,
                 })
 
-                if (media.region.layout.isOverlay) {
-                    if (media.region.mediaObjects.length > 1) {
-                        media.emitter.emit('end', media);
-                    } else {
-                        // We only have one media object
-                        // Only proceed running playNextMedia() when
-                        // currentLayout has allEnded
-                        if (xlr.currentLayout && xlr.currentLayout.allEnded) {
-                            media.emitter.emit('end', media);
-                        }
-                    }
-                } else {
-                    media.emitter.emit('end', media);
-                }
+                media.emitter.emit('end', media);
 
                 if (media.mediaType === 'video') {
                     // Dispose the video media
                     console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    VideoMedia(media, xlr).stop(true);
+                    VideoMedia(media, this.xlr).stop(true);
                 }
             }
         }, 1000);
@@ -109,332 +217,110 @@ export default function Media(
         console.debug('startMediaTimer: Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
 
-    emitter.on('start', function(media: IMedia) {
-        if (media.mediaType === 'video') {
-            const videoMedia = VideoMedia(media, xlr);
-
-            videoMedia.init();
-
-            if (media.duration > 0) {
-                startMediaTimer(media);
-            }
-        } else if (media.mediaType === 'audio') {
-            AudioMedia(media).init();
-            if (media.duration > 0) {
-                startMediaTimer(media);
-            }
-        } else {
-            startMediaTimer(media);
-        }
-
-        // Check if stats are enabled for the layout
-        if (media.enableStat) {
-            statsBC.postMessage({
-                action: 'START_STAT',
-                mediaId: parseInt(media.id),
-                layoutId: media.region.layout.id,
-                scheduleId: media.region.layout.scheduleId,
-                type: 'media',
-            });
-        }
-
-        // Emit media/widget start event
-        console.debug('Media::Emitter > Start - Calling widgetStart event');
-        xlr.emitter.emit('widgetStart', parseInt(media.id));
-    });
-
-    emitter.on('end', function(media: IMedia) {
-        if (mediaTimer) {
-            clearInterval(mediaTimer);
-            mediaTimeCount = 0;
-        }
-
-        // Check if stats are enabled for the layout
-        if (media.enableStat) {
-            statsBC.postMessage({
-                action: 'END_STAT',
-                mediaId: parseInt(media.id),
-                layoutId: media.region.layout.id,
-                scheduleId: media.region.layout.scheduleId,
-                type: 'media',
-            });
-        }
-
-        // Emit media/widget end event
-        console.debug('Media::Emitter > End - Calling widgetEnd event', {
-            mediaId: media.id,
-            regionId: media.region.id,
-            layoutId: media.region.layout.id,
-        });
-        xlr.emitter.emit('widgetEnd', parseInt(media.id));
-
-        media.region.playNextMedia();
-    });
-
-    mediaObject.on = function<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]) {
-        return emitter.on(event, callback);
+    private on<E extends keyof IMediaEvents>(event: E, callback: IMediaEvents[E]) {
+        return this.emitter.on(event, callback);
     };
 
-    mediaObject.emitter = emitter;
-
-    mediaObject.init = function() {
-        const self = mediaObject;
-        self.id = props.mediaId;
-        self.fileId = self.xml?.getAttribute('fileId') || '';
-        self.idCounter = nextId(props.options);
-        self.containerName = `M-${self.id}-${self.idCounter}`;
-        self.iframeName = `${self.containerName}-iframe`;
-        self.mediaType = self.xml?.getAttribute('type') || '';
-        self.render = self.xml?.getAttribute('render') || '';
-        self.duration = parseInt(self.xml?.getAttribute('duration') as string) || 0;
-        self.enableStat = Boolean(self.xml?.getAttribute('enableStat') || false);
-        self.options = { ...props.options };
-
-        const $mediaIframe = document.createElement('iframe');
-        const mediaOptions = self.xml?.getElementsByTagName('options');
+    private init() {
+        const mediaOptions = this.xml?.getElementsByTagName('options');
 
         if (mediaOptions) {
             for (let _options of Array.from(mediaOptions)) {
                 // Get options
                 const _mediaOptions = _options.children;
                 for (let mediaOption of Array.from(_mediaOptions)) {
-                    self.options[mediaOption.nodeName.toLowerCase()] = mediaOption.textContent;
+                    this.options[mediaOption.nodeName.toLowerCase()] = mediaOption.textContent;
                 }
             }
         }
 
         // Check for options.uri and add it to media
-        if (Boolean(self.options['uri'])) {
-            self.uri = self.options['uri'];
+        if (Boolean(this.options['uri'])) {
+            this.uri = this.options['uri'];
         }
 
         // Show in fullscreen?
-        if(self.options.showfullscreen === "1") {
+        if(this.options.showfullscreen === "1") {
             // Set dimensions as the layout ones
-            self.divWidth = self.region.layout.sWidth;
-            self.divHeight = self.region.layout.sHeight;
+            this.divWidth = this.region.layout.sWidth;
+            this.divHeight = this.region.layout.sHeight;
         } else {
             // Set dimensions as the region ones
-            self.divWidth = self.region.sWidth;
-            self.divHeight = self.region.sHeight;
+            this.divWidth = this.region.sWidth;
+            this.divHeight = this.region.sHeight;
         }
-
-        $mediaIframe.scrolling = 'no';
-        $mediaIframe.id = self.iframeName;
-        $mediaIframe.width = `${self.divWidth}px`;
-        $mediaIframe.height = `${self.divHeight}px`;
-        $mediaIframe.style.cssText = `border: 0;`;
-
-        const $mediaId = getMediaId(self);
-        let $media = <HTMLElement>(self.region.html.querySelector!(`#${$mediaId}`));
-
-        if ($media === null) {
-            if (self.mediaType === 'video') {
-                $media = document.createElement('video');
-            } else if (self.mediaType === 'audio') {
-                $media = new Audio();
-            } else {
-                $media = document.createElement('div');
-            }
-        
-            $media.id = $mediaId;
-        }
-
-        $media.className = 'media--item';
-
-        /* Scale the Content Container */
-        $media.style.cssText = `
-            display: none;
-            width: ${self.divWidth}px;
-            height: ${self.divHeight}px;
-            position: absolute;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        `;
-
-        const $region = document.getElementById(`${self.region.containerName}`);
 
         const resourceUrlParams: any = {
-            ...xlr.config.config,
-            regionOptions: self.region.options,
-            layoutId: self.region.layout.layoutId,
-            regionId: self.region.id,
-            mediaId: self.id,
-            fileId: self.fileId,
-            scaleFactor: self.region.layout.scaleFactor,
-            uri: self.uri,
-            isGlobalContent: self.mediaType === 'global',
-            isImageOrVideo: self.mediaType === 'image' || self.mediaType === 'video',
-            render: self.render,
+            ...this.xlr.config.config,
+            regionOptions: this.region.options,
+            layoutId: this.region.layout.layoutId,
+            regionId: this.region.id,
+            mediaId: this.id,
+            fileId: this.fileId,
+            scaleFactor: this.region.layout.scaleFactor,
+            uri: this.uri,
+            isGlobalContent: this.mediaType === 'global',
+            isImageOrVideo: this.mediaType === 'image' || this.mediaType === 'video',
+            render: this.render,
         };
 
-        if (self.mediaType === 'image' || self.mediaType === 'video') {
-            resourceUrlParams.mediaType = self.mediaType;
+        if (this.mediaType === 'image' || this.mediaType === 'video') {
+            resourceUrlParams.mediaType = this.mediaType;
         }
 
         let tmpUrl = '';
 
-        if (xlr.config.platform === ConsumerPlatform.CMS) {
-            tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
-        } else if (xlr.config.platform === ConsumerPlatform.CHROMEOS) {
-            tmpUrl = composeResourceUrl(xlr.config, resourceUrlParams);
+        if (this.xlr.config.platform === ConsumerPlatform.CMS) {
+            tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
+        } else if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
+            tmpUrl = composeResourceUrl(this.xlr.config, resourceUrlParams);
 
-            if (self.mediaType === 'image' || self.mediaType === 'video' || self.mediaType === 'audio') {
+            if (this.mediaType === 'image' || this.mediaType === 'video' || this.mediaType === 'audio') {
                 tmpUrl = composeMediaUrl(resourceUrlParams);
 
                 // this is an SSP Layout
-                if (self.region.layout.layoutId === -1) {
-                    tmpUrl = self.uri;
+                if (this.region.layout.layoutId === -1) {
+                    tmpUrl = this.uri;
                 }
             }
-        } else if (xlr.config.platform === ConsumerPlatform.ELECTRON) {
-            tmpUrl = composeResourceUrlByPlatform(xlr.config, resourceUrlParams);
+        } else if (this.xlr.config.platform === ConsumerPlatform.ELECTRON) {
+            tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
         }
 
-        self.url = tmpUrl;
+        this.url = tmpUrl;
 
         // Loop if media has loop, or if region has loop and a single media
-        self.loop =
-            self.options['loop'] == '1' ||
-            (self.region.options['loop'] == '1' && self.region.totalMediaObjects == 1);
+        this.loop =
+            this.options['loop'] == '1' ||
+            (this.region.options['loop'] == '1' && this.region.totalMediaObjects == 1);
+    }
 
-        if (self.render === 'html' || self.render === 'webpage') {
-            $mediaIframe.src = self.url;
-        } else {
-            $mediaIframe.src = `${self.url}&width=${self.divWidth}&height=${self.divHeight}`;
-        }
-
-        if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
-            self.checkIframeStatus = true;
-            self.iframe = $mediaIframe;
-        }  else if (self.mediaType === "image") {
-            if (self.options['scaletype'] === 'stretch') {
-                $media.style.cssText = $media.style.cssText.concat(`background-size: 100% 100%;`);
-            } else if (self.options['scaletype'] === 'fit') {
-                $media.style.cssText = $media.style.cssText.concat(`background-size: cover;`);
-            } else {
-                // Center scale type, do we have align or valign?
-                const align = (self.options['align'] == "") ? "center" : self.options['align'];
-                const valign = (self.options['valign'] == "" || self.options['valign'] == "middle") ? "center" : self.options['valign'];
-                $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
-            }
-        } else if (self.mediaType === 'video') {
-            const $videoMedia = composeVideoSource($media as HTMLVideoElement, self);
-
-            let isMuted = false;
-            if (Boolean(self.options['mute'])) {
-                isMuted = self.options.mute === '1';
-            }
-
-            if (Boolean(self.options['scaletype'])) {
-                if (self.options.scaletype === 'stretch') {
-                    $videoMedia.style.objectFit = 'fill';
-                }
-            }
-
-            $videoMedia.classList.add('video-js', 'vjs-default-skin');
-
-            if (self.loop) {
-                self.loop = true;
-                $videoMedia.loop = true;
-            }
-
-            self.muted = isMuted;
-
-            $media = $videoMedia;
-        } else if (self.mediaType === 'audio') {
-            const $audioMedia = $media as HTMLAudioElement;
-
-            $audioMedia.preload = 'auto';
-            $audioMedia.textContent = 'Unsupported Audio';
-            $audioMedia.autoplay = true;
-
-            if (self.loop) {
-                $audioMedia.loop = true;
-            }
-
-            $media = $audioMedia;
-        }
-
-        // Duration is per item condition
-        if (self.render === 'html' || self.mediaType === 'ticker') {
-            /* Check if the ticker duration is based on the number of items in the feed */
-            if (self.options['durationisperitem'] === '1') {
-                const regex = new RegExp('<!-- NUMITEMS=(.*?) -->');
-
-                (async () => {
-                    let html = await fetchJSON(`${tmpUrl}&width=${self.divWidth}&height=${self.divHeight}`);
-                    console.debug({html});
-                    const res = regex.exec(html);
-
-                    if (res !== null) {
-                        self.duration = parseInt(String(self.duration)) * parseInt(res[1]);
-                    }
-                })();
-            }
-        }
-
-        // Check if the media has fade-in/out transitions
-        if (Boolean(self.options['transin']) && Boolean(self.options['transinduration'])) {
-            const transInDuration = Number(self.options.transinduration);
-            const fadeInTrans = transitionElement('fadeIn', { duration: transInDuration });
-            $media.animate(fadeInTrans.keyframes, fadeInTrans.timing);
-        }
-
-        // Add media to the region
-        // Second media if exists, will be off-canvas
-        // All added media will be hidden by default
-        // It will start showing when region.nextMedia() function is called
-
-        // When there's only 1 item and loop = false, don't remove the item but leave it at its last state
-        // For image, and only 1 item, it should still have the transition for next state
-        // Add conditions for video duration being 0 or 1 and also the loop property
-        // For video url, we have to create a URL out of the XLF video URL
-
-        /**
-         * @DONE
-         * Case 1: Video duration = 0, this will play the video for its entire duration
-         * Case 2: Video duration is set > 0 and loop = false
-         * E.g. Set duration = 100s, video duration = 62s
-         * the video will play until 62s and will stop to its last frame until 100s
-         * After 100s, it will expire
-         * Case 3: Video duration is set > 0 and loop = true
-         * E.g. Set duration = 100s, video duration = 62s, loop = true
-         * the video will play until 62s and will loop through until the remaining 38s
-         * to complete the 100s set duration
-         */
-
-        // Add html node to media for
-        self.html = $media;
-    };
-
-    mediaObject.run = function() {
+    run() {
         const self = this;
         let transInDuration = 1;
         let transInDirection: compassPoints = 'E';
 
-        if (Boolean(self.options['transinduration'])) {
-            transInDuration = Number(self.options.transinduration);
+        if (Boolean(this.options['transinduration'])) {
+            transInDuration = Number(this.options.transinduration);
         }
 
-        if (Boolean(self.options['transindirection'])) {
-            transInDirection = self.options.transindirection;
+        if (Boolean(this.options['transindirection'])) {
+            transInDirection = this.options.transindirection;
         }
 
         let defaultTransInOptions: TransitionElementOptions = {duration: transInDuration};
         let transIn = transitionElement('defaultIn', {duration: defaultTransInOptions.duration});
         
-        if (Boolean(self.options['transin'])) {
-            let transInName = self.options['transin'];
+        if (Boolean(this.options['transin'])) {
+            let transInName = this.options['transin'];
 
             if (transInName === 'fly') {
                 transInName = `${transInName}In`;
                 defaultTransInOptions.keyframes = flyTransitionKeyframes({
                     trans: 'in',
                     direction: transInDirection,
-                    height: self.divHeight,
-                    width: self.divWidth,
+                    height: this.divHeight,
+                    width: this.divWidth,
                 });
             }
 
@@ -442,9 +328,9 @@ export default function Media(
         }
 
         const showCurrentMedia = async () => {
-            let $mediaId = getMediaId(self);
+            let $mediaId = getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName});
             let $media = document.getElementById($mediaId);
-            const isCMS = xlr.config.platform === ConsumerPlatform.CMS;
+            const isCMS = this.xlr.config.platform === ConsumerPlatform.CMS;
 
             if (!$media) {
                 $media = getNewMedia();
@@ -453,40 +339,40 @@ export default function Media(
             if ($media) {
                 $media.style.setProperty('display', 'block');
 
-                if (Boolean(self.options['transin'])) {
+                if (Boolean(this.options['transin'])) {
                     $media.animate(transIn.keyframes, transIn.timing);
                 }
 
-                if (self.mediaType === 'image' && self.url !== null) {
+                if (this.mediaType === 'image' && this.url !== null) {
                     ($media as HTMLImageElement).style
                         .setProperty(
                             'background-image',
                             `url(${!isCMS
-                                ? self.url
-                                : await getDataBlob(self.url)}`
+                                ? this.url
+                                : await getDataBlob(this.url)}`
                         );
-                } else if (self.mediaType === 'video' && self.url !== null) {
+                } else if (this.mediaType === 'video' && this.url !== null) {
                     // Initialize video.js
-                    self.player = videojs($media, {
+                    this.player = videojs($media, {
                         controls: false,
                         preload: 'auto',
                         autoplay: false,
                         muted: true,
-                        errorDisplay: xlr.config.platform !== ConsumerPlatform.CHROMEOS,
-                        loop: self.loop,
+                        errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                        loop: this.loop,
                     });
-                } else if (self.mediaType === 'audio' && self.url !== null) {
+                } else if (this.mediaType === 'audio' && this.url !== null) {
                     ($media as HTMLAudioElement).src =
-                        isCMS ? await preloadMediaBlob(self.url, self.mediaType) : self.url;
-                } else if ((self.render === 'html' || self.mediaType === 'webpage') &&
-                    self.iframe && self.checkIframeStatus
+                        isCMS ? await preloadMediaBlob(this.url, this.mediaType) : this.url;
+                } else if ((this.render === 'html' || this.mediaType === 'webpage') &&
+                    this.iframe && this.checkIframeStatus
                 ) {
                     // Set state as false ( for now )
-                    self.ready = false;
+                    this.ready = false;
 
                     // Append iframe
                     $media.innerHTML = '';
-                    $media.appendChild(self.iframe as Node);
+                    $media.appendChild(this.iframe as Node);
 
                     // On iframe load, set state as ready to play full preview
                     // (self.iframe) && self.iframe.addEventListener('load', function(){
@@ -498,39 +384,40 @@ export default function Media(
                     // });
                 }
 
-                self.emitter.emit('start', self);
+                if (!this.region.layout.isOverlay ||
+                    (this.region.layout.isOverlay && this.region.totalMediaObjects > 1)
+                ) {
+                    this.emitter.emit('start', <IMedia>this);
+                }
             }
         };
         const getNewMedia = (): HTMLElement | null => {
-            const $region = document.getElementById(`${self.region.containerName}`);
+            const $region = document.getElementById(`${this.region.containerName}`);
             // This function is for checking whether
             // the region still has to show a media item
             // when another region is not finished yet
-            if (self.region.complete && !self.region.layout.allEnded) {
+            if (this.region.complete && !this.region.layout.allEnded) {
                 // Add currentMedia to the region
 
-                ($region) && $region.insertBefore(self.html as Node, $region.lastElementChild);
+                ($region) && $region.insertBefore(this.html as Node, $region.lastElementChild);
 
-                return self.html as HTMLElement;
+                return this.html as HTMLElement;
             }
 
             return null;
         };
 
         showCurrentMedia();
-    };
+    }
 
-    mediaObject.stop = async function() {
-        const self = mediaObject;
-        const $media = document.getElementById(getMediaId(self));
+    async stop() {
+        const $media = document.getElementById(
+            getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName})
+        );
 
         if ($media) {
             $media.style.display = 'none';
             $media.remove();
         }
-    };
-
-    mediaObject.init();
-
-    return mediaObject;
+    }
 }

@@ -359,4 +359,39 @@ export default class ActionController {
             }
         });
     }
+
+    initKeyboardActions() {
+        const self = this;
+
+        // Store actions in a map
+        const keyActions = new Map<string, DOMStringMap[]>();
+
+        this.$actionController.querySelectorAll<HTMLElement>('.action[triggerType="keyPress"]').forEach(function ($el) {
+            const dataset = $el.dataset;
+            const code = dataset.triggercode;
+
+            if(code) {
+                // Create an empty array, if not yet set
+                if(!keyActions.get(code)) {
+                    keyActions.set(code, []);
+                }
+
+                // Add new action to array
+                keyActions.get(code)!.push(dataset);
+            }
+        });
+
+        // Keyboard listener
+        document.addEventListener('keydown', (ev: KeyboardEvent) => {
+            const actions = keyActions.get(ev.code);
+
+            // Are there action for this key code?
+            if(actions) {
+                // Run all actions associated with it
+                actions.forEach((dataset) => {
+                    self.runAction(dataset, self.options);
+                });
+            }
+        });
+    }
 }

@@ -29,9 +29,11 @@ import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
 import {getLayoutIndexByLayoutId, hasSspLayout} from "./Modules/Generators/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
 import {ConsumerPlatform} from "./Types/Platform";
+import {OverlayLayoutManager} from "./Modules/Layout/OverlayLayoutManager";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
+    overlays: InputLayoutType[],
     options?: OptionsType,
 ) {
     const props = {
@@ -43,9 +45,16 @@ export default function XiboLayoutRenderer(
         ...initialXlr,
     };
 
-    let isUpdatingLoop = false;
+    const runOverlayLayouts = (async () => {
+        await xlrObject.overlayLayoutManager.prepareOverlayLayouts(xlrObject.overlays, xlrObject);
 
-    xlrObject.isUpdatingLoop = isUpdatingLoop;
+        // Play overlays
+        xlrObject.overlayLayoutManager.playOverlays();
+    });
+
+    xlrObject.isUpdatingLoop = false;
+    xlrObject.isUpdatingOverlays = false;
+    xlrObject.overlayLayoutManager = new OverlayLayoutManager();
 
     let splashScreen: ISplashScreen;
 
@@ -75,6 +84,12 @@ export default function XiboLayoutRenderer(
         await xlrObject.updateLoop(inputLayouts);
 
         xlrObject.isUpdatingLoop = false;
+    });
+
+    xlrObject.on('updateOverlays', async (overlays: InputLayoutType[]) => {
+        xlrObject.isUpdatingOverlays = true;
+        await xlrObject.updateOverlays(overlays);
+        xlrObject.isUpdatingOverlays = false;
     })
 
     /**
@@ -95,6 +110,7 @@ export default function XiboLayoutRenderer(
         const self = this;
         self.inputLayouts = !Array.isArray(props.inputLayouts) ?
             [props.inputLayouts] : props.inputLayouts;
+        self.overlays = overlays;
         self.config = JSON.parse(JSON.stringify({...platform, ...props.options}));
 
         // Prepare rendering DOM
@@ -126,8 +142,7 @@ export default function XiboLayoutRenderer(
         });
     };
 
-    xlrObject.playSchedules = function(xlr: IXlr) {
-        const self = this;
+    xlrObject.playLayouts = function(xlr: IXlr) {
         const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
         // Check if there's a current layout
         if (xlr.currentLayout !== undefined) {
@@ -139,35 +154,44 @@ export default function XiboLayoutRenderer(
                 console.log('>>>> XLR.debug XLR::playSchedules > Running currentLayout', xlr.currentLayout);
                 xlr.currentLayout.run();
 
-                // @TODO: Implement overlay layout here
-                (async () => {
-                    await self.renderOverlayLayouts();
-                })();
+                // Hide overlays when current layout is interrupt
+                if (xlr.currentLayout.isInterrupt()) {
+                    xlrObject.overlayLayoutManager.stopOverlays();
+                }
             }
+
         } else {
             // Show splash screen
             if ($splashScreen) {
                 $splashScreen?.show();
             }
+        }
+    }
 
+    xlrObject.playSchedules = function(xlr: IXlr) {
+        xlrObject.playLayouts(xlr);
+
+        if (xlr.currentLayout !== undefined && !xlr.currentLayout.isInterrupt()) {
+            // Run overlay layouts separately
+            runOverlayLayouts();
         }
     };
 
     xlrObject.renderOverlayLayouts = async function() {
         const self = this;
-        // Parse this.uniqueLayouts if overlays are available
-        const overlayLayouts = Object.keys(this.uniqueLayouts).reduce((_layouts: ILayout[], _layoutId) => {
-            if (Boolean(this.uniqueLayouts[_layoutId])) {
-                if (this.uniqueLayouts[_layoutId]?.isOverlay !== undefined) {
-                    // Get layout
-                    const fromUniqueLayout = this.getLayout(this.uniqueLayouts[_layoutId]);
-                    if (fromUniqueLayout !== undefined) {
-                        _layouts = [..._layouts, fromUniqueLayout];
-                    }
-                }
-            }
+        // Parse this.overlays if overlays are available
+        const overlayLayouts = this.overlays.reduce((collection: ILayout[], item) => {
+            let inputOverlay: InputLayoutType = <InputLayoutType>{};
 
-            return _layouts;
+            inputOverlay = {...inputOverlay, ...item};
+            inputOverlay.index = item.index;
+
+            const overlayLayout: ILayout = <ILayout>initialLayout;
+
+            return [...collection, {
+                ...overlayLayout,
+                ...inputOverlay,
+            }]
         }, []);
 
         console.log('XLR::renderOverlayLayouts', {overlayLayouts});
@@ -306,6 +330,13 @@ export default function XiboLayoutRenderer(
         }
     };
 
+    xlrObject.updateOverlays = async (overlays: InputLayoutType[]) => {
+        xlrObject.overlays = overlays;
+
+        // Run overlay layouts separately
+        await runOverlayLayouts();
+    };
+
     xlrObject.parseLayouts = function(loopUpdate?: boolean) {
         let _currentLayout;
         let _nextLayout;
@@ -422,7 +453,8 @@ export default function XiboLayoutRenderer(
     };
 
     xlrObject.getLayout = function(inputLayout: InputLayoutType) {
-        if (Object.keys(this.uniqueLayouts).length === 0) {
+        const isCMS = this.config.platform === 'CMS';
+        if (!isCMS && Object.keys(this.uniqueLayouts).length === 0) {
             return;
         }
 
@@ -433,10 +465,18 @@ export default function XiboLayoutRenderer(
                 _layout = inputLayout;
                 _layout.id = inputLayout.layoutId;
             } else {
-                _layout = {..._layout, ...this.uniqueLayouts[inputLayout.layoutId]};
+                let activeLayout = inputLayout;
+
+                if (isCMS) {
+                    activeLayout.index = 0;
+                } else {
+                    activeLayout = {...this.uniqueLayouts[inputLayout.layoutId]};
+                }
+
+                _layout = {..._layout, ...activeLayout};
 
                 // Must set index/sequence from schedule loop
-                _layout.index = inputLayout.index as number;
+                _layout.index = activeLayout.index as number;
             }
         }
 
@@ -551,7 +591,6 @@ export default function XiboLayoutRenderer(
         let layoutXlf: string;
         let layoutXlfNode: Document | undefined;
         let sspInputLayout: InputLayoutType;
-        let overlayLayout: InputLayoutType;
         if (inputLayout && inputLayout.layoutNode === undefined) {
             // Check if we have an SspLayout
             if (inputLayout.layoutId === -1) {
@@ -564,15 +603,13 @@ export default function XiboLayoutRenderer(
                 layoutXlf = await getXlf(newOptions);
             }
 
-            if (Boolean(inputLayout['isOverlay'])) {
-                overlayLayout = self.uniqueLayouts[inputLayout.layoutId];
-            }
-
             const parser = new window.DOMParser();
             layoutXlfNode = parser.parseFromString(layoutXlf as string, 'text/xml');
         } else {
             layoutXlfNode = inputLayout && inputLayout.layoutNode;
         }
+
+        const isOverlayLayout = !!inputLayout?.isOverlay;
 
         return new Promise<ILayout>((resolve) => {
             const xlrLayoutObj: ILayout = <ILayout>{...initialLayout};
@@ -586,7 +623,7 @@ export default function XiboLayoutRenderer(
             xlrLayoutObj.index = inputLayout.index;
             xlrLayoutObj.xlfString = layoutXlf;
             xlrLayoutObj.duration = inputLayout.duration;
-            xlrLayoutObj.isOverlay = !!overlayLayout;
+            xlrLayoutObj.isOverlay = isOverlayLayout;
             xlrLayoutObj.shareOfVoice = inputLayout.shareOfVoice;
 
             console.log('XLR::prepareLayoutXlf >> Promise >> xlrLayoutObj', xlrLayoutObj);
@@ -596,7 +633,7 @@ export default function XiboLayoutRenderer(
                 xlrLayoutObj.ad = sspInputLayout.ad;
             }
 
-            if (overlayLayout) {
+            if (isOverlayLayout) {
                 resolve(new OverlayLayout(
                   xlrLayoutObj,
                   newOptions,
