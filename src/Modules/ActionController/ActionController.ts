@@ -18,17 +18,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-// import Moveable from 'moveable';
 import {
     ConsumerPlatform,
     ILayout,
-    IMedia,
-    IRegion,
     OptionsType
 } from '../../types';
 import {getAllAttributes, nextId} from '../Generators/Generators';
 import './action-controller.css';
 import {PreviewTranslations} from "../../Lib/translations";
+import {Region} from "../Region";
+import {Media, VideoMedia} from "../Media";
 
 export class Action {
     readonly id: string;
@@ -64,6 +63,7 @@ export default class ActionController {
     $actionControllerTitle: HTMLElement | null;
     $actionsContainer: HTMLElement | null;
     translations: any = {};
+    initializedKeyboardActions = false;
 
     constructor(parent: ILayout, actions: Action[], options: InactOptions) {
         this.parent = parent;
@@ -73,6 +73,7 @@ export default class ActionController {
         this.$container = <HTMLDivElement | null>(document.querySelector(`#${this.parent.containerName}[data-sequence="${this.parent.index}"]`));
         this.$actionControllerTitle = null;
         this.$actionsContainer = null;
+        this.initializedKeyboardActions = false;
 
         if (this.$container && this.$container.getElementsByClassName('action-controller')[0]) {
             this.$actionController = this.$container.getElementsByClassName('action-controller')[0] as ActionsWrapper;
@@ -252,7 +253,7 @@ export default class ActionController {
     loadMediaInRegion(regionId: string, widgetId: string) {
         const self = this;
         // Find target region
-        let targetRegion: IRegion | undefined;
+        let targetRegion: Region | undefined;
         
         self.parent.regions.forEach((regionObj) => {
             if (regionObj.id === regionId) {
@@ -261,9 +262,9 @@ export default class ActionController {
         });
 
         // Find media in actions
-        let targetMedia: IMedia | undefined;
+        let targetMedia: Media | VideoMedia | undefined;
         if (targetRegion) {
-            targetRegion.mediaObjectsActions.forEach((media) => {
+            targetRegion.mediaItemsActions.forEach((media) => {
                 if (media.id === widgetId) {
                     targetMedia = media;
                 }
@@ -276,13 +277,27 @@ export default class ActionController {
         }
 
         // If region is empty, remove the background color and empty message
-        if (targetRegion?.mediaObjects.length === 0) {
+        if (targetRegion?.mediaItems.length === 0) {
             targetRegion.complete = false;
         }
 
         // Create media in region and play it next
-        targetRegion?.mediaObjects.splice(targetRegion.currentMediaIndex + 1, 0, targetMedia as IMedia);
-        targetRegion?.playNextMedia();
+        if (targetMedia && targetRegion) {
+            targetRegion.mediaItems.splice(targetRegion.activeMediaIndex + 1, 0, targetMedia);
+            targetRegion.totalMediaItems = targetRegion.mediaItems.length;
+
+            console.debug('ActionController::loadMediaInRegion', {
+                mediaItems: targetRegion?.mediaItems,
+                activeMedia: targetRegion?.activeMedia,
+            })
+
+            if (targetRegion.activeMedia?.mediaType === 'video') {
+                ((targetRegion.activeMedia as unknown) as VideoMedia).emitter.emit('end');
+            } else {
+                ((targetRegion.activeMedia as unknown) as Media)?.emitter.emit(
+                    'end', ((targetRegion.activeMedia as unknown) as Media));
+            }
+        }
     }
 
     /** Run action based on action data */
@@ -331,7 +346,7 @@ export default class ActionController {
                         }
                     } else if (dataset.source === 'widget') {
                         // Try to find widget/media
-                        const mediaObjects = Array.from(regionObj.mediaObjects);
+                        const mediaObjects = Array.from(regionObj.mediaItems);
 
                         for (const mediaObject of mediaObjects) {
                             if (mediaObject.id === dataset.sourceid) {
@@ -363,35 +378,45 @@ export default class ActionController {
     initKeyboardActions() {
         const self = this;
 
-        // Store actions in a map
-        const keyActions = new Map<string, DOMStringMap[]>();
+        if (!this.initializedKeyboardActions) {
+            // Store actions in a map
+            const keyActions = new Map<string, DOMStringMap[]>();
 
-        this.$actionController.querySelectorAll<HTMLElement>('.action[triggerType="keyPress"]').forEach(function ($el) {
-            const dataset = $el.dataset;
-            const code = dataset.triggercode;
+            this.$actionController.querySelectorAll<HTMLElement>('.action[triggerType="keyPress"]').forEach(function ($el) {
+                const dataset = $el.dataset;
+                const code = dataset.triggercode;
 
-            if(code) {
-                // Create an empty array, if not yet set
-                if(!keyActions.get(code)) {
-                    keyActions.set(code, []);
+                if(code) {
+                    // Create an empty array, if not yet set
+                    if(!keyActions.get(code)) {
+                        keyActions.set(code, []);
+                    }
+
+                    // Add new action to array
+                    keyActions.get(code)!.push(dataset);
                 }
+            });
 
-                // Add new action to array
-                keyActions.get(code)!.push(dataset);
-            }
-        });
+            const keyboardEventHandler = (ev: KeyboardEvent) => {
+                const actions = keyActions.get(ev.code);
+                console.debug('ActionController::initKeyboardActions', {
+                    actions,
+                    options: self.options
+                })
 
-        // Keyboard listener
-        document.addEventListener('keydown', (ev: KeyboardEvent) => {
-            const actions = keyActions.get(ev.code);
+                // Are there action for this key code?
+                if(actions) {
+                    // Run all actions associated with it
+                    actions.forEach((dataset) => {
+                        self.runAction(dataset, self.options);
+                    });
+                }
+            };
+            // Keyboard listener
+            document.removeEventListener('keydown', keyboardEventHandler);
+            document.addEventListener('keydown', keyboardEventHandler);
 
-            // Are there action for this key code?
-            if(actions) {
-                // Run all actions associated with it
-                actions.forEach((dataset) => {
-                    self.runAction(dataset, self.options);
-                });
-            }
-        });
+            this.initializedKeyboardActions = true;
+        }
     }
 }

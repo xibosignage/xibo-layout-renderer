@@ -224,7 +224,7 @@ export default class Layout implements ILayout {
     regionObjects: IRegion[] = <IRegion[]>[];
     drawer: Element | null = null;
     allExpired: boolean = false;
-    regions: IRegion[] = <IRegion[]>[];
+    regions: Region[] = [];
     actions: Action[] = <Action[]>[];
     done: boolean = false;
     allEnded: boolean = false;
@@ -490,7 +490,7 @@ export default class Layout implements ILayout {
         const layoutRegions = Array.from(this?.layoutNode?.getElementsByTagName('region') || []);
 
         Array.from(layoutRegions).forEach((regionXml, regionIndex) => {
-            const regionObj = Region(
+            const regionObj = new Region(
               this,
               regionXml,
               regionXml?.getAttribute('id') || '',
@@ -604,8 +604,8 @@ export default class Layout implements ILayout {
         return new Promise(async (resolve) => {
             for(let i = 0;i < this.regions.length;i++) {
                 let region = this.regions[i];
-                for(let j = 0;j < region.mediaObjects.length;j++) {
-                    let media = region.mediaObjects[j];
+                for(let j = 0;j < region.mediaItems.length;j++) {
+                    let media = region.mediaItems[j];
                     await media.stop();
                 }
             }
