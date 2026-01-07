@@ -53,7 +53,6 @@ export type OptionsType = {
     getResourceUrl: string;
     layoutBackgroundDownloadUrl: string;
     layoutPreviewUrl: string;
-    libraryDownloadUrl: string;
     loaderUrl: string;
     previewJwt: string;
     idCounter: number;

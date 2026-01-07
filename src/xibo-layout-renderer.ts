@@ -34,6 +34,11 @@ export default function XiboLayoutRenderer(
     overlays: InputLayoutType[],
     options?: OptionsType,
 ) {
+    // Init ID counter if we have options
+    if (options && options.idCounter == null) {
+        options.idCounter = 0;
+    }
+
     const props = {
         inputLayouts,
         options,

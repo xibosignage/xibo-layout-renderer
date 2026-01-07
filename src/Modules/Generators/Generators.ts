@@ -212,7 +212,7 @@ export function composeBgUrlByPlatform(
     params: any
 ) {
     let bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", (params.layout.id as unknown) as string) +
-        '?preview=1&width=' + params.layout.sWidth +
+        '&preview=1&width=' + params.layout.sWidth +
         '&height=' + params.layout.sHeight +
         '&dynamic&proportional=0';
 
