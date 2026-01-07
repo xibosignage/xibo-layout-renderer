@@ -21,7 +21,6 @@
 import {createNanoEvents} from 'nanoevents';
 
 import Layout, {getXlf, initRenderingDOM} from './Modules/Layout';
-import {platform} from './Modules/Platform';
 import {ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType,} from './Types/Layout';
 import {ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback} from './Types/XLR';
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
@@ -35,6 +34,11 @@ export default function XiboLayoutRenderer(
     overlays: InputLayoutType[],
     options?: OptionsType,
 ) {
+    // Init ID counter if we have options
+    if (options && options.idCounter == null) {
+        options.idCounter = 0;
+    }
+
     const props = {
         inputLayouts,
         options,
@@ -110,7 +114,7 @@ export default function XiboLayoutRenderer(
         self.inputLayouts = !Array.isArray(props.inputLayouts) ?
             [props.inputLayouts] : props.inputLayouts;
         self.overlays = overlays;
-        self.config = JSON.parse(JSON.stringify({...platform, ...props.options}));
+        self.config = props.options as OptionsType;
 
         // Prepare rendering DOM
         const previewCanvas = document.querySelector('#preview_canvas');
@@ -566,12 +570,7 @@ export default function XiboLayoutRenderer(
     xlrObject.prepareLayoutXlf = async function(inputLayout: ILayout) {
         const self = this;
         // Compose layout props first
-        let newOptions: OptionsType = Object.assign({}, platform);
-
-        newOptions = {
-            ...newOptions,
-            ...props.options,
-        };
+        let newOptions = props.options as OptionsType;
 
         if (self.config.platform ==='CMS' &&
             inputLayout && Boolean(inputLayout.layoutId)

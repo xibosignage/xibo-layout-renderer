@@ -20,7 +20,6 @@
  */
 import {Emitter, Unsubscribe} from 'nanoevents';
 import {IRegion} from '../Region';
-import {platform} from '../../Modules/Platform';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
 
@@ -54,8 +53,8 @@ export type OptionsType = {
     getResourceUrl: string;
     layoutBackgroundDownloadUrl: string;
     layoutPreviewUrl: string;
-    libraryDownloadUrl: string;
     loaderUrl: string;
+    previewJwt: string;
     idCounter: number;
     inPreview: boolean;
     appHost?: string | null;
@@ -158,7 +157,7 @@ export const initialLayout: ILayout = {
     allExpired: false,
     regions: [],
     actions: [],
-    options: platform,
+    options: {} as OptionsType,
     done: false,
     allEnded: false,
     path: '',

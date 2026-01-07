@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -54,8 +54,14 @@ export const capitalizeStr = (inputStr: string) => {
     return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
 };
 
-export async function getDataBlob(src: string) {
-    return fetch(src, {mode: 'no-cors'})
+export async function getDataBlob(src: string, jwtToken: string|null) {
+    return fetch(src, {
+            method: 'GET',
+            mode: 'no-cors',
+            headers: {
+                'X-PREVIEW-JWT': jwtToken || '',
+            },
+        })
         .then((res) => res.blob())
         .then((blob) => new Promise((res, rej) => {
             const reader = new FileReader();
@@ -68,8 +74,14 @@ export async function getDataBlob(src: string) {
 
 export type MediaTypes = 'video' | 'audio' | 'image';
 
-export async function preloadMediaBlob(src: string, type: MediaTypes) {
-    const res = await fetch(src, {mode: 'no-cors'});
+export async function preloadMediaBlob(src: string, type: MediaTypes, jwtToken: string|null) {
+    const res = await fetch(src, {
+        method: 'GET',
+        mode: 'no-cors',
+        headers: {
+            'X-PREVIEW-JWT': jwtToken || '',
+        },
+    });
     let blob: Blob | MediaSource = new Blob();
 
     if (type === 'image') {
@@ -84,16 +96,28 @@ export async function preloadMediaBlob(src: string, type: MediaTypes) {
     return URL.createObjectURL(blob);
 }
 
-export async function fetchJSON(url: string) {
-    return fetch(url)
+export async function fetchJSON(url: string, jwtToken: string|null) {
+    return fetch(url,
+        {
+            method: 'GET',
+            headers: {
+                'X-PREVIEW-JWT': jwtToken || '',
+            },
+        })
         .then(res => res.json())
         .catch(err => {
             console.debug(err);
         });
 }
 
-export async function fetchText(url: string): Promise<string> {
-    return fetch(url)
+export async function fetchText(url: string, jwtToken: string|null): Promise<string> {
+    return fetch(url,
+        {
+            method: 'GET',
+            headers: {
+                'X-PREVIEW-JWT': jwtToken || '',
+            },
+        })
         .then(res => res.text())
         .then((responseText) => {
             if (String(responseText).length > 0) {
@@ -148,6 +172,10 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
         .replace(":id", params.mediaId) +
         '?preview=1&layoutPreview=1';
 
+    if (options.platform === 'CMS') {
+        resourceUrl += '&jwt=' + params.regionOptions.previewJwt;
+    }
+
     if (options.platform === 'chromeOS') {
         const resourceEndpoint = '/required-files/resource/';
 
@@ -184,7 +212,7 @@ export function composeBgUrlByPlatform(
     params: any
 ) {
     let bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", (params.layout.id as unknown) as string) +
-        '?preview=1&width=' + params.layout.sWidth +
+        '&preview=1&width=' + params.layout.sWidth +
         '&height=' + params.layout.sHeight +
         '&dynamic&proportional=0';
 
@@ -341,7 +369,7 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
             $media = document.createElement('div');
         }
 
-        $media.id = self.containerName;
+        $media.id = getMediaId(self);
     }
 
     $media.dataset.role = role;
@@ -429,7 +457,7 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
             const regex = new RegExp('<!-- NUMITEMS=(.*?) -->');
 
             (async () => {
-                let html = await fetchJSON(`${self.url}&width=${self.divWidth}&height=${self.divHeight}`);
+                let html = await fetchJSON(`${self.url}&width=${self.divWidth}&height=${self.divHeight}`, self.options.previewJwt);
                 console.debug({html});
                 const res = regex.exec(html);
 

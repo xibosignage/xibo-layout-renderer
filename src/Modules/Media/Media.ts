@@ -346,7 +346,7 @@ export class Media implements IMedia {
                             'background-image',
                             `url(${!isCMS
                                 ? this.url
-                                : await getDataBlob(this.url)}`
+                                : await getDataBlob(this.url, this.options.previewJwt)}`
                         );
                 } else if (this.mediaType === 'video' && this.url !== null) {
                     // Initialize video.js
@@ -360,7 +360,7 @@ export class Media implements IMedia {
                     });
                 } else if (this.mediaType === 'audio' && this.url !== null) {
                     ($media as HTMLAudioElement).src =
-                        isCMS ? await preloadMediaBlob(this.url, this.mediaType) : this.url;
+                        isCMS ? await preloadMediaBlob(this.url, this.mediaType, this.options.previewJwt) : this.url;
                 } else if ((this.render === 'html' || this.mediaType === 'webpage') &&
                     this.iframe && this.checkIframeStatus
                 ) {

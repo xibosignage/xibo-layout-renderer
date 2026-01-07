@@ -34,7 +34,6 @@ import {Region} from '../Region';
 
 import './layout.css';
 import ActionController, {Action} from '../ActionController';
-import {platform} from "../Platform";
 import {IRegion} from '../../types';
 
 const playAgainClickHandle = function (ev: { preventDefault: () => void; }) {
@@ -94,13 +93,11 @@ export function initRenderingDOM(targetContainer: Element | null) {
 }
 
 export async function getXlf(layoutOptions: OptionsType) {
-    let apiHost = window.location.href.split("/layout")[0];
-
-    let xlfUrl = apiHost + layoutOptions.xlfUrl;
+    let xlfUrl = layoutOptions.xlfUrl;
     let fetchOptions: RequestInit = {};
 
     if (layoutOptions.platform === 'CMS') {
-        xlfUrl = apiHost + layoutOptions.xlfUrl;
+        xlfUrl = layoutOptions.xlfUrl;
         fetchOptions.mode = 'no-cors';
     } else if (layoutOptions.platform === 'chromeOS') {
         xlfUrl = layoutOptions.xlfUrl;
@@ -112,7 +109,13 @@ export async function getXlf(layoutOptions: OptionsType) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
 
-    const res = await fetch(xlfUrl);
+    const res = await fetch(
+        xlfUrl, {
+            method: 'GET',
+            headers: {
+                'X-PREVIEW-JWT': layoutOptions.previewJwt,
+            },
+        });
 
     return await res.text();
 }
@@ -234,7 +237,7 @@ export default class Layout implements ILayout {
     layoutNode?: Document;
     path?: string = '';
 
-    options: OptionsType = platform;
+    options: OptionsType = {} as OptionsType;
     xlr: IXlr = <IXlr>{};
 
     private readonly layoutObj: ILayout = <ILayout>{};
