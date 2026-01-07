@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -369,7 +369,7 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
             $media = document.createElement('div');
         }
 
-        $media.id = self.containerName;
+        $media.id = getMediaId(self);
     }
 
     $media.dataset.role = role;
