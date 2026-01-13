@@ -34,6 +34,7 @@ export enum ELayoutState {
     RUNNING,
     PLAYED,
     CANCELLED,
+    ERROR,
 }
 
 export type InputLayoutType = {
@@ -129,6 +130,7 @@ export interface ILayout {
     shareOfVoice: number;
     isInterrupt(): boolean;
     state: ELayoutState;
+    errorCode: number | null;
 }
 
 export const initialLayout: ILayout = {
@@ -171,6 +173,7 @@ export const initialLayout: ILayout = {
     ad: null,
     isOverlay: false,
     shareOfVoice: 0,
+    errorCode: null,
     prepareLayout() {
     },
     parseXlf() {
