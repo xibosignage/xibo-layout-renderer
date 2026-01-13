@@ -211,14 +211,18 @@ export function composeBgUrlByPlatform(
     platform: OptionsType['platform'],
     params: any
 ) {
-    let bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", (params.layout.id as unknown) as string) +
-        '&preview=1&width=' + params.layout.sWidth +
-        '&height=' + params.layout.sHeight +
-        '&dynamic&proportional=0';
+    let bgImageUrl = '';
 
-    if (platform === 'chromeOS') {
+    if (platform === 'CMS') {
+        bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", (params.layout.id as unknown) as string) +
+            '&preview=1&width=' + params.layout.sWidth +
+            '&height=' + params.layout.sHeight +
+            '&dynamic&proportional=0';
+
+    } else if (platform === 'chromeOS') {
         bgImageUrl = composeMediaUrl({uri: params.layout.bgImage});
     }
+    // @TODO: Add condition to handle electron platform
 
     return bgImageUrl;
 }
