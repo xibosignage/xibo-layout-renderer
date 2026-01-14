@@ -605,7 +605,8 @@ export default function XiboLayoutRenderer(
         const isOverlayLayout = !!inputLayout?.isOverlay;
 
         return new Promise<ILayout>((resolve) => {
-            const xlrLayoutObj: ILayout = <ILayout>{...initialLayout};
+            const xlrLayoutObj: ILayout = <ILayout>{...initialLayout,
+                ad: inputLayout.ad ?? initialLayout.ad};
 
             console.log('XLR::prepareLayoutXlf >> Promise', {xlrLayoutObj, inputLayout});
 

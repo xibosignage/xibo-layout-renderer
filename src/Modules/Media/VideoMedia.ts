@@ -23,7 +23,7 @@ import {format} from "date-fns";
 
 import { IMedia } from '../../Types/Media';
 import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType, getFileExt, setExpiry } from '../Generators';
-import { IXlr } from '../../types';
+import {ELayoutState, IXlr} from '../../types';
 import PwaSW from '../../Lib/pwa-sw';
 
 import './media.css';
@@ -58,6 +58,8 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                     // Immediately expire media and report a fault
                     const playerSW = PwaSW();
                     const hasSW = await playerSW.getSW();
+                    media.region.layout.state = ELayoutState.ERROR;
+                    media.region.layout.errorCode = 405
 
                     if (hasSW) {
                         playerSW.postMsg({

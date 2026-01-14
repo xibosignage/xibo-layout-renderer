@@ -236,6 +236,7 @@ export default class Layout implements ILayout {
     scheduleId?: number;
     layoutNode?: Document;
     path?: string = '';
+    errorCode: number | null = null;
 
     options: OptionsType = {} as OptionsType;
     xlr: IXlr = <IXlr>{};
