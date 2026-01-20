@@ -57,7 +57,6 @@ export const capitalizeStr = (inputStr: string) => {
 export async function getDataBlob(src: string, jwtToken: string|null) {
     return fetch(src, {
             method: 'GET',
-            mode: 'no-cors',
             headers: {
                 'X-PREVIEW-JWT': jwtToken || '',
             },
@@ -77,7 +76,6 @@ export type MediaTypes = 'video' | 'audio' | 'image';
 export async function preloadMediaBlob(src: string, type: MediaTypes, jwtToken: string|null) {
     const res = await fetch(src, {
         method: 'GET',
-        mode: 'no-cors',
         headers: {
             'X-PREVIEW-JWT': jwtToken || '',
         },
