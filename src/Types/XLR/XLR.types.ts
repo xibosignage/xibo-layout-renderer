@@ -20,7 +20,6 @@
  */
 import {Emitter, Unsubscribe} from 'nanoevents';
 import {ILayout, InputLayoutType, OptionsType} from '../Layout';
-import {platform} from '../../Modules/Platform';
 import {OverlayLayoutManager} from "../../Modules/Layout/OverlayLayoutManager";
 
 export type PrepareLayoutsType = {
@@ -124,7 +123,7 @@ export interface IXlr {
 export const initialXlr: IXlr = {
     bootstrap() {
     },
-    config: platform,
+    config: {} as OptionsType,
     currentLayout: undefined,
     currentLayoutId: -2,
     currentLayoutIndex: 0,

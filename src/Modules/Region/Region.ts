@@ -25,7 +25,6 @@ import { ILayout, OptionsType } from '../../Types/Layout';
 import { initialRegion, IRegion, IRegionEvents } from '../../Types/Region';
 import { IMedia } from '../../Types/Media';
 import { getMediaId, nextId } from '../Generators';
-import { platform } from '../Platform';
 import { Media } from '../Media';
 import {
     TransitionElementOptions,
@@ -71,7 +70,7 @@ export default function Region(
         self.currentMediaIndex = 0;
         self.id = props.regionId;
         self.uniqueId = `${nextId(self.options as OptionsType & IRegion["options"])}`;
-        self.options = {...platform, ...props.options};
+        self.options = props.options;
         self.containerName = `R-${self.id}-${self.uniqueId}`;
         self.xml = props.xml;
         self.mediaObjects = [];
