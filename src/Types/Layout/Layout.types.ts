@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -135,7 +135,7 @@ export interface ILayout {
 
 export const initialLayout: ILayout = {
     id: null,
-    layoutId: -1,
+    layoutId: -9,
     sw: 0,
     sh: 0,
     xw: 0,
