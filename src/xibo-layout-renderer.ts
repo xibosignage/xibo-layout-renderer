@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -587,11 +587,17 @@ export default function XiboLayoutRenderer(
         if (inputLayout && inputLayout.layoutNode === undefined) {
             // Check if we have an SspLayout
             if (inputLayout.layoutId === -1) {
-                await self.emitSync('adRequest', inputLayout.index);
-                sspInputLayout = self.inputLayouts[inputLayout.index];
+                try {
+                    await self.emitSync('adRequest', inputLayout.index);
+                    sspInputLayout = self.inputLayouts[inputLayout.index];
 
-                // @ts-ignore
-                layoutXlf = sspInputLayout?.getXlf() || '';
+                    // @ts-ignore
+                    layoutXlf = sspInputLayout?.getXlf() || '';
+                } catch (err) {
+                    console.error('[XLR::prepareLayoutXlf] >> SSP Layout', {
+                        err,
+                    })
+                }
             } else {
                 layoutXlf = await getXlf(newOptions);
             }
