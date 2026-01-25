@@ -597,6 +597,7 @@ export default function XiboLayoutRenderer(
                     console.error('[XLR::prepareLayoutXlf] >> SSP Layout', {
                         err,
                     })
+                    layoutXlf = '';
                 }
             } else {
                 layoutXlf = await getXlf(newOptions);
