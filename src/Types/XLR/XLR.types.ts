@@ -44,6 +44,8 @@ export type IXlrEvents = {
     updateOverlays: (overlays: InputLayoutType[]) => void;
     overlayStart: (overlay: ILayout) => void;
     overlayEnd: (overlay: ILayout) => void;
+    commandCodeReceived: (commandCode: string) => void;
+    commandStringReceived: (commandString: string) => void;
 };
 
 export interface IXlrPlayback {

@@ -95,6 +95,7 @@ export class Media implements IMedia {
     private mediaTimeCount = 0;
     private xlr: IXlr = <IXlr>{};
     private readonly statsBC = new BroadcastChannel('statsBC');
+    private hasCommandExecuted: boolean;
 
     constructor(
         region: IRegion,
@@ -118,6 +119,7 @@ export class Media implements IMedia {
         this.render = this.xml?.getAttribute('render') || '';
         this.duration = parseInt(this.xml?.getAttribute('duration') as string) || 0;
         this.enableStat = Boolean(this.xml?.getAttribute('enableStat') || false);
+        this.hasCommandExecuted = false;
 
         this.on('start', (media: IMedia) => {
             if (media.state === MediaState.PLAYING) return;
@@ -133,6 +135,17 @@ export class Media implements IMedia {
                 }
             } else if (media.mediaType === 'audio') {
                 AudioMedia(media).init();
+                if (media.duration > 0) {
+                    this.startMediaTimer(media);
+                }
+            } else if (media.mediaType === 'shellcommand') {
+                if (this.hasCommandExecuted && !this.loop) {
+                    return;
+                }
+
+                this.hasCommandExecuted = true;
+                this.emitCommand(media);
+
                 if (media.duration > 0) {
                     this.startMediaTimer(media);
                 }
@@ -415,6 +428,65 @@ export class Media implements IMedia {
         if ($media) {
             $media.style.display = 'none';
             $media.remove();
+        }
+    }
+
+    /**
+     * Emits a command from the shell command widget.
+     *
+     * @param media
+     * @private
+     */
+    private emitCommand(media: IMedia): void {
+        if (media.mediaType !== 'shellcommand') {
+            return;
+        }
+
+        const options = media.options;
+
+        if (options.commandtype === 'storedCommand' && options.commandcode) {
+            console.debug('Media::Emitter > Shell Command - Calling commandCodeReceived event');
+            this.xlr.emitter.emit(
+                'commandCodeReceived',
+                options.commandcode
+            );
+            return;
+        }
+
+        let commandString = '';
+
+        if (options.useglobalcommand === '1') {
+            commandString = options.globalcommand || '';
+        } else {
+            // Use platform-specific command when available
+            if (this.xlr.config.platform === 'chromeOS') {
+                commandString = options.chromeoscommand || '';
+            } else if (this.xlr.config.platform === 'android') {
+                commandString = options.androidcommand || '';
+            } else if (this.xlr.config.platform === 'linux') {
+                commandString = options.linuxcommand || '';
+            } else if (this.xlr.config.platform === 'tizen') {
+                commandString = options.tizencommand || '';
+            } else if (this.xlr.config.platform === 'webos') {
+                commandString = options.weboscommand || '';
+            } else if (this.xlr.config.platform === 'windows') {
+                commandString = options.windowscommand || '';
+            }
+
+            // Fall back to the global command if the platform-specific one
+            // is missing, not configured, or not supported yet
+            if (!commandString && options.globalcommand) {
+                commandString = options.globalcommand;
+            }
+        }
+
+        if (commandString) {
+            console.debug('Media::Emitter > Shell Command - Calling commandStringReceived event');
+            this.xlr.emitter.emit(
+                'commandStringReceived',
+                commandString
+            );
+            return;
         }
     }
 }

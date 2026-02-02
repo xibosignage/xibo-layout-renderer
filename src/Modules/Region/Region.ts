@@ -357,6 +357,19 @@ export default function Region(
             return;
         }
 
+        // Are we in a playlist, and has the playlist completed a full cycle?
+        const isLastMediaInPlaylist = self.currentMediaIndex === self.mediaObjects.length - 1 && self.mediaObjects.length > 1;
+
+        // If yes, enable shell command widgets again (if any), so they execute on the next playlist cycle
+        if (isLastMediaInPlaylist) {
+            self.mediaObjects.forEach((media: IMedia): void => {
+                if (media.mediaType === 'shellcommand') {
+                    // reset per-playlist-cycle execution state
+                    (media as any).hasCommandExecuted = false;
+                }
+            });
+        }
+
         if (!self.layout.isOverlay && self.currentMediaIndex === self.mediaObjects.length - 1) {
             self.finished();
 

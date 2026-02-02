@@ -105,7 +105,7 @@ export async function getXlf(layoutOptions: OptionsType) {
         fetchOptions.headers = {
             'Content-Type': 'text/xml',
         };
-    } else if (layoutOptions.platform !== 'CMS' && layoutOptions.appHost !== null) {
+    } else if (layoutOptions.appHost !== null) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
 
