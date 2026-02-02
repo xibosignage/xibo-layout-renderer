@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -23,6 +23,7 @@ import Player from "video.js/dist/types/player";
 import { IMediaEvents } from '../../Modules/Media/Media';
 import {initialRegion, IRegion} from '../Region';
 import {OptionsType} from '../Layout';
+import {IMediaLifecycleManager, IPreciseMediaTimer} from "../../Lib";
 
 export type MediaState = 'idle' | 'playing' | 'ended';
 
@@ -79,6 +80,17 @@ export interface IMedia {
     url: string | null;
     useDuration: boolean;
     xml: Element | null;
+
+    // Gapless playback
+    lifecycle?: IMediaLifecycleManager;
+    preciseTimer?: IPreciseMediaTimer | null;
+    preloadStartTime?: number;
+
+    // Gapless methods
+    preload?(options?: {
+        signal?: AbortSignal;
+        onProgress?: (percent: number) => void;
+    }): Promise<void>;
 }
 
 export const initialMedia: IMedia = {

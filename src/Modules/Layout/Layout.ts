@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -35,6 +35,7 @@ import {Region} from '../Region';
 import './layout.css';
 import ActionController, {Action} from '../ActionController';
 import {IRegion} from '../../types';
+import {LayoutTransitionManager} from "../../Lib";
 
 const playAgainClickHandle = function (ev: { preventDefault: () => void; }) {
     ev.preventDefault();
@@ -219,7 +220,7 @@ export default class Layout implements ILayout {
     regionObjects: IRegion[] = <IRegion[]>[];
     drawer: Element | null = null;
     allExpired: boolean = false;
-    regions: IRegion[] = <IRegion[]>[];
+    regions: Region[] = <Region[]>[];
     actions: Action[] = <Action[]>[];
     done: boolean = false;
     allEnded: boolean = false;
@@ -244,6 +245,15 @@ export default class Layout implements ILayout {
     private readonly layoutObj: ILayout = <ILayout>{};
     protected readonly statsBC = new BroadcastChannel('statsBC');
 
+    /**
+     * DOM element reference for this layout
+     * Set during parseXlf() and used by LayoutTransitionManager for fade animations
+     * Holds the HTMLDivElement that displays this layout on screen
+     * @type {HTMLDivElement | null}
+     */
+    html: HTMLDivElement | null = null;
+    transitionManager: LayoutTransitionManager | undefined;
+
     constructor(
       xlrLayoutObj: ILayout,
       options: OptionsType,
@@ -258,7 +268,13 @@ export default class Layout implements ILayout {
         // Prepare and parse layout node
         this.prepareLayout();
 
-        this.on('start', (layout: ILayout) => {
+        this.transitionManager = new LayoutTransitionManager({
+            fadeDurationMs: options.gaplessPlayback?.transitionDurationMs ?? 500,
+            parallelStartMs: options.gaplessPlayback?.preloadBufferMs ?? 1000,
+            maxWaitMs: options.gaplessPlayback?.maxPreloadTimeMs ?? 5000,
+        });
+
+        this.on('start', (layout: Layout) => {
             layout.done = false;
             layout.state = ELayoutState.RUNNING;
             console.debug('>>>> XLR.debug Layout start emitted > Layout ID > ', layout.id);
@@ -278,7 +294,7 @@ export default class Layout implements ILayout {
             layout.xlr.emitter.emit('layoutStart', layout);
         });
 
-        this.on('end', async (layout: ILayout) => {
+        this.on('end', async (layout: Layout) => {
             // Only proceed when last layout state is RUNNING
             if (layout.state === ELayoutState.CANCELLED) {
                 return;
@@ -334,7 +350,7 @@ export default class Layout implements ILayout {
             }
         });
 
-        this.on('cancelled', (layout: ILayout) => {
+        this.on('cancelled', (layout: Layout) => {
             console.debug('>>>>> XLR.debug / Layout cancelled > Layout ID > ', layout.id);
             layout.state = ELayoutState.CANCELLED;
         });
@@ -375,6 +391,9 @@ export default class Layout implements ILayout {
             $layout = document.createElement('div');
             $layout.id = this.containerName;
         }
+
+        // Store reference to DOM element for transition manager
+        this.html = $layout;
 
         let $screen = document.getElementById('screen_container');
         ($screen) && $screen.append($layout);
@@ -559,7 +578,7 @@ export default class Layout implements ILayout {
         }
     }
 
-    async regionEnded(): Promise<void> {
+    async _regionEnded(): Promise<void> {
         this.allEnded = true;
 
         for (let i = 0; i < this.regions.length; i++) {
@@ -592,6 +611,26 @@ export default class Layout implements ILayout {
             if (!this.isOverlay) {
                 this.emitter.emit('end', this);
             }
+        }
+    }
+
+    regionEnded(region: Region) {
+        console.debug('Layout::regionEnded', {
+            layoutId: this.layoutObj.id,
+            regionId: region.id,
+        });
+
+        // Call original logic
+        if (this._regionEnded && typeof this._regionEnded === 'function') {
+            this._regionEnded.call(this);
+        }
+
+        // Check if all regions have finished
+        const allRegionsDone = this.regions.every(r => r.ended || r.finished);
+        if (allRegionsDone) {
+            console.debug('Layout: All regions finished',
+              { layoutId: this.id });
+            this.emitter.emit('end', this);
         }
     }
 

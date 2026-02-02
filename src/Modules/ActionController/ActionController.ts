@@ -1,21 +1,21 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
- * Xibo - Digital Signage - https://www.xibosignage.com
+ * Xibo - Digital Signage - https://xibosignage.com
  *
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 // import Moveable from 'moveable';
@@ -50,7 +50,7 @@ export type InactOptions = {
 } & OptionsType['previewTranslations'];
 
 export default class ActionController {
-    readonly parent: ILayout;
+    readonly parent: Layout;
     readonly actions: Action[];
     readonly options: InactOptions;
     readonly $container: HTMLElement | null;
@@ -60,7 +60,7 @@ export default class ActionController {
     $actionsContainer: HTMLElement | null;
     translations: any = {};
 
-    constructor(parent: ILayout, actions: Action[], options: InactOptions) {
+    constructor(parent: Layout, actions: Action[], options: InactOptions) {
         this.parent = parent;
         this.actions = actions;
         this.options = options;

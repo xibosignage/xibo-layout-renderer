@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -183,10 +183,11 @@ export default function XiboLayoutRenderer(
     xlrObject.renderOverlayLayouts = async function() {
         const self = this;
         // Parse this.overlays if overlays are available
-        const overlayLayouts = this.overlays.reduce((collection: ILayout[], item) => {
+        const overlayLayouts = this.overlays.reduce((collection: Layout[], item) => {
             let inputOverlay: InputLayoutType = <InputLayoutType>{};
 
-            inputOverlay = {...inputOverlay, ...item};
+            const overlayLayoutObj = {...initialLayout, ...item};
+            inputOverlay = new OverlayLayout(overlayLayoutObj, options as OptionsType, self);
             inputOverlay.index = item.index;
 
             const overlayLayout: ILayout = <ILayout>initialLayout;

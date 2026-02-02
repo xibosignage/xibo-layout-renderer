@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -21,6 +21,7 @@
 import {Emitter, Unsubscribe} from 'nanoevents';
 import {ILayout, InputLayoutType, OptionsType} from '../Layout';
 import {OverlayLayoutManager} from "../../Modules/Layout/OverlayLayoutManager";
+import Layout from "../../Modules/Layout";
 
 export type PrepareLayoutsType = {
     moveNext?: boolean;
@@ -33,22 +34,22 @@ export enum ELayoutType {
 
 export type IXlrEvents = {
     layoutChange: (layoutId: number) => void;
-    layoutStart: (layout: ILayout) => void;
-    layoutEnd: (layout: ILayout) => void;
-    layoutError: (layout: ILayout) => void;
+    layoutStart: (layout: Layout) => void;
+    layoutEnd: (layout: Layout) => void;
+    layoutError: (layout: Layout) => void;
     widgetStart: (widgetId: number) => void;
     widgetEnd: (widgetId: number) => void;
     widgetError: (widgetId: number) => void;
     adRequest: (sspLayoutIndex: number) => void;
     updateLoop: (inputLayouts: InputLayoutType[]) => void;
     updateOverlays: (overlays: InputLayoutType[]) => void;
-    overlayStart: (overlay: ILayout) => void;
-    overlayEnd: (overlay: ILayout) => void;
+    overlayStart: (overlay: Layout) => void;
+    overlayEnd: (overlay: Layout) => void;
 };
 
 export interface IXlrPlayback {
-    currentLayout: ILayout | undefined;
-    nextLayout: ILayout | undefined;
+    currentLayout: Layout | undefined;
+    nextLayout: Layout | undefined;
     currentLayoutIndex: number;
     nextLayoutIndex: number;
     isCurrentLayoutValid: boolean;
@@ -59,7 +60,7 @@ export interface IXlr {
     bootstrap(): void,
 
     config: OptionsType,
-    currentLayout: ILayout | undefined;
+    currentLayout: Layout | undefined;
     currentLayoutId: number;
     currentLayoutIndex: number;
 
@@ -67,9 +68,9 @@ export interface IXlr {
 
     emitter: Emitter<IXlrEvents>;
 
-    getLayout(inputLayout: InputLayoutType): ILayout | undefined;
+    getLayout(inputLayout: InputLayoutType): Layout | undefined;
 
-    getLayoutById(layoutId: number, layoutIndex?: number): ILayout | undefined;
+    getLayoutById(layoutId: number, layoutIndex?: number): Layout | undefined;
 
     gotoNextLayout(): void;
 
@@ -85,8 +86,8 @@ export interface IXlr {
     isSspEnabled: boolean;
     isUpdatingLoop: boolean;
     isUpdatingOverlays: boolean;
-    layouts: Record<string, ILayout>;
-    nextLayout: ILayout | undefined;
+    layouts: Record<string, Layout>;
+    nextLayout: Layout | undefined;
 
     on<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]): Unsubscribe;
 
@@ -99,9 +100,9 @@ export interface IXlr {
 
     playSchedules(xlr: IXlr): void;
 
-    prepareForSsp(nextLayout: ILayout): Promise<ILayout>;
+    prepareForSsp(nextLayout: Layout): Promise<Layout>;
 
-    prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout>;
+    prepareLayoutXlf(inputLayout: Layout | undefined): Promise<Layout>;
 
     prepareLayouts(): Promise<IXlr>;
 
@@ -132,11 +133,11 @@ export const initialXlr: IXlr = {
         return Promise.resolve();
     },
     emitter: <Emitter<IXlrEvents>>{},
-    getLayout(inputLayout: InputLayoutType): ILayout | undefined {
+    getLayout(inputLayout: InputLayoutType): Layout | undefined {
         return;
     },
-    getLayoutById(layoutId: number): ILayout | undefined {
-        return <ILayout>{};
+    getLayoutById(layoutId: number): Layout | undefined {
+        return <Layout>{};
     },
     gotoNextLayout() {
     },
@@ -167,11 +168,11 @@ export const initialXlr: IXlr = {
     },
     playSchedules() {
     },
-    prepareForSsp(nextLayout: ILayout): Promise<ILayout> {
-        return Promise.resolve(<ILayout>{});
+    prepareForSsp(nextLayout: Layout): Promise<Layout> {
+        return Promise.resolve(<Layout>{});
     },
-    prepareLayoutXlf(inputLayout: ILayout | undefined): Promise<ILayout> {
-        return Promise.resolve(<ILayout>{});
+    prepareLayoutXlf(inputLayout: Layout | undefined): Promise<Layout> {
+        return Promise.resolve(<Layout>{});
     },
     prepareLayouts(): Promise<IXlr> {
         return Promise.resolve(<IXlr>{});

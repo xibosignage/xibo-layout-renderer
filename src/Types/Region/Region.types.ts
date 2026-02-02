@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -21,6 +21,7 @@
 import { DefaultEvents, Emitter, Unsubscribe } from 'nanoevents';
 import {ILayout, initialLayout} from '../Layout';
 import {IMedia} from '../Media';
+import {RegionMediaPipeline} from "../../Lib";
 
 export interface IRegionEvents {
     start: (layout: IRegion) => void;
@@ -90,6 +91,9 @@ export interface IRegion {
     uniqueId: string;
     xml: null | Element;
     zIndex: number;
+
+    // Gapless playback
+    pipeline: RegionMediaPipeline;
 }
 
 export const initialRegion: IRegion = {
@@ -147,4 +151,5 @@ export const initialRegion: IRegion = {
     uniqueId: '',
     xml: null,
     zIndex: 0,
+    pipeline: <RegionMediaPipeline>{},
 };

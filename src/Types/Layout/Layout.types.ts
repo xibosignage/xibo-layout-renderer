@@ -22,11 +22,14 @@ import {Emitter, Unsubscribe} from 'nanoevents';
 import {IRegion} from '../Region';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
+import {ILayoutTransitionManager} from "../../Lib";
+import Layout from "../../Modules/Layout";
+import {Region} from "../../../../xlr-wip/player/types";
 
 export interface ILayoutEvents {
-    start: (layout: ILayout) => void;
-    end: (layout: ILayout) => void;
-    cancelled: (layout: ILayout) => void;
+    start: (layout: Layout) => void;
+    end: (layout: Layout) => void;
+    cancelled: (layout: Layout) => void;
 }
 
 export enum ELayoutState {
@@ -73,6 +76,13 @@ export type OptionsType = {
         splashScreen: string;
         logo: string;
     };
+    gaplessPlayback: {
+        enabled?: boolean; // Default: true
+        preloadBufferMs?: number; // Default: 2000
+        maxPreloadTimeMs?: number; // Default: 5000
+        transitionDurationMs?: number; // Default: 500
+        enablePrecisionTimer?: boolean; // Default: true
+    };
 };
 
 export interface ILayout {
@@ -100,7 +110,7 @@ export interface ILayout {
     regionObjects: IRegion[];
     drawer: Element | null;
     allExpired: boolean;
-    regions: IRegion[];
+    regions: Region[];
     actions: Action[];
     options: OptionsType;
     done: boolean;
@@ -113,7 +123,7 @@ export interface ILayout {
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;
-    regionEnded(): Promise<void>;
+    regionEnded(region: Region): void;
     stopAllMedia(): Promise<void>;
     resetLayout(): Promise<void>;
     index: number;
@@ -131,6 +141,19 @@ export interface ILayout {
     isInterrupt(): boolean;
     state: ELayoutState;
     errorCode: number | null;
+    playRegions(): void;
+
+    /**
+     * DOM element reference for this layout
+     * Set during parseXlf(), used for fade transitions by LayoutTransitionManager
+     * @type {HTMLDivElement | null}
+     */
+    html?: HTMLDivElement | null;
+
+    // Gapless playback transitions
+    transitionManager?: ILayoutTransitionManager;
+    currentRegionCount?: number;
+    regionsEnded?: number;
 }
 
 export const initialLayout: ILayout = {
@@ -163,6 +186,7 @@ export const initialLayout: ILayout = {
     done: false,
     allEnded: false,
     path: '',
+    html: null,
     emitter: <Emitter<ILayoutEvents>>{},
     index: -1,
     actionController: undefined,
@@ -187,9 +211,7 @@ export const initialLayout: ILayout = {
     },
     end() {
     },
-    regionEnded(): Promise<void> {
-        return Promise.resolve();
-    },
+    regionEnded(region: Region) {},
     stopAllMedia() {
         return Promise.resolve();
     },
@@ -206,6 +228,7 @@ export const initialLayout: ILayout = {
     },
     isInterrupt: () => false,
     state: ELayoutState.IDLE,
+    playRegions() {},
 };
 
 export type GetLayoutParamType = {
@@ -219,4 +242,47 @@ export type GetLayoutType = {
     inputLayouts: InputLayoutType[];
     current: ILayout | undefined;
     next: ILayout | undefined;
+}
+
+/**
+ * Configuration for layout-to-layout transitions
+ */
+export interface ILayoutTransitionConfig {
+    /** Duration of fade transition in milliseconds */
+    fadeDurationMs: number;
+
+    /** Time before current layout ends to start next layout playback */
+    parallelStartMs: number;
+
+    /** Maximum time to wait for layout preparation before forcing transition */
+    maxWaitMs: number;
+
+    /** Easing function for fade (ease-in-out', 'ease-in', 'ease-out', 'linear') */
+    easing?: 'ease-in-out' | 'ease-in' | 'ease-out' | 'linear';
+}
+
+/**
+ * Events emitted during layout transitions
+ */
+export interface ILayoutTransitionEvents {
+    /** Fired when layout transition starts */
+    transitionStart: (data: {
+        from: ILayout,
+        to: ILayout,
+        fadeDurationMs: number;
+    }) => void;
+
+    /** Fired when layout transition completes */
+    transitionComplete: (data: {
+        from: ILayout,
+        to: ILayout,
+        durationMs: number;
+    }) => void;
+
+    /** Fired if layout transition fails */
+    transitionFailed: (data: {
+        from: ILayout,
+        to: ILayout,
+        error: Error;
+    }) => void;
 }
