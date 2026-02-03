@@ -59,7 +59,7 @@ export type OptionsType = {
     idCounter: number;
     inPreview: boolean;
     appHost?: string | null;
-    platform: 'CMS' | 'chromeOS';
+    platform: 'CMS' | 'chromeOS' | 'android' | 'linux' | 'tizen' | 'webos' | 'windows';
     config?: {
         cmsUrl: string | null;
         schemaVersion: number;
