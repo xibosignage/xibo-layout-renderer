@@ -54,7 +54,7 @@ export const capitalizeStr = (inputStr: string) => {
     return String(inputStr).charAt(0).toUpperCase() + String(inputStr).substring(1);
 };
 
-export async function getDataBlob(src: string, jwtToken: string|null) {
+export async function getDataBlob(src: string, jwtToken: string|null): Promise<string | ArrayBuffer | null> {
     return fetch(src, {
             method: 'GET',
             headers: {
@@ -73,7 +73,7 @@ export async function getDataBlob(src: string, jwtToken: string|null) {
 
 export type MediaTypes = 'video' | 'audio' | 'image';
 
-export async function preloadMediaBlob(src: string, type: MediaTypes, jwtToken: string|null) {
+export async function preloadMediaBlob(src: string, type: MediaTypes | string, jwtToken: string|null) {
     const res = await fetch(src, {
         method: 'GET',
         headers: {

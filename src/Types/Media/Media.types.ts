@@ -18,11 +18,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {Emitter, Unsubscribe} from 'nanoevents';
+import {Emitter} from 'nanoevents';
 import Player from "video.js/dist/types/player";
-import { IMediaEvents } from '../../Modules/Media/Media';
 import {initialRegion, IRegion} from '../Region';
 import {OptionsType} from '../Layout';
+import {IMediaEvents} from "../Events";
+import { IMediaLifecycleManager, IPreciseMediaTimer } from '../../Lib';
+import { MediaTypes } from '../../Modules/Generators';
 
 export type MediaState = 'idle' | 'playing' | 'ended';
 
@@ -53,7 +55,7 @@ export interface IMedia {
     loadIframeOnRun: boolean;
     loop: boolean;
     mediaId: string;
-    mediaType: string;
+    mediaType: MediaTypes | string;
     muted?: boolean;
 
     options: OptionsType & {
@@ -79,6 +81,17 @@ export interface IMedia {
     url: string | null;
     useDuration: boolean;
     xml: Element | null;
+
+    // Gapless playback
+    lifecycle?: IMediaLifecycleManager;
+    preciseTimer?: IPreciseMediaTimer | null;
+    preloadStartTime?: number;
+
+    // Gapless methods
+    preload?(options?: {
+        signal?: AbortSignal;
+        onProgress?: (percent: number) => void;
+    }): Promise<void>;
 }
 
 export const initialMedia: IMedia = {

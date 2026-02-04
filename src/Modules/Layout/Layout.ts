@@ -24,10 +24,10 @@ import {
     GetLayoutParamType,
     GetLayoutType,
     ILayout,
-    ILayoutEvents,
     initialLayout,
     OptionsType,
 } from '../../Types/Layout';
+import {EventUnsubscriber, ILayoutEvents} from '../../Types/Events';
 import {IXlr} from '../../Types/XLR';
 import {composeBgUrlByPlatform, nextId} from '../Generators';
 import {Region} from '../Region';
@@ -35,6 +35,7 @@ import {Region} from '../Region';
 import './layout.css';
 import ActionController, {Action} from '../ActionController';
 import {IRegion} from '../../types';
+import { ILayoutTransitionManager, LayoutTransitionManager } from '../../Lib';
 
 const playAgainClickHandle = function (ev: { preventDefault: () => void; }) {
     ev.preventDefault();
@@ -216,11 +217,11 @@ export default class Layout implements ILayout {
     containerName: string = '';
     regionMaxZIndex: number = 0;
     ready: boolean = false;
-    regionObjects: IRegion[] = <IRegion[]>[];
+    regionObjects: IRegion[] = [];
     drawer: Element | null = null;
     allExpired: boolean = false;
-    regions: IRegion[] = <IRegion[]>[];
-    actions: Action[] = <Action[]>[];
+    regions: IRegion[] = [];
+    actions: Action[] = [];
     done: boolean = false;
     allEnded: boolean = false;
     emitter: Emitter<ILayoutEvents> = createNanoEvents<ILayoutEvents>();
@@ -237,12 +238,15 @@ export default class Layout implements ILayout {
     layoutNode?: Document;
     path?: string = '';
     errorCode: number | null = null;
+    html: HTMLDivElement | null = null;
+    currentRegionCount?: number = 0;
 
     options: OptionsType = {} as OptionsType;
     xlr: IXlr = <IXlr>{};
 
     private readonly layoutObj: ILayout = <ILayout>{};
     protected readonly statsBC = new BroadcastChannel('statsBC');
+    transitionManager: ILayoutTransitionManager | undefined;
 
     constructor(
       xlrLayoutObj: ILayout,
@@ -254,6 +258,12 @@ export default class Layout implements ILayout {
         this.options = options;
         this.xlr = xlr;
         this.layoutObj = xlrLayoutObj;
+
+        this.transitionManager = new LayoutTransitionManager({
+            fadeDurationMs: this.options.gaplessPlayback?.transitionDurationMs ?? 500,
+            parallelStartMs: this.options.gaplessPlayback?.preloadBufferMs ?? 1000,
+            maxWaitMs: this.options.gaplessPlayback?.maxPreloadTimeMs ?? 5000,
+        });
 
         // Prepare and parse layout node
         this.prepareLayout();
@@ -376,6 +386,8 @@ export default class Layout implements ILayout {
             $layout.id = this.containerName;
         }
 
+        this.html = $layout;
+
         let $screen = document.getElementById('screen_container');
         ($screen) && $screen.append($layout);
 
@@ -486,7 +498,7 @@ export default class Layout implements ILayout {
         const layoutRegions = Array.from(this?.layoutNode?.getElementsByTagName('region') || []);
 
         Array.from(layoutRegions).forEach((regionXml, regionIndex) => {
-            const regionObj = Region(
+            const regionObj = new Region(
               this,
               regionXml,
               regionXml?.getAttribute('id') || '',
@@ -638,7 +650,7 @@ export default class Layout implements ILayout {
         return this.shareOfVoice > 0;
     }
 
-    on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]) {
+    on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): EventUnsubscriber {
         return this.emitter.on(event, callback);
     }
 }

@@ -20,7 +20,8 @@
  */
 
 import Layout from "./Layout";
-import {ELayoutState, ILayout, ILayoutEvents, OptionsType} from "../../Types/Layout";
+import {ELayoutState, ILayout, OptionsType} from "../../Types/Layout";
+import {ILayoutEvents} from "../../Types/Events";
 import {IXlr} from "../../Types/XLR";
 import {createNanoEvents, Emitter, Unsubscribe} from "nanoevents";
 

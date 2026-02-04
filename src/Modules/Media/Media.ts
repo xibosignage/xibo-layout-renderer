@@ -20,15 +20,14 @@
  */
 import {createNanoEvents, Emitter} from 'nanoevents';
 import videojs from 'video.js';
-import { nanoid } from 'nanoid';
 import Player from "video.js/dist/types/player";
 
 import { OptionsType } from '../../Types/Layout';
 import { IRegion } from '../../Types/Region';
 import { IMedia } from '../../Types/Media';
+import { IMediaEvents } from '../../Types/Events';
 import {
     capitalizeStr,
-    fetchJSON,
     getMediaId,
     nextId,
     preloadMediaBlob,
@@ -38,18 +37,14 @@ import {
     getDataBlob,
 } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
-import { VideoMedia } from './VideoMedia';
+import { composeVideoSource, VideoMedia } from './VideoMedia';
 import { AudioMedia } from './AudioMedia';
 import {IXlr} from '../../Types/XLR';
 import {MediaState} from "../../Types/Media/Media.types";
 
 import 'video.js/dist/video-js.min.css';
-import {createMediaElement} from "../Generators/Generators";
-
-export interface IMediaEvents {
-    start: (media: IMedia) => void;
-    end: (media: IMedia) => void;
-}
+import {createMediaElement, MediaTypes} from "../Generators/Generators";
+import { IMediaLifecycleManager, IPreciseMediaTimer, MediaLifecycleManager, MediaLifecycleState, PreciseMediaTimer } from '../../Lib';
 
 export class Media implements IMedia {
     attachedAudio: boolean = false;
@@ -71,7 +66,7 @@ export class Media implements IMedia {
     loadIframeOnRun: boolean = false;
     loop: boolean = false;
     mediaId: string = '';
-    mediaType: string = '';
+    mediaType: MediaTypes | string = '';
     muted?: boolean = false;
     options: OptionsType & {
         [k: string]: any;
@@ -91,7 +86,11 @@ export class Media implements IMedia {
     useDuration: boolean = false;
     xml: Element | null = null;
 
-    private mediaTimer: ReturnType<typeof setInterval> | undefined;
+    lifecycle: IMediaLifecycleManager = new MediaLifecycleManager();
+    preciseTimer: IPreciseMediaTimer | null = null;
+    preloadStartTime: number = 0;
+
+    private mediaTimer: ReturnType<typeof setInterval> | undefined | null;
     private mediaTimeCount = 0;
     private xlr: IXlr = <IXlr>{};
     private readonly statsBC = new BroadcastChannel('statsBC');
@@ -120,26 +119,26 @@ export class Media implements IMedia {
         this.enableStat = Boolean(this.xml?.getAttribute('enableStat') || false);
 
         this.on('start', (media: IMedia) => {
-            if (media.state === MediaState.PLAYING) return;
+            // if (media.state === MediaState.PLAYING) return;
 
-            media.state = MediaState.PLAYING;
-            if (media.mediaType === 'video') {
-                const videoMedia = VideoMedia(media, xlr);
+            // media.state = MediaState.PLAYING;
+            // if (media.mediaType === 'video') {
+            //     const videoMedia = VideoMedia(media, xlr);
 
-                videoMedia.init();
+            //     videoMedia.init();
 
-                if (media.duration > 0) {
-                    this.startMediaTimer(media);
-                }
-            } else if (media.mediaType === 'audio') {
-                AudioMedia(media).init();
-                if (media.duration > 0) {
-                    this.startMediaTimer(media);
-                }
-            } else {
-                this.startMediaTimer(media);
-            }
+            //     if (media.duration > 0) {
+            //         this.startMediaTimer(media);
+            //     }
+            // } else if (media.mediaType === 'audio') {
+            //     AudioMedia(media).init();
+            //     if (media.duration > 0) {
+            //         this.startMediaTimer(media);
+            //     }
+            // } else {
+            // }
 
+            this.startMediaTimer(media);
             // Check if stats are enabled for the layout
             if (media.enableStat) {
                 this.statsBC.postMessage({
@@ -191,28 +190,244 @@ export class Media implements IMedia {
         this.init();
     }
 
-    private startMediaTimer(media: IMedia) {
-        this.mediaTimer = setInterval(() => {
-            this.mediaTimeCount++;
-            if (this.mediaTimeCount > media.duration) {
-                console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
+    async preload(options?: {
+        signal?: AbortSignal;
+        onProgress?: (percent: number) => void;
+    }): Promise<void> {
+        if (this.mediaType === 'video') {
+            await this.preloadVideo(options);
+        } else if (this.mediaType === 'audio') {
+            await this.preloadAudio(options);
+        } else if (this.mediaType === 'image') {
+            await this.preloadImage(options);
+        } else if (this.render === 'html' || this.mediaType === 'webpage') {
+            await this.preloadHtml(options);
+        } else {
+            // Default: mark as ready immediately
+            options?.onProgress?.(100);
+        }
+    }
 
-                console.debug('Media::Emitter > End', {
-                    currentLayout: this.xlr.currentLayout,
-                    media,
-                    region: media.region,
-                    layout: media.region.layout,
-                })
-
-                media.emitter.emit('end', media);
-
-                if (media.mediaType === 'video') {
-                    // Dispose the video media
-                    console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    VideoMedia(media, this.xlr).stop(true);
+    private async preloadVideo(options?: any): Promise<void> {
+        console.debug('??? XLR.debug >> Preloading video media', {
+            mediaId: this.id,
+            url: this.url,
+        });
+        // Video preloading
+        return new Promise((resolve, reject) => {
+            const abortListener = () => reject(new DOMException('Aborted', 'AbortError'));
+            options?.signal?.addEventListener('abort', abortListener);
+            
+            try {
+                // Create video element and video.js player
+                if (!this.player && this.html && this.mediaType === 'video') {
+                    // Create player with preload: 'auto'
+                    const player = videojs(this.html, {
+                        controls: false,
+                        preload: 'auto',
+                        autoplay: false,
+                        muted: true,
+                        errorDisplay: this.xlr.config.platform !== 'chromeOS',
+                        loop: this.loop,
+                    });
+                    
+                    this.player = player;
+                    
+                    // Set source
+                    if (this.url) {
+                        const source = composeVideoSource(this.html as HTMLVideoElement, this);
+                        options?.onProgress?.(50);
+                    }
+                    
+                    // Wait for metadata to be loaded
+                    player.one('loadedmetadata', () => {
+                        options?.onProgress?.(80);
+                        
+                        const playerDuration = player.duration();
+                        if (this.duration === 0 && playerDuration) {
+                            this.duration = Math.ceil(playerDuration);
+                        }
+                    });
+                    
+                    // Wait for canplay
+                    player.one('canplay', () => {
+                        options?.onProgress?.(100);
+                        options?.signal?.removeEventListener('abort', abortListener);
+                        resolve();
+                    });
+                    
+                    player.on('error', (err: any) => {
+                        options?.signal?.removeEventListener('abort', abortListener);
+                        reject(err);
+                    });
                 }
+            } catch (error) {
+                options?.signal?.removeEventListener('abort', abortListener);
+                reject(error);
             }
-        }, 1000);
+        });
+    }
+
+    private async preloadAudio(options?: any): Promise<void> {
+        console.debug('??? XLR.debug >> Preloading audio media', {
+            mediaId: this.id,
+            url: this.url,
+        });
+        const isCMS = this.xlr.config.platform === 'CMS';
+        // Similar to video but for audio elements
+        return new Promise(async (resolve, reject) => {
+            try {
+                if (this.url && this.html) {
+                    const audio = this.html as HTMLAudioElement;
+                    audio.src = !isCMS ? this.url : await preloadMediaBlob(this.url, this.mediaType, this.options.previewJwt);
+                    options?.onProgress?.(50);
+                    
+                    audio.onloadedmetadata = () => {
+                        options?.onProgress?.(80);
+                        if (this.duration === 0) {
+                            this.duration = Math.ceil(audio.duration);
+                        }
+                    };
+                    
+                    audio.oncanplay = () => {
+                        options?.onProgress?.(100);
+                        resolve();
+                    };
+                    
+                    audio.onerror = (err) => reject(err);
+                    audio.load();
+                } else {
+                    resolve();
+                }
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    private async preloadImage(options?: any): Promise<void> {
+        console.debug('??? XLR.debug >> Preloading image media', {
+            mediaId: this.id,
+            url: this.url,
+        });
+        const isCMS = this.xlr.config.platform === 'CMS';
+        // Preload image via Image element
+        return new Promise(async (resolve, reject) => {
+            try {
+                const img = new Image();
+                img.onload = () => {
+                    options?.onProgress?.(100);
+                    resolve();
+                };
+                img.onerror = () => reject(new Error('Image load failed'));
+                
+                if (this.url) {
+                    options?.onProgress?.(50);
+                    img.src = !isCMS ? this.url : await getDataBlob(this.url, this.options.previewJwt) as string;
+                } else {
+                    resolve();
+                }
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    private async preloadHtml(options?: any): Promise<void> {
+        console.debug('??? XLR.debug >> Preloading HTML/iframe media', {
+            mediaId: this.id,
+            html: this.html,
+            iframe: this.iframe,
+            ready: this.ready,
+            iframeStatus: this.checkIframeStatus,
+        });
+        // HTML/iframe preloading
+        return new Promise((resolve) => {
+            if (this.iframe) {
+                options?.onProgress?.(50);
+                
+                const onIframeReady = () => {
+                    this.checkIframeStatus = true;
+                    options?.onProgress?.(100);
+
+                    if (this.html) {
+                        this.html.innerHTML = '';
+                        this.html.appendChild(this.iframe as HTMLIFrameElement);
+                    }
+
+                    resolve();
+                };
+                
+                if (this.ready) {
+                    onIframeReady();
+                } else {
+                    this.iframe.onload = onIframeReady;
+                    setTimeout(onIframeReady, 1000);  // Timeout safety
+                }
+            } else {
+                options?.onProgress?.(100);
+                resolve();
+            }
+        });
+    }
+
+    private startMediaTimer(media: IMedia) {
+        const preciseTimer = new PreciseMediaTimer(media.duration);
+        const preloadEstimate = media.region.pipeline.estimatePreloadTime(media);
+        const preloadTriggerMs = media.duration - (2000 + preloadEstimate);
+
+        let preloadTriggered = false;
+
+        preciseTimer.onTick((elapsed, remaining) => {
+            // Trigger preload at calculated time
+            if (!preloadTriggered && remaining <= (2000 + preloadEstimate)) {
+                preloadTriggered = true;
+                console.debug(`??? XLR.debug >> Precise timer: Preloading next media for media ${media.id}, remaining time: ${remaining}ms`, {
+                    elapsed,
+                });
+                
+                media.region.pipeline
+                    .onCurrentMediaWillEnd(remaining)
+                    .catch(err => console.error('??? XLR.debug >> Preload failed:', err));
+            }
+        });
+
+        preciseTimer.onComplete(() => {
+            console.debug(`??? XLR.debug >> Precise timer: Media ${media.id} duration ended`);
+            console.debug('??? XLR.debug >> startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
+
+            // Trigger transition
+            media.region.pipeline
+                .onCurrentMediaEnded()
+                .catch(err => console.error('??? XLR.debug >> Transition failed:', err));
+        });
+
+        preciseTimer.start();
+        media.preciseTimer = preciseTimer;
+
+        this.mediaTimer = null; // Disable interval-based timer
+        this.mediaTimeCount = 0;
+        // this.mediaTimer = setInterval(() => {
+        //     this.mediaTimeCount++;
+        //     if (this.mediaTimeCount > media.duration) {
+        //         console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
+
+        //         console.debug('Media::Emitter > End', {
+        //             currentLayout: this.xlr.currentLayout,
+        //             media,
+        //             region: media.region,
+        //             layout: media.region.layout,
+        //         })
+
+        //         media.emitter.emit('end', media);
+
+        //         if (media.mediaType === 'video') {
+        //             // Dispose the video media
+        //             console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+        //             VideoMedia(media, this.xlr).stop(true);
+        //         }
+        //     }
+        // }, 1000);
 
         console.debug('startMediaTimer: Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
@@ -290,10 +505,19 @@ export class Media implements IMedia {
         this.loop =
             this.options['loop'] == '1' ||
             (this.region.options['loop'] == '1' && this.region.totalMediaObjects == 1);
+
+        // Create HTML element for media
+        this.html = createMediaElement(this, 'current');
     }
 
     run() {
-        const self = this;
+        // Update lifecycle state
+        if (this.lifecycle.canTransitionTo(MediaLifecycleState.PLAYING)) {
+            this.lifecycle.transitionToState(MediaLifecycleState.PLAYING);
+        }
+
+        // Resources should already be loaded from preload()
+        // Just start rendering/playing
         let transInDuration = 1;
         let transInDirection: compassPoints = 'E';
 
@@ -324,70 +548,6 @@ export class Media implements IMedia {
             transIn = transitionElement(transInName, defaultTransInOptions);
         }
 
-        const showCurrentMedia = async () => {
-            let $mediaId = getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName});
-            let $media = document.getElementById($mediaId);
-            const isCMS = this.xlr.config.platform === 'CMS';
-
-            if (!$media) {
-                $media = getNewMedia();
-            }
-
-            if ($media) {
-                $media.style.setProperty('display', 'block');
-
-                if (Boolean(this.options['transin'])) {
-                    $media.animate(transIn.keyframes, transIn.timing);
-                }
-
-                if (this.mediaType === 'image' && this.url !== null) {
-                    ($media as HTMLImageElement).style
-                        .setProperty(
-                            'background-image',
-                            `url(${!isCMS
-                                ? this.url
-                                : await getDataBlob(this.url, this.options.previewJwt)}`
-                        );
-                } else if (this.mediaType === 'video' && this.url !== null) {
-                    // Initialize video.js
-                    this.player = videojs($media, {
-                        controls: false,
-                        preload: 'auto',
-                        autoplay: false,
-                        muted: true,
-                        errorDisplay: this.xlr.config.platform !== 'chromeOS',
-                        loop: this.loop,
-                    });
-                } else if (this.mediaType === 'audio' && this.url !== null) {
-                    ($media as HTMLAudioElement).src =
-                        isCMS ? await preloadMediaBlob(this.url, this.mediaType, this.options.previewJwt) : this.url;
-                } else if ((this.render === 'html' || this.mediaType === 'webpage') &&
-                    this.iframe && this.checkIframeStatus
-                ) {
-                    // Set state as false ( for now )
-                    this.ready = false;
-
-                    // Append iframe
-                    $media.innerHTML = '';
-                    $media.appendChild(this.iframe as Node);
-
-                    // On iframe load, set state as ready to play full preview
-                    // (self.iframe) && self.iframe.addEventListener('load', function(){
-                    //     self.ready = true;
-                    //     if (self.iframe) {
-                    //         const iframeStyles = self.iframe.style.cssText;
-                    //         self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
-                    //     }
-                    // });
-                }
-
-                if (!this.region.layout.isOverlay ||
-                    (this.region.layout.isOverlay && this.region.totalMediaObjects > 1)
-                ) {
-                    this.emitter.emit('start', <IMedia>this);
-                }
-            }
-        };
         const getNewMedia = (): HTMLElement | null => {
             const $region = document.getElementById(`${this.region.containerName}`);
             // This function is for checking whether
@@ -402,6 +562,38 @@ export class Media implements IMedia {
             }
 
             return null;
+        };
+
+        const showCurrentMedia = async () => {
+            let $mediaId = getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName});
+            let $media = document.getElementById($mediaId);
+
+            if (!$media) {
+                $media = getNewMedia();
+            }
+
+            if ($media) {
+                $media.style.setProperty('display', 'block');
+
+                if (Boolean(this.options['transin'])) {
+                    $media.animate(transIn.keyframes, transIn.timing);
+                }
+
+                // For video: start playback immediately
+                if (this.mediaType === 'video' && this.player) {
+                    // Player should already be ready from preload
+                    this.player.muted(this.muted ?? false);
+                    this.player.play()?.catch((err) => {
+                        console.error('Video playback failed:', err);
+                    });
+                }
+
+                if (!this.region.layout.isOverlay ||
+                    (this.region.layout.isOverlay && this.region.totalMediaObjects > 1)
+                ) {
+                    this.emitter.emit('start', this);
+                }
+            }
         };
 
         showCurrentMedia();

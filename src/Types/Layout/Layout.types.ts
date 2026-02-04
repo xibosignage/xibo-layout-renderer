@@ -22,12 +22,8 @@ import {Emitter, Unsubscribe} from 'nanoevents';
 import {IRegion} from '../Region';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
-
-export interface ILayoutEvents {
-    start: (layout: ILayout) => void;
-    end: (layout: ILayout) => void;
-    cancelled: (layout: ILayout) => void;
-}
+import { ILayoutEvents } from '../Events';
+import { ILayoutTransitionManager } from '../../Lib';
 
 export enum ELayoutState {
     IDLE,
@@ -73,6 +69,13 @@ export type OptionsType = {
         splashScreen: string;
         logo: string;
     };
+    gaplessPlayback: {
+        enabled?: boolean; // Default: true
+        preloadBufferMs?: number; // Default: 2000
+        maxPreloadTimeMs?: number; // Default: 5000
+        transitionDurationMs?: number; // Default: 500
+        enablePrecisionTimer?: boolean; // Default: true
+    };
 };
 
 export interface ILayout {
@@ -106,6 +109,7 @@ export interface ILayout {
     done: boolean;
     allEnded: boolean;
     path?: string;
+    html: HTMLDivElement | null;
     prepareLayout(): void;
     parseXlf(): void;
     run(): void;
@@ -131,6 +135,12 @@ export interface ILayout {
     isInterrupt(): boolean;
     state: ELayoutState;
     errorCode: number | null;
+    playRegions(): void;
+
+    // Gapless playback transitions
+    transitionManager?: ILayoutTransitionManager;
+    currentRegionCount?: number;
+    regionsEnded?: number;
 }
 
 export const initialLayout: ILayout = {
@@ -163,6 +173,7 @@ export const initialLayout: ILayout = {
     done: false,
     allEnded: false,
     path: '',
+    html: null,
     emitter: <Emitter<ILayoutEvents>>{},
     index: -1,
     actionController: undefined,
@@ -206,6 +217,7 @@ export const initialLayout: ILayout = {
     },
     isInterrupt: () => false,
     state: ELayoutState.IDLE,
+    playRegions() {},
 };
 
 export type GetLayoutParamType = {
@@ -219,4 +231,21 @@ export type GetLayoutType = {
     inputLayouts: InputLayoutType[];
     current: ILayout | undefined;
     next: ILayout | undefined;
+}
+
+/**
+ * Configuration for layout-to-layout transitions
+ */
+export interface ILayoutTransitionConfig {
+    /** Duration of fade transition in milliseconds */
+    fadeDurationMs: number;
+
+    /** Time before current layout ends to start next layout playback */
+    parallelStartMs: number;
+
+    /** Maximum time to wait for layout preparation before forcing transition */
+    maxWaitMs: number;
+
+    /** Easing function for fade (ease-in-out', 'ease-in', 'ease-out', 'linear') */
+    easing?: 'ease-in-out' | 'ease-in' | 'ease-out' | 'linear';
 }
