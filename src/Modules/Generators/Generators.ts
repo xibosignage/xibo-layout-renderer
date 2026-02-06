@@ -24,6 +24,7 @@ import {IXlr} from "../../Types/XLR";
 import {nanoid} from "nanoid";
 import {composeVideoSource} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -170,20 +171,27 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
         .replace(":id", params.mediaId) +
         '?preview=1&layoutPreview=1';
 
-    if (options.platform === 'CMS') {
+    if (options.platform === ConsumerPlatform.CMS) {
         resourceUrl += '&jwt=' + params.regionOptions.previewJwt;
     }
 
-    if (options.platform === 'chromeOS') {
-        const resourceEndpoint = '/required-files/resource/';
-
-        if (!params.isGlobalContent && params.isImageOrVideo) {
-            resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+    if (options.platform === ConsumerPlatform.ELECTRON) {
+        if (params.render === 'html') {
+            resourceUrl = options.appHost +
+              'layout_' + params.layoutId +
+              '_region_' + params.regionid +
+              '_media_' + params.mediaId +
+              '.html';
+        } else if (params.render === 'native' && params.isImageOrVideo) {
+            resourceUrl = options.appHost + params.uri;
         }
-    } else if (!Boolean(params['mediaType'])) {
-        resourceUrl += '&scale_override=' + params.scaleFactor;
     }
 
+    // if (!Boolean(params['mediaType'])) {
+    //     resourceUrl += '&scale_override=' + params.scaleFactor;
+    // }
+
+    // Default value is for CMS
     return resourceUrl;
 }
 

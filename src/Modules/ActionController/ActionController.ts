@@ -19,7 +19,7 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 // import Moveable from 'moveable';
-import { ILayout, IMedia, IRegion, OptionsType } from '../../types';
+import {ConsumerPlatform, ILayout, IMedia, IRegion, OptionsType} from '../../types';
 import { getAllAttributes, nextId } from '../Generators/Generators';
 import './action-controller.css';
 import {PreviewTranslations} from "../../Lib/translations";
@@ -283,10 +283,10 @@ export default class ActionController {
     /** Run action based on action data */
     runAction(actionData: {[k: string]: any}, options: InactOptions) {
         if(actionData.actiontype == 'navLayout') {
-            if (this.parent.xlr.config.platform === 'CMS') {
+            if (this.parent.xlr.config.platform === ConsumerPlatform.CMS) {
                 // Open layout preview in a new tab
                 this.openLayoutInNewTab(actionData.layoutcode, options);
-            } else if (this.parent.xlr.config.platform === 'chromeOS') {
+            } else if (this.parent.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                 // Set target layout as active layout
                 this.openLayoutInPlayer(actionData.layoutcode, options);
             }

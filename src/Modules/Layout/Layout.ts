@@ -27,14 +27,13 @@ import {
     initialLayout,
     OptionsType,
 } from '../../Types/Layout';
-import {ILayoutEvents} from "../../types";
+import {ConsumerPlatform, ILayoutEvents, IRegion} from "../../types";
 import {IXlr} from '../../Types/XLR';
 import {composeBgUrlByPlatform, nextId} from '../Generators';
 import {Region} from '../Region';
 
 import './layout.css';
 import ActionController, {Action} from '../ActionController';
-import {IRegion} from '../../types';
 
 const playAgainClickHandle = function (ev: { preventDefault: () => void; }) {
     ev.preventDefault();
@@ -96,10 +95,10 @@ export async function getXlf(layoutOptions: OptionsType) {
     let xlfUrl = layoutOptions.xlfUrl;
     let fetchOptions: RequestInit = {};
 
-    if (layoutOptions.platform === 'CMS') {
+    if (layoutOptions.platform === ConsumerPlatform.CMS) {
         xlfUrl = layoutOptions.xlfUrl;
         fetchOptions.mode = 'no-cors';
-    } else if (layoutOptions.platform === 'chromeOS') {
+    } else if (layoutOptions.platform === ConsumerPlatform.CHROMEOS) {
         xlfUrl = layoutOptions.xlfUrl;
         fetchOptions.mode = 'cors';
         fetchOptions.headers = {
@@ -107,6 +106,12 @@ export async function getXlf(layoutOptions: OptionsType) {
         };
     } else if (layoutOptions.appHost !== null) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
+        if (layoutOptions.platform === ConsumerPlatform.ELECTRON) {
+            fetchOptions.mode = 'cors';
+            fetchOptions.headers = {
+                'Content-Type': 'text/xml',
+            };
+        }
     }
 
     const res = await fetch(
@@ -320,12 +325,12 @@ export default class Layout implements ILayout {
             console.debug('>>>>> XLR.debug Awaited XLR::emitSync > End - Calling layoutEnd event');
             await layout.xlr.emitSync('layoutEnd', layout);
 
-            if (this.xlr.config.platform !== 'CMS' && layout.inLoop) {
+            if (this.xlr.config.platform !== ConsumerPlatform.CMS && layout.inLoop) {
                 // Transition next layout to current layout and prepare next layout if exist
                 this.xlr.prepareLayouts().then(async (_xlr) => {
                     console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
 
-                    this.xlr.playLayouts(_xlr);
+                    await this.xlr.playLayouts(_xlr);
 
                     if (layout.isInterrupt() && _xlr.currentLayout && !_xlr.currentLayout.isInterrupt()) {
                         // Start back overlay layouts when previous layout is interrupt
@@ -384,7 +389,7 @@ export default class Layout implements ILayout {
         if ($layout) {
             $layout.dataset.sequence = `${this.index}`;
             $layout.style.display = 'none';
-            if (this.xlr.config.platform === 'CMS') {
+            if (this.xlr.config.platform === ConsumerPlatform.CMS) {
                 $layout.style.outline = 'red solid thin';
             }
 
@@ -587,7 +592,7 @@ export default class Layout implements ILayout {
             await this.stopAllMedia();
 
             console.debug('starting to end layout . . .');
-            if (this.xlr.config.platform === 'CMS') {
+            if (this.xlr.config.platform === ConsumerPlatform.CMS) {
                 const $end = document.getElementById('play_ended');
                 const $preview = document.getElementById('screen_container');
 

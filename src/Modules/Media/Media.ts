@@ -39,6 +39,7 @@ import {IMediaEvents} from "../../Types/Events";
 
 import 'video.js/dist/video-js.min.css';
 import {createMediaElement} from "../Generators/Generators";
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export class Media implements IMedia {
     attachedAudio: boolean = false;
@@ -264,6 +265,7 @@ export class Media implements IMedia {
             uri: this.uri,
             isGlobalContent: this.mediaType === 'global',
             isImageOrVideo: this.mediaType === 'image' || this.mediaType === 'video',
+            render: this.render,
         };
 
         if (this.mediaType === 'image' || this.mediaType === 'video') {
@@ -272,9 +274,9 @@ export class Media implements IMedia {
 
         let tmpUrl = '';
 
-        if (this.xlr.config.platform === 'CMS') {
+        if (this.xlr.config.platform === ConsumerPlatform.CMS) {
             tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
-        } else if (this.xlr.config.platform === 'chromeOS') {
+        } else if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
             tmpUrl = composeResourceUrl(this.xlr.config, resourceUrlParams);
 
             if (this.mediaType === 'image' || this.mediaType === 'video' || this.mediaType === 'audio') {
@@ -285,6 +287,8 @@ export class Media implements IMedia {
                     tmpUrl = this.uri;
                 }
             }
+        } else if (this.xlr.config.platform === ConsumerPlatform.ELECTRON) {
+            tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
         }
 
         this.url = tmpUrl;
@@ -448,17 +452,17 @@ export class Media implements IMedia {
             commandString = options.globalcommand || '';
         } else {
             // Use platform-specific command when available
-            if (this.xlr.config.platform === 'chromeOS') {
+            if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                 commandString = options.chromeoscommand || '';
-            } else if (this.xlr.config.platform === 'android') {
+            } else if (this.xlr.config.platform === ConsumerPlatform.ANDROID) {
                 commandString = options.androidcommand || '';
-            } else if (this.xlr.config.platform === 'linux') {
+            } else if (this.xlr.config.platform === ConsumerPlatform.LINUX) {
                 commandString = options.linuxcommand || '';
-            } else if (this.xlr.config.platform === 'tizen') {
+            } else if (this.xlr.config.platform === ConsumerPlatform.TIZEN) {
                 commandString = options.tizencommand || '';
-            } else if (this.xlr.config.platform === 'webos') {
+            } else if (this.xlr.config.platform === ConsumerPlatform.WEBOS) {
                 commandString = options.weboscommand || '';
-            } else if (this.xlr.config.platform === 'windows') {
+            } else if (this.xlr.config.platform === ConsumerPlatform.WINDOWS) {
                 commandString = options.windowscommand || '';
             }
 

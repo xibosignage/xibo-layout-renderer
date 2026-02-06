@@ -24,7 +24,7 @@ import {format} from "date-fns";
 
 import { IMedia } from '../../Types/Media';
 import { capitalizeStr, videoFileType, getFileExt, setExpiry } from '../Generators';
-import {ELayoutState, IXlr, OptionsType} from '../../types';
+import {ConsumerPlatform, ELayoutState, IXlr, OptionsType} from '../../types';
 import PwaSW from '../../Lib/pwa-sw';
 
 import './media.css';
@@ -280,7 +280,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                             this.stop();
                         } else {
                             console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
-                            if (xlr.config.platform === 'chromeOS') {
+                            if (xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                                 await playerReportFault('Media autoplay error');
                             }
                         }
@@ -288,7 +288,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                 });
                 vjsPlayer.on('error', async (err: any) => {
                     console.debug(`??? XLR.debug >> VideoMedia - Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
-                    if (xlr.config.platform === 'chromeOS') {
+                    if (xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                         await playerReportFault('Video file source not supported');
                     } else {
                         // End media after 5 seconds

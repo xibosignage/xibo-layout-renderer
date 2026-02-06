@@ -23,6 +23,7 @@ import {IRegion} from '../Region';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
 import { ILayoutEvents } from "../Events";
+import {ConsumerPlatform} from "../Platform";
 
 export enum ELayoutState {
     IDLE,
@@ -54,7 +55,7 @@ export type OptionsType = {
     idCounter: number;
     inPreview: boolean;
     appHost?: string | null;
-    platform: 'CMS' | 'chromeOS' | 'android' | 'linux' | 'tizen' | 'webos' | 'windows';
+    platform: ConsumerPlatform;
     config?: {
         cmsUrl: string | null;
         schemaVersion: number;
