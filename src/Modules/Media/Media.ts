@@ -19,37 +19,26 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {createNanoEvents, Emitter} from 'nanoevents';
-import videojs from 'video.js';
-import { nanoid } from 'nanoid';
 import Player from "video.js/dist/types/player";
 
 import { OptionsType } from '../../Types/Layout';
 import { IRegion } from '../../Types/Region';
-import { IMedia } from '../../Types/Media';
+import { IMedia, MediaState } from '../../Types/Media';
 import {
     capitalizeStr,
-    fetchJSON,
     getMediaId,
     nextId,
-    preloadMediaBlob,
     composeResourceUrl,
     composeResourceUrlByPlatform,
     composeMediaUrl,
-    getDataBlob,
 } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
-import { VideoMedia } from './VideoMedia';
 import { AudioMedia } from './AudioMedia';
 import {IXlr} from '../../Types/XLR';
-import {MediaState} from "../../Types/Media/Media.types";
+import {IMediaEvents} from "../../Types/Events";
 
 import 'video.js/dist/video-js.min.css';
 import {createMediaElement} from "../Generators/Generators";
-
-export interface IMediaEvents {
-    start: (media: IMedia) => void;
-    end: (media: IMedia) => void;
-}
 
 export class Media implements IMedia {
     attachedAudio: boolean = false;
@@ -126,9 +115,10 @@ export class Media implements IMedia {
 
             media.state = MediaState.PLAYING;
             if (media.mediaType === 'video') {
-                const videoMedia = VideoMedia(media, xlr);
-
-                videoMedia.init();
+                // const videoMedia = VideoMedia(media, this.xlr);
+                //
+                // videoMedia.init();
+                media.videoHandler?.player?.play();
 
                 if (media.duration > 0) {
                     this.startMediaTimer(media);
@@ -222,7 +212,7 @@ export class Media implements IMedia {
                 if (media.mediaType === 'video') {
                     // Dispose the video media
                     console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    VideoMedia(media, this.xlr).stop(true);
+                    (media.videoHandler) && media.videoHandler.stop(true);
                 }
             }
         }, 1000);
@@ -303,10 +293,11 @@ export class Media implements IMedia {
         this.loop =
             this.options['loop'] == '1' ||
             (this.region.options['loop'] == '1' && this.region.totalMediaObjects == 1);
+
+        this.html = createMediaElement(this);
     }
 
     run() {
-        const self = this;
         let transInDuration = 1;
         let transInDirection: compassPoints = 'E';
 
@@ -337,67 +328,65 @@ export class Media implements IMedia {
             transIn = transitionElement(transInName, defaultTransInOptions);
         }
 
-        const showCurrentMedia = async () => {
+        const showCurrentMedia = () => {
             let $mediaId = getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName});
-            let $media = document.getElementById($mediaId);
-            const isCMS = this.xlr.config.platform === 'CMS';
+            let $media = this.html;
 
             if (!$media) {
                 $media = getNewMedia();
             }
 
+            console.debug('??? XLR.debug >> Media run - show current media:', {
+                $mediaId,
+                $media,
+                mediaObject: this,
+            });
+
             if ($media) {
-                $media.style.setProperty('display', 'block');
+                $media.style.setProperty('visibility', 'visible');
+                $media.style.setProperty('z-index', '10');
+                $media.style.setProperty('opacity', '1');
+
+                if (this.mediaType === 'video') {
+                    // @ts-ignore
+                    if ($media !== null && $media?.parentElement?.classList.contains('video-js')) {
+                        const $videoWrapper = $media.parentElement;
+
+                        if ($videoWrapper !== null) {
+                            $videoWrapper.style.setProperty('visibility', 'visible');
+                            $videoWrapper.style.setProperty('z-index', '10');
+                            $videoWrapper.style.setProperty('opacity', '1');
+                        }
+                    }
+                }
 
                 if (Boolean(this.options['transin'])) {
                     $media.animate(transIn.keyframes, transIn.timing);
-                }
-
-                if (this.mediaType === 'image' && this.url !== null) {
-                    ($media as HTMLImageElement).style
-                        .setProperty(
-                            'background-image',
-                            `url(${!isCMS
-                                ? this.url
-                                : await getDataBlob(this.url, this.options.previewJwt)}`
-                        );
-                } else if (this.mediaType === 'video' && this.url !== null) {
-                    // Initialize video.js
-                    this.player = videojs($media, {
-                        controls: false,
-                        preload: 'auto',
-                        autoplay: false,
-                        muted: true,
-                        errorDisplay: this.xlr.config.platform !== 'chromeOS',
-                        loop: this.loop,
-                    });
-                } else if (this.mediaType === 'audio' && this.url !== null) {
-                    ($media as HTMLAudioElement).src =
-                        isCMS ? await preloadMediaBlob(this.url, this.mediaType, this.options.previewJwt) : this.url;
-                } else if ((this.render === 'html' || this.mediaType === 'webpage') &&
-                    this.iframe && this.checkIframeStatus
-                ) {
-                    // Set state as false ( for now )
-                    this.ready = false;
-
-                    // Append iframe
-                    $media.innerHTML = '';
-                    $media.appendChild(this.iframe as Node);
-
-                    // On iframe load, set state as ready to play full preview
-                    // (self.iframe) && self.iframe.addEventListener('load', function(){
-                    //     self.ready = true;
-                    //     if (self.iframe) {
-                    //         const iframeStyles = self.iframe.style.cssText;
-                    //         self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
-                    //     }
-                    // });
                 }
 
                 if (!this.region.layout.isOverlay ||
                     (this.region.layout.isOverlay && this.region.totalMediaObjects > 1)
                 ) {
                     this.emitter.emit('start', <IMedia>this);
+
+                    // Prepare next media while current media is running with some buffer
+                    const preloadBufferMs = 1500; // Trial default
+                    let durationMs = this.duration * 1000;
+
+                    if (this.mediaType === 'video' && this.player) {
+                        const playerDuration = this.player.duration();
+
+                        if (playerDuration) {
+                            durationMs = playerDuration * 1000;
+                        }
+                    }
+
+                    setTimeout(async () => {
+                        console.debug('??? XLR.debug >> Media run - preparing next media:', {
+
+                        })
+                        await this.region.prepareNextMedia();
+                    }, durationMs - preloadBufferMs);
                 }
             }
         };

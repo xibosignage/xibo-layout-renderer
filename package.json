@@ -9,8 +9,10 @@
   "type": "module",
   "scripts": {
     "prepare": "npm run build",
-    "build": "rimraf dist && rollup --config rollup.config.prod.ts --configPlugin @rollup/plugin-typescript",
-    "dev": "rimraf dist && rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "prebuild": "npm run clean",
+    "build": "rollup --config rollup.config.prod.ts --configPlugin @rollup/plugin-typescript",
+    "dev": "rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
   },
   "repository": {
     "type": "git",

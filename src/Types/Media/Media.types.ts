@@ -18,11 +18,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {Emitter, Unsubscribe} from 'nanoevents';
+import {Emitter} from 'nanoevents';
 import Player from "video.js/dist/types/player";
-import { IMediaEvents } from '../../Modules/Media/Media';
+
 import {initialRegion, IRegion} from '../Region';
 import {OptionsType} from '../Layout';
+import {IVideoMediaHandler} from "../../Modules/Media";
+import { IMediaEvents } from "../Events";
 
 export type MediaState = 'idle' | 'playing' | 'ended';
 
@@ -79,6 +81,7 @@ export interface IMedia {
     url: string | null;
     useDuration: boolean;
     xml: Element | null;
+    videoHandler?: IVideoMediaHandler;
 }
 
 export const initialMedia: IMedia = {

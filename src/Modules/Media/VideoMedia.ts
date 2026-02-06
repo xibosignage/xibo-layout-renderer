@@ -19,14 +19,16 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import videojs from 'video.js';
+import Player from "video.js/dist/types/player";
 import {format} from "date-fns";
 
 import { IMedia } from '../../Types/Media';
-import { capitalizeStr, getMediaId, preloadMediaBlob, MediaTypes, videoFileType, getFileExt, setExpiry } from '../Generators';
-import {ELayoutState, IXlr} from '../../types';
+import { capitalizeStr, videoFileType, getFileExt, setExpiry } from '../Generators';
+import {ELayoutState, IXlr, OptionsType} from '../../types';
 import PwaSW from '../../Lib/pwa-sw';
 
 import './media.css';
+import {BlobLoader} from "../../Lib";
 
 export function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
     // const videoSrc = await preloadMediaBlob(media.url as string, media.mediaType as MediaTypes);
@@ -45,6 +47,139 @@ export function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
     return $media;
 }
 
+export const defaultVjsOpts = {
+    autoplay: false,
+    muted: true, // Start muted to allow autoplay policies
+    preload: 'auto',
+    controls: false,
+};
+
+export interface IVideoMediaHandler {
+    player: Player | undefined;
+    duration: number;
+    stop(disposeOnly?: boolean): void;
+}
+
+export function videoMediaHandler(media: IMedia, platform: OptionsType['platform']): IVideoMediaHandler {
+    const videoPlayer: IVideoMediaHandler = {
+        player: undefined,
+        duration: 0,
+        stop(disposeOnly?: boolean) {
+        }
+    };
+
+    const playerReportFault = async (msg: string) => {
+        // Immediately expire media and report a fault
+        const playerSW = PwaSW();
+        const hasSW = await playerSW.getSW();
+        media.region.layout.state = ELayoutState.ERROR;
+        media.region.layout.errorCode = 405
+
+        if (hasSW) {
+            playerSW.postMsg({
+                type: 'MEDIA_FAULT',
+                code: 5002,
+                reason: msg,
+                mediaId: media.id,
+                regionId: media.region.id,
+                layoutId: media.region.layout.id,
+                date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+                // Temporary setting
+                expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
+            }).finally(() => {
+                videoPlayer.stop();
+            });
+        } else {
+            videoPlayer.stop();
+        }
+    };
+
+    videoPlayer.duration = media.duration;
+
+    if (media.player) {
+        videoPlayer.player = media.player;
+    } else {
+        // Load on demand if it has not been cached
+        let vjsElem: HTMLElement | string | null = media.html;
+        const vidType = videoFileType(getFileExt(media.uri)) as string;
+
+        if (vjsElem === null) {
+            // Use media containerName instead for VJS id
+            vjsElem = media.containerName;
+        }
+
+        videoPlayer.player = videojs(vjsElem, {
+            ...defaultVjsOpts,
+            sources: [{
+                src: media.url,
+                type: vidType,
+            }],
+        });
+    }
+
+    videoPlayer.stop = (disposeOnly = false) => {
+        // Expire the media and dispose the video
+        if (videoPlayer.player !== undefined) {
+            if (!disposeOnly) {
+                media.emitter.emit('end', media);
+            }
+
+            // Clear cached blob to free memory
+            BlobLoader.release(videoPlayer.player.currentSrc());
+
+            // Dispose player
+            videoPlayer.player.dispose();
+
+            // Clear up media player
+            videoPlayer.player = undefined;
+            media.player = undefined;
+
+        }
+    };
+
+    videoPlayer.player.on('loadstart', () => {
+        console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
+    });
+
+    videoPlayer.player.one('loadedmetadata', () => {
+        if (media.duration === 0 && videoPlayer.player !== undefined) {
+            videoPlayer.duration = videoPlayer.player.duration() as number;
+        }
+
+        console.debug('??? XLR.debug >> VideoMedia - loadedmetadata: Setting video duration to = ' + videoPlayer.duration);
+    });
+
+    videoPlayer.player.one('playing', () => {
+        console.debug('??? XLR.debug >> VideoMedia - playing: Showing Media ' +
+          media.id + ' for ' + videoPlayer.duration + 's of Region ' + media.region.regionId);
+        console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+        (videoPlayer.player) && videoPlayer.player.muted(media.muted);
+    });
+
+    videoPlayer.player.on('error', async (err: any) => {
+        console.debug(`??? XLR.debug >> VideoMedia - Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
+        if (platform === 'chromeOS') {
+            await playerReportFault('Video file source not supported');
+        } else {
+            // End media after 5 seconds
+            setTimeout(() => {
+                console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended . . .`);
+                videoPlayer.stop();
+            }, 5000);
+        }
+    });
+
+    // Register on.("end") when media.duration is 0
+    if (media.duration === 0) {
+        videoPlayer.player.on('ended', () => {
+            console.debug(`??? XLR.debug >> VideoMedia - onended: ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+            videoPlayer.stop();
+        });
+    }
+
+    return videoPlayer;
+}
+
 export function VideoMedia(media: IMedia, xlr: IXlr) {
     return {
         duration: 0,
@@ -52,6 +187,11 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
             const vjsPlayer = media.player;
 
             this.duration = media.duration;
+
+            console.debug('??? XLR.debug >> VideoMedia >> init:', {
+                vjsPlayer,
+                duration: this.duration,
+            })
 
             if (vjsPlayer !== undefined) {
                 const playerReportFault = async (msg: string) => {
@@ -81,25 +221,26 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                 };
 
                 vjsPlayer.on('loadstart', () => {
-                    console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
+                    console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
                 });
+                //
+                // vjsPlayer.one('loadedmetadata', () => {
+                //     if (media.duration === 0) {
+                //         this.duration = vjsPlayer.duration() as number;
+                //     }
+                //
+                //     console.debug('??? XLR.debug >> VideoMedia - loadedmetadata: Setting video duration to = ' + this.duration);
+                // });
 
-                vjsPlayer.one('loadedmetadata', () => {
-                    if (media.duration === 0) {
-                        this.duration = vjsPlayer.duration() as number;
-                    }
-
-                    console.debug('VideoMedia: loadedmetadata: Setting video duration to = ' + this.duration);
-                });
-
-                vjsPlayer.one('canplay', () => {
-                    console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
-                });
+                // vjsPlayer.one('canplay', () => {
+                //     console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} can be played . . .`);
+                // });
 
                 vjsPlayer.one('playing', () => {
-                    console.debug('VideoMedia: playing: Showing Media ' +
+                    console.debug('??? XLR.debug >> VideoMedia - playing: Showing Media ' +
                         media.id + ' for ' + this.duration + 's of Region ' + media.region.regionId);
-                    console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+                    console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
+                    vjsPlayer.muted(media.muted);
                 });
 
                 // @NOTE: When video is paused due to fail in unmuting the video
@@ -114,7 +255,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                     // Race promise between a 0.5s play and a 5s skip
                     Promise.race([
                         new Promise((resolve, reject) => setTimeout(async () => {
-                            console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Trying to force play after 0.1 seconds`);
+                            console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} : Trying to force play after 0.1 seconds`);
                             // Try to force play here
                             try {
                                 // Set video mute/unmute based on setting once playing
@@ -131,14 +272,14 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                         new Promise((_, reject) => setTimeout(() => reject('Timeout'), 5000))
                     ])
                     .then(() => {
-                        console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay started`);
+                        console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay started`);
                     })
                     .catch(async (error) => {
                         if (error === 'Timeout') {
-                            console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Promise not resolved within 5 seconds. Move to next media`);
+                            console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} : Promise not resolved within 5 seconds. Move to next media`);
                             this.stop();
                         } else {
-                            console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
+                            console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
                             if (xlr.config.platform === 'chromeOS') {
                                 await playerReportFault('Media autoplay error');
                             }
@@ -146,13 +287,13 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                     });
                 });
                 vjsPlayer.on('error', async (err: any) => {
-                    console.debug(`VideoMedia: Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
+                    console.debug(`??? XLR.debug >> VideoMedia - Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
                     if (xlr.config.platform === 'chromeOS') {
                         await playerReportFault('Video file source not supported');
                     } else {
                         // End media after 5 seconds
                         setTimeout(() => {
-                            console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended . . .`);
+                            console.debug(`??? XLR.debug >> VideoMedia - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended . . .`);
                             this.stop();
                         }, 5000);
                     }
@@ -160,7 +301,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
 
                 if (media.duration === 0) {
                     vjsPlayer.on('ended', () => {
-                        console.debug(`VideoMedia: onended: ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                        console.debug(`??? XLR.debug >> VideoMedia - onended: ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
                         this.stop();
                     });
                 }
