@@ -22,12 +22,7 @@ import {Emitter, Unsubscribe} from 'nanoevents';
 import {IRegion} from '../Region';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
-
-export interface ILayoutEvents {
-    start: (layout: ILayout) => void;
-    end: (layout: ILayout) => void;
-    cancelled: (layout: ILayout) => void;
-}
+import { ILayoutEvents } from "../Events";
 
 export enum ELayoutState {
     IDLE,
@@ -108,7 +103,7 @@ export interface ILayout {
     path?: string;
     prepareLayout(): void;
     parseXlf(): void;
-    run(): void;
+    run(): Promise<void>;
     emitter: Emitter<ILayoutEvents>;
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
@@ -131,6 +126,7 @@ export interface ILayout {
     isInterrupt(): boolean;
     state: ELayoutState;
     errorCode: number | null;
+    html: HTMLElement | null;
 }
 
 export const initialLayout: ILayout = {
@@ -178,7 +174,8 @@ export const initialLayout: ILayout = {
     },
     parseXlf() {
     },
-    run() {
+    run(): Promise<void> {
+        return Promise.resolve();
     },
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe {
         return <Unsubscribe>{};
@@ -206,6 +203,7 @@ export const initialLayout: ILayout = {
     },
     isInterrupt: () => false,
     state: ELayoutState.IDLE,
+    html: null,
 };
 
 export type GetLayoutParamType = {

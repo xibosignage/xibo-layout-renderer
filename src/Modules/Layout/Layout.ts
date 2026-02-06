@@ -24,10 +24,10 @@ import {
     GetLayoutParamType,
     GetLayoutType,
     ILayout,
-    ILayoutEvents,
     initialLayout,
     OptionsType,
 } from '../../Types/Layout';
+import {ILayoutEvents} from "../../types";
 import {IXlr} from '../../Types/XLR';
 import {composeBgUrlByPlatform, nextId} from '../Generators';
 import {Region} from '../Region';
@@ -237,6 +237,7 @@ export default class Layout implements ILayout {
     layoutNode?: Document;
     path?: string = '';
     errorCode: number | null = null;
+    html: HTMLElement | null;
 
     options: OptionsType = {} as OptionsType;
     xlr: IXlr = <IXlr>{};
@@ -254,6 +255,7 @@ export default class Layout implements ILayout {
         this.options = options;
         this.xlr = xlr;
         this.layoutObj = xlrLayoutObj;
+        this.html = null;
 
         // Prepare and parse layout node
         this.prepareLayout();
@@ -462,6 +464,8 @@ export default class Layout implements ILayout {
         if (this.isOverlay && $layout) {
         }
 
+        this.html = $layout;
+
         // Create actions
         const layoutActions = Array.from(this.layoutNode?.getElementsByTagName('action') || []);
         Array.from(layoutActions).forEach((actionXml) => {
@@ -486,7 +490,7 @@ export default class Layout implements ILayout {
         const layoutRegions = Array.from(this?.layoutNode?.getElementsByTagName('region') || []);
 
         Array.from(layoutRegions).forEach((regionXml, regionIndex) => {
-            const regionObj = Region(
+            const regionObj = new Region(
               this,
               regionXml,
               regionXml?.getAttribute('id') || '',
@@ -503,7 +507,7 @@ export default class Layout implements ILayout {
         this.actionController.initKeyboardActions();
     };
 
-    run(): void {
+    async run(): Promise<void> {
         const $layoutContainer = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
         const $splashScreen = document.getElementById(`splash_${this.id}`);
 
@@ -523,16 +527,27 @@ export default class Layout implements ILayout {
             this.emitter.emit('start', this);
 
             // Play regions
-            this.playRegions();
+            await this.playRegions();
         }
     }
 
-    playRegions() {
-        console.debug('Layout running > Layout ID > ', this.id);
-        console.debug('Layout Regions > ', this.regions);
+    async playRegions() {
+        console.debug('??? XLR.debug >> Layout playRegions() - Layout running > Layout ID > ', this.id);
+        console.debug('??? XLR.debug >> Layout playRegions() - Layout Regions > ', this.regions);
+
+        // Wait until all regions are ready before starting to run them
+        while (!this.regions.every(region => region.ready)) {
+            console.debug('??? XLR.debug >> Layout playRegions() - Waiting for regions to be ready');
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        console.debug('??? XLR.debug >> Layout playRegions() - All regions ready, starting playback');
+
         for (let i = 0; i < this.regions.length; i++) {
             // playLog(4, "debug", "Running region " + self.regions[i].id, false);
-            this.regions[i].run();
+            const region = this.regions[i];
+
+            region.run();
         }
     }
 

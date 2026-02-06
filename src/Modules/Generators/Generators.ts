@@ -350,21 +350,88 @@ export function hasSspLayout(inputLayouts: InputLayoutType[], defaultValue = fal
     return inputLayouts.find(layout => layout.layoutId === -1) !== undefined;
 }
 
-export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next') {
-    const self = mediaObject;
-    const $mediaIframe = document.createElement('iframe');
-    $mediaIframe.scrolling = 'no';
-    $mediaIframe.id = self.iframeName;
-    $mediaIframe.width = `${self.divWidth}px`;
-    $mediaIframe.height = `${self.divHeight}px`;
-    $mediaIframe.style.cssText = `border: 0;`;
+export function prepareIframe(media: IMedia) {
+    const iframe = document.createElement('iframe');
 
-    const mediaSelector = `.media--item[data-role="${role}"][data-media-id="${mediaObject.id}"]`;
-    let $media = <HTMLElement>(self.region.html.querySelector!(mediaSelector));
+    iframe.scrolling = 'no';
+    iframe.id = media.iframeName;
+    iframe.width = `${media.divWidth}px`;
+    iframe.height = `${media.divHeight}px`;
+    iframe.style.cssText = `border: 0;`;
+
+
+    if ((media.render === 'html' || media.render === 'webpage') && media.url !== null) {
+        iframe.src = media.url;
+    } else {
+        iframe.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
+    }
+
+    return iframe;
+}
+
+export function prepareImage(media: IMedia, container: HTMLElement) {
+    if (media.options['scaletype'] === 'stretch') {
+        container.style.cssText = container.style.cssText.concat(`background-size: 100% 100%;`);
+    } else if (media.options['scaletype'] === 'fit') {
+        container.style.cssText = container.style.cssText.concat(`background-size: cover;`);
+    } else {
+        // Center scale type, do we have align or valign?
+        const align = (media.options['align'] == "") ? "center" : media.options['align'];
+        const valign = (media.options['valign'] == "" || media.options['valign'] == "middle") ? "center" : media.options['valign'];
+        container.style.cssText = container.style.cssText.concat(`background-position: ${align} ${valign}`);
+    }
+
+    return container;
+}
+
+export function prepareVideo(media: IMedia, container: HTMLVideoElement) {
+    const $videoMedia = composeVideoSource(container as HTMLVideoElement, media);
+
+    let isMuted = false;
+    if (Boolean(media.options['mute'])) {
+        isMuted = media.options.mute === '1';
+    }
+
+    if (Boolean(media.options['scaletype'])) {
+        if (media.options.scaletype === 'stretch') {
+            $videoMedia.style.objectFit = 'fill';
+        }
+    }
+
+    $videoMedia.classList.add('video-js', 'vjs-default-skin');
+
+    if (media.loop) {
+        media.loop = true;
+        $videoMedia.loop = true;
+    }
+
+    media.muted = isMuted;
+
+    return $videoMedia;
+}
+
+export function prepareAudio(media: IMedia, container: HTMLAudioElement) {
+    const $audioMedia = container as HTMLAudioElement;
+
+    $audioMedia.preload = 'auto';
+    $audioMedia.textContent = 'Unsupported Audio';
+    $audioMedia.autoplay = true;
+
+    if (media.loop) {
+        $audioMedia.loop = true;
+    }
+
+    return $audioMedia;
+}
+
+export function createMediaElement(mediaObject: IMedia) {
+    const self = mediaObject;
+
+    let $media = <HTMLElement>(self.region.html.querySelector!(`#${self.containerName}`));
 
     if ($media === null) {
         if (self.mediaType === 'video') {
-            $media = document.createElement('video');
+            $media = document.createElement('video') as HTMLVideoElement;
         } else if (self.mediaType === 'audio') {
             $media = new Audio();
         } else {
@@ -374,7 +441,6 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
         $media.id = getMediaId(self);
     }
 
-    $media.dataset.role = role;
     $media.dataset.mediaId = self.id;
     $media.dataset.mediaType = self.mediaType;
     $media.dataset.type = self.type;
@@ -385,71 +451,26 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
 
     /* Scale the Content Container */
     $media.style.cssText = `
-            display: none;
-            width: ${self.divWidth}px;
-            height: ${self.divHeight}px;
-            position: absolute;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        `;
-
-    if ((self.render === 'html' || self.render === 'webpage') && self.url !== null) {
-        $mediaIframe.src = self.url;
-    } else {
-        $mediaIframe.src = `${self.url}&width=${self.divWidth}&height=${self.divHeight}`;
-    }
+        visibility: hidden;
+        opacity: 0;
+        z-index: 0;
+        width: ${self.divWidth}px;
+        height: ${self.divHeight}px;
+        position: absolute;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    `;
 
     if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
         self.checkIframeStatus = true;
-        self.iframe = $mediaIframe;
+        self.iframe = prepareIframe(self);
     }  else if (self.mediaType === "image") {
-        if (self.options['scaletype'] === 'stretch') {
-            $media.style.cssText = $media.style.cssText.concat(`background-size: 100% 100%;`);
-        } else if (self.options['scaletype'] === 'fit') {
-            $media.style.cssText = $media.style.cssText.concat(`background-size: cover;`);
-        } else {
-            // Center scale type, do we have align or valign?
-            const align = (self.options['align'] == "") ? "center" : self.options['align'];
-            const valign = (self.options['valign'] == "" || self.options['valign'] == "middle") ? "center" : self.options['valign'];
-            $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
-        }
+        $media = prepareImage(self, $media);
     } else if (self.mediaType === 'video') {
-        const $videoMedia = composeVideoSource($media as HTMLVideoElement, self);
-
-        let isMuted = false;
-        if (Boolean(self.options['mute'])) {
-            isMuted = self.options.mute === '1';
-        }
-
-        if (Boolean(self.options['scaletype'])) {
-            if (self.options.scaletype === 'stretch') {
-                $videoMedia.style.objectFit = 'fill';
-            }
-        }
-
-        $videoMedia.classList.add('video-js', 'vjs-default-skin');
-
-        if (self.loop) {
-            self.loop = true;
-            $videoMedia.loop = true;
-        }
-
-        self.muted = isMuted;
-
-        $media = $videoMedia;
+        $media = prepareVideo(self, $media as HTMLVideoElement);
     } else if (self.mediaType === 'audio') {
-        const $audioMedia = $media as HTMLAudioElement;
-
-        $audioMedia.preload = 'auto';
-        $audioMedia.textContent = 'Unsupported Audio';
-        $audioMedia.autoplay = true;
-
-        if (self.loop) {
-            $audioMedia.loop = true;
-        }
-
-        $media = $audioMedia;
+        $media = prepareAudio(self, $media as HTMLAudioElement);
     }
 
     // Duration is per item condition
