@@ -36,6 +36,8 @@ import {
 } from '../Transitions';
 import {IXlr} from '../../Types/XLR';
 import {createMediaElement, getAllAttributes} from '../Generators/Generators';
+import videojs from "video.js";
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export default function Region(
     layout: ILayout,
@@ -229,6 +231,20 @@ export default function Region(
                     regionId: self.id,
                 });
                 ($region) && $region.insertBefore(self.currEl as Node, $region.lastElementChild);
+
+                // Once media html is added to the DOM
+                // attach events or even preloading (e.g. video)
+                if (self.currMedia.mediaType === 'video') {
+                    // Initialize videojs
+                    self.currMedia.player = videojs(self.currMedia.html, {
+                        controls: false,
+                        preload: 'auto',
+                        autoplay: false,
+                        muted: true,
+                        errorDisplay: xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                        loop: self.currMedia.loop,
+                    });
+                }
             }
 
             if (self.totalMediaObjects > 1 && self.nxtMedia) {
@@ -240,6 +256,18 @@ export default function Region(
                     regionId: self.id,
                 });
                 ($region) && $region.insertBefore(self.nxtEl as Node, $region.lastElementChild);
+
+                if (self.nxtMedia.mediaType === 'video') {
+                    // Initialize videojs
+                    self.nxtMedia.player = videojs(self.nxtMedia.html, {
+                        controls: false,
+                        preload: 'auto',
+                        autoplay: false,
+                        muted: true,
+                        errorDisplay: xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                        loop: self.nxtMedia.loop,
+                    });
+                }
             }
         }
     };

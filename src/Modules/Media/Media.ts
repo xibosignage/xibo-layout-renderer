@@ -352,15 +352,6 @@ export class Media implements IMedia {
                                 : await getDataBlob(this.url)}`
                         );
                 } else if (this.mediaType === 'video' && this.url !== null) {
-                    // Initialize video.js
-                    this.player = videojs($media, {
-                        controls: false,
-                        preload: 'auto',
-                        autoplay: false,
-                        muted: true,
-                        errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
-                        loop: this.loop,
-                    });
                 } else if (this.mediaType === 'audio' && this.url !== null) {
                     ($media as HTMLAudioElement).src =
                         isCMS ? await preloadMediaBlob(this.url, this.mediaType) : this.url;
