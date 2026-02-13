@@ -187,8 +187,8 @@ export default class ActionController {
                 };
             }
 
-            // Do not render webhook controller in ChromeOS player
-            if (this.parent.xlr.config.platform === 'chromeOS') {
+            // Only render webhook controller in CMS
+            if (this.parent.xlr.config.platform !== 'CMS') {
                 this.$actionController.style.display = 'none';
                 return;
             }
