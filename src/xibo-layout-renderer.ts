@@ -22,7 +22,7 @@ import {createNanoEvents} from 'nanoevents';
 
 import Layout, {getXlf, initRenderingDOM} from './Modules/Layout';
 import {platform} from './Modules/Platform';
-import {ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType,} from './Types/Layout';
+import {ELayoutState, ILayout, initialLayout, InputLayoutType, LayoutPlaybackType, OptionsType,} from './Types/Layout';
 import {ELayoutType, initialXlr, IXlr, IXlrEvents} from './Types/XLR';
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
 import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
@@ -206,7 +206,7 @@ export default function XiboLayoutRenderer(
                 if (this.currentLayout && this.currentLayout.isInterrupt()) {
                     if (this.isLayoutInDOM(_overlay.containerName, _overlay.index)) {
                         await _overlay.finishAllRegions();
-                        _overlay.removeLayout();
+                        _overlay.removeLayout(LayoutPlaybackType.OVERLAY);
                     }
                 } else {
                     _overlay.run();
@@ -296,7 +296,7 @@ export default function XiboLayoutRenderer(
                 if (this.nextLayout &&
                     this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
                 ) {
-                    this.nextLayout.removeLayout();
+                    this.nextLayout.removeLayout(LayoutPlaybackType.NEXT);
                 }
     
                 if (playback.currentLayout) {
@@ -312,15 +312,16 @@ export default function XiboLayoutRenderer(
         } else {
             // Remove next layout if it is in the DOM
             if (this.nextLayout &&
-                this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
+                this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index) &&
+                this.nextLayout.id != this.currentLayout?.id
             ) {
-                this.nextLayout.removeLayout();
+                this.nextLayout.removeLayout(LayoutPlaybackType.NEXT);
             }
 
             // Prepare new current layout
-            if (playback.currentLayout) {
-                await prepareNewCurrentLayout();
-            }
+            // if (playback.currentLayout) {
+            //     await prepareNewCurrentLayout();
+            // }
             // Prepare new next layout
             if (playback.nextLayout) {
                 this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
@@ -540,7 +541,7 @@ export default function XiboLayoutRenderer(
                 nextLayoutXlf &&
                 this.isLayoutInDOM(nextLayoutXlf.containerName, nextLayoutXlf.index)
             ) {
-                nextLayoutXlf.removeLayout();
+                nextLayoutXlf.removeLayout(LayoutPlaybackType.NEXT);
             }
         }
 
@@ -657,7 +658,7 @@ export default function XiboLayoutRenderer(
 
         while (_nextLayout && _nextLayout.xlfString === '') {
             // Remove skipped layout
-            _nextLayout.removeLayout();
+            _nextLayout.removeLayout(LayoutPlaybackType.NEXT);
 
             // Get next valid layout
             // We will skip next layout that has no valid xlf

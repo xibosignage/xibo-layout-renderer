@@ -38,6 +38,12 @@ export enum ELayoutState {
     CANCELLED,
 }
 
+export enum LayoutPlaybackType {
+    CURRENT = 'current',
+    NEXT = 'next',
+    OVERLAY = 'overlay',
+}
+
 export type InputLayoutType = {
     response: any;
     layoutId: number;
@@ -123,7 +129,7 @@ export interface ILayout {
     xlr: IXlr,
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
-    removeLayout(): void;
+    removeLayout(caller?: LayoutPlaybackType): void;
     xlfString: string;
     getXlf(): string;
     ad: any;

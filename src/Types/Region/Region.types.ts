@@ -90,6 +90,8 @@ export interface IRegion {
     uniqueId: string;
     xml: null | Element;
     zIndex: number;
+    prepareFirstMedia(): void;
+    prepareNextMedia(): void;
 }
 
 export const initialRegion: IRegion = {
@@ -147,4 +149,8 @@ export const initialRegion: IRegion = {
     uniqueId: '',
     xml: null,
     zIndex: 0,
+    prepareFirstMedia() {
+    },
+    prepareNextMedia() {
+    },
 };

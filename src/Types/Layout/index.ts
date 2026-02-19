@@ -28,4 +28,5 @@ export {
     initialLayout,
     ILayoutEvents,
     ELayoutState,
+    LayoutPlaybackType,
 } from './Layout.types';

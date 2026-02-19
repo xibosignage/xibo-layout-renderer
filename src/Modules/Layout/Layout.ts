@@ -26,6 +26,7 @@ import {
     ILayout,
     ILayoutEvents,
     initialLayout,
+    LayoutPlaybackType,
     OptionsType,
 } from '../../Types/Layout';
 import {IXlr} from '../../Types/XLR';
@@ -325,7 +326,7 @@ export default class Layout implements ILayout {
             if (this.xlr.config.platform !== ConsumerPlatform.CMS && layout.inLoop) {
                 // Transition next layout to current layout and prepare next layout if exist
                 this.xlr.prepareLayouts().then(async (_xlr) => {
-                    console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
+                    console.debug('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
 
                     this.xlr.playLayouts(_xlr);
 
@@ -622,7 +623,12 @@ export default class Layout implements ILayout {
         return Promise.all(this.regions.map(region => region.finished()));
     }
 
-    removeLayout(): void {
+    removeLayout(caller: LayoutPlaybackType = LayoutPlaybackType.CURRENT): void {
+        console.debug('??? XLR.debug >> Layout::removeLayout', {
+            containerName: this.containerName,
+            index: this.index,
+            caller,
+        })
         /* Remove layout that does not exist */
         const $layout = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
 

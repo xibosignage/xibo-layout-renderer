@@ -333,7 +333,7 @@ export function hasSspLayout(inputLayouts: InputLayoutType[], defaultValue = fal
     return inputLayouts.find(layout => layout.layoutId === -1) !== undefined;
 }
 
-export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next') {
+export function createMediaElement(mediaObject: IMedia) {
     const self = mediaObject;
     const $mediaIframe = document.createElement('iframe');
     $mediaIframe.scrolling = 'no';
@@ -342,7 +342,8 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
     $mediaIframe.height = `${self.divHeight}px`;
     $mediaIframe.style.cssText = `border: 0;`;
 
-    const mediaSelector = `.media--item[data-role="${role}"][data-media-id="${mediaObject.id}"]`;
+    const mediaId = getMediaId(mediaObject);
+    const mediaSelector = `.media--item.${mediaId}`;
     let $media = <HTMLElement>(self.region.html.querySelector!(mediaSelector));
 
     if ($media === null) {
@@ -354,21 +355,19 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
             $media = document.createElement('div');
         }
 
-        $media.id = self.containerName;
+        $media.id = mediaId;
     }
 
-    $media.dataset.role = role;
     $media.dataset.mediaId = self.id;
     $media.dataset.mediaType = self.mediaType;
     $media.dataset.type = self.type;
     $media.dataset.render = self.render;
     $media.dataset.duration = String(self.duration);
     $media.dataset.fileId = self.fileId;
-    $media.className = 'media--item';
+    $media.className = `media--item ${mediaId}`;
 
     /* Scale the Content Container */
     $media.style.cssText = `
-            display: none;
             width: ${self.divWidth}px;
             height: ${self.divHeight}px;
             position: absolute;
@@ -376,6 +375,10 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
             background-repeat: no-repeat;
             background-position: center;
         `;
+
+    if (self.mediaType !== 'video') {
+        $media.style.cssText.concat('display: none;');
+    }
 
     if ((self.render === 'html' || self.render === 'webpage') && self.url !== null) {
         $mediaIframe.src = self.url;

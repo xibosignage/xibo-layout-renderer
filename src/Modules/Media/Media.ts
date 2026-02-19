@@ -38,13 +38,14 @@ import {
     preloadMediaBlob,
 } from '../Generators';
 import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
-import { VideoMedia } from './VideoMedia';
+import {VideoMedia, vjsDefaultOptions} from './VideoMedia';
 import { AudioMedia } from './AudioMedia';
 import {IXlr} from '../../Types/XLR';
 import {MediaState} from "../../Types/Media/Media.types";
 
 import 'video.js/dist/video-js.min.css';
 import {ConsumerPlatform} from "../../Types/Platform";
+import {createMediaElement} from "../Generators/Generators";
 
 export interface IMediaEvents {
     start: (media: IMedia) => void;
@@ -127,6 +128,7 @@ export class Media implements IMedia {
                 const videoMedia = VideoMedia(media, xlr);
 
                 videoMedia.init();
+                videoMedia.play();
 
                 if (media.duration > 0) {
                     this.startMediaTimer(media);
@@ -192,8 +194,22 @@ export class Media implements IMedia {
     }
 
     private startMediaTimer(media: IMedia) {
+        const preloadTimeMs = 2000;
+        let preloadTimeBufferMs = (media.duration * 1000) - preloadTimeMs;
+
+        if (preloadTimeBufferMs < preloadTimeMs) {
+            // Use media duration when preloadTimeBufferMs is less than the preloadTimeMs
+            preloadTimeBufferMs = (media.duration * 1000);
+        }
+
         this.mediaTimer = setInterval(() => {
             this.mediaTimeCount++;
+            const elapsedTimeMs = (this.mediaTimeCount * 1000);
+            // prepare region's next media
+            if (this.region.totalMediaObjects > 1 && elapsedTimeMs >= preloadTimeBufferMs) {
+                this.region.prepareNextMedia();
+            }
+
             if (this.mediaTimeCount > media.duration) {
                 console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
 
@@ -293,10 +309,11 @@ export class Media implements IMedia {
         this.loop =
             this.options['loop'] == '1' ||
             (this.region.options['loop'] == '1' && this.region.totalMediaObjects == 1);
+
+        this.html = createMediaElement(this);
     }
 
     run() {
-        const self = this;
         let transInDuration = 1;
         let transInDirection: compassPoints = 'E';
 
@@ -330,50 +347,39 @@ export class Media implements IMedia {
         const showCurrentMedia = async () => {
             let $mediaId = getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName});
             let $media = document.getElementById($mediaId);
-            const isCMS = this.xlr.config.platform === ConsumerPlatform.CMS;
 
             if (!$media) {
                 $media = getNewMedia();
             }
 
             if ($media) {
-                $media.style.setProperty('display', 'block');
+                if (this.mediaType === 'video' && this.player !== undefined && !this.player.isDisposed()) {
+                    (this.player.el() as HTMLElement).style.display = 'block';
+                } else {
+                    $media.style.setProperty('display', 'block');
+                }
 
                 if (Boolean(this.options['transin'])) {
                     $media.animate(transIn.keyframes, transIn.timing);
                 }
 
-                if (this.mediaType === 'image' && this.url !== null) {
-                    ($media as HTMLImageElement).style
-                        .setProperty(
-                            'background-image',
-                            `url(${!isCMS
-                                ? this.url
-                                : await getDataBlob(this.url)}`
-                        );
-                } else if (this.mediaType === 'video' && this.url !== null) {
-                    // Initialize video.js
-                    this.player = videojs($media, {
-                        controls: false,
-                        preload: 'auto',
-                        autoplay: false,
-                        muted: true,
-                        errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
-                        loop: this.loop,
-                    });
-                } else if (this.mediaType === 'audio' && this.url !== null) {
-                    ($media as HTMLAudioElement).src =
-                        isCMS ? await preloadMediaBlob(this.url, this.mediaType) : this.url;
+                if (this.mediaType === 'video') {
+                    // Make sure that vjs is available on the media
+                    // Else, re-initialize
+                    if (this.player !== undefined) {
+                        if (this.player.isDisposed_) {
+                            this.player = undefined;
+                            this.player = videojs($mediaId, {
+                                ...vjsDefaultOptions({
+                                    errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                                    loop: this.loop,
+                                }),
+                            })
+                        }
+                    }
                 } else if ((this.render === 'html' || this.mediaType === 'webpage') &&
                     this.iframe && this.checkIframeStatus
                 ) {
-                    // Set state as false ( for now )
-                    this.ready = false;
-
-                    // Append iframe
-                    $media.innerHTML = '';
-                    $media.appendChild(this.iframe as Node);
-
                     // On iframe load, set state as ready to play full preview
                     // (self.iframe) && self.iframe.addEventListener('load', function(){
                     //     self.ready = true;

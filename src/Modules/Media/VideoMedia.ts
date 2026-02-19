@@ -31,6 +31,15 @@ import {ConsumerPlatform, IXlr} from '../../types';
 import PwaSW from '../../Lib/pwa-sw';
 
 import './media.css';
+import Player from "video.js/dist/types/player";
+
+export const vjsDefaultOptions = (opts?: any) => ({
+    controls: false,
+    preload: 'auto',
+    autoplay: false,
+    muted: true,
+    ...opts,
+});
 
 export function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
     // const videoSrc = await preloadMediaBlob(media.url as string, media.mediaType as MediaTypes);
@@ -50,48 +59,48 @@ export function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
 }
 
 export function VideoMedia(media: IMedia, xlr: IXlr) {
-    return {
+    const playerReportFault = async (msg: string) => {
+        // Immediately expire media and report a fault
+        const playerSW = PwaSW();
+        const hasSW = await playerSW.getSW();
+
+        if (hasSW) {
+            playerSW.postMsg({
+                type: 'MEDIA_FAULT',
+                code: 5002,
+                reason: msg,
+                mediaId: media.id,
+                regionId: media.region.id,
+                layoutId: media.region.layout.id,
+                date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+                // Temporary setting
+                expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
+            }).finally(() => {
+                videoPlayer.stop();
+            });
+        } else {
+            videoPlayer.stop();
+        }
+    };
+
+    const videoPlayer = {
         duration: 0,
         init: function () {
             const vjsPlayer = media.player;
 
-            this.duration = media.duration;
+            videoPlayer.duration = media.duration;
 
             if (vjsPlayer !== undefined) {
-                const playerReportFault = async (msg: string) => {
-                    // Immediately expire media and report a fault
-                    const playerSW = PwaSW();
-                    const hasSW = await playerSW.getSW();
-
-                    if (hasSW) {
-                        playerSW.postMsg({
-                            type: 'MEDIA_FAULT',
-                            code: 5002,
-                            reason: msg,
-                            mediaId: media.id,
-                            regionId: media.region.id,
-                            layoutId: media.region.layout.id,
-                            date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-                            // Temporary setting
-                            expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
-                        }).finally(() => {
-                            this.stop();
-                        });
-                    } else {
-                        this.stop();
-                    }
-                };
-
                 vjsPlayer.on('loadstart', () => {
                     console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
                 });
 
                 vjsPlayer.one('loadedmetadata', () => {
                     if (media.duration === 0) {
-                        this.duration = vjsPlayer.duration() as number;
+                        videoPlayer.duration = vjsPlayer.duration() as number;
                     }
 
-                    console.debug('VideoMedia: loadedmetadata: Setting video duration to = ' + this.duration);
+                    console.debug('VideoMedia: loadedmetadata: Setting video duration to = ' + videoPlayer.duration);
                 });
 
                 vjsPlayer.one('canplay', () => {
@@ -99,8 +108,11 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                 });
 
                 vjsPlayer.one('playing', () => {
+                    // Update duration
+                    videoPlayer.duration = vjsPlayer.duration() as number;
+
                     console.debug('VideoMedia: playing: Showing Media ' +
-                        media.id + ' for ' + this.duration + 's of Region ' + media.region.regionId);
+                        media.id + ' for ' + videoPlayer.duration + 's of Region ' + media.region.regionId);
                     console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} is now playing . . .`);
                 });
 
@@ -110,7 +122,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                 // @NOTE: The pause issue when unmuting the video is mainly on a browser level.
                 // Please visit https://developer.chrome.com/blog/autoplay/ for more info.
 
-                vjsPlayer.on('ready', () => {
+                vjsPlayer.ready(() => {
                     vjsPlayer.muted(true);
 
                     // Race promise between a 0.5s play and a 5s skip
@@ -183,5 +195,23 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                 media.player = undefined;
             }
         },
+        play: function() {
+            if (media.player) {
+                media.player.play()
+                  ?.catch(async (error) => {
+                      if (error === 'Timeout') {
+                          console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Promise not resolved within 5 seconds. Move to next media`);
+                          this.stop();
+                      } else {
+                          console.debug(`VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
+                          if (xlr.config.platform === ConsumerPlatform.CHROMEOS) {
+                              await playerReportFault('Media autoplay error');
+                          }
+                      }
+                  })
+            }
+        },
     }
+
+    return videoPlayer;
 }

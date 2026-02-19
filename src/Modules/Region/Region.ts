@@ -24,9 +24,9 @@ import {nanoid} from "nanoid";
 import { ILayout, OptionsType } from '../../Types/Layout';
 import { initialRegion, IRegion, IRegionEvents } from '../../Types/Region';
 import { IMedia } from '../../Types/Media';
-import { getMediaId, nextId } from '../Generators';
+import {getDataBlob, getMediaId, nextId, preloadMediaBlob} from '../Generators';
 import { platform } from '../Platform';
-import { Media } from '../Media';
+import {Media, vjsDefaultOptions} from '../Media';
 import {
     TransitionElementOptions,
     TransitionNameType,
@@ -36,6 +36,8 @@ import {
 } from '../Transitions';
 import {IXlr} from '../../Types/XLR';
 import {createMediaElement, getAllAttributes} from '../Generators/Generators';
+import videojs from "video.js";
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export default function Region(
     layout: ILayout,
@@ -171,7 +173,160 @@ export default function Region(
             }
         });
 
-        self.prepareMediaObjects();
+        console.debug('??? XLR.debug >> Region::prepareRegion', {
+            mediaItems: self.mediaObjects,
+            totalMediaItems: self.totalMediaObjects,
+        });
+
+        // Prepare first media
+        if (self.mediaObjects.length > 0) {
+            // Clean up region first
+            if (self.html?.children.length > 0) {
+                self.html.innerHTML = '';
+            }
+
+            self.prepareFirstMedia();
+        }
+    };
+
+    const prepareVideoMedia = (media: IMedia) => {
+        const mediaId = getMediaId(media);
+        // Check if html is ready and is in the DOM
+        if (media.html !== null) {
+
+            // Clean up video.js instance
+            const existingPlayer = videojs.getPlayer(mediaId);
+
+            if (existingPlayer) {
+                existingPlayer.dispose();
+                media.player = undefined;
+            }
+
+            // const mediaInRegion = regionObject.html.querySelector('.' + mediaId);
+            //
+            // if (mediaInRegion) {
+            //     // Clean up region of this media first before appending again
+            //     // To avoid duplicate copy of the exact same media in the region
+            //     mediaInRegion.remove();
+            // }
+
+            media.html = createMediaElement(media);
+            // Append fresh copy of the media into the region
+            regionObject.html.appendChild(media.html);
+
+            // Initialize video.js
+            media.player = videojs(getMediaId(media), {
+                ...vjsDefaultOptions({
+                    errorDisplay: xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                    loop: media.loop,
+                }),
+            });
+            (media.player.el() as HTMLElement).style.display = 'none';
+        }
+    };
+
+    const prepareImageMedia = (media: IMedia) => {
+        const mediaId = getMediaId(media);
+        (media.html as HTMLElement).style
+              .setProperty('background-image', `url(${media.url}`);
+
+        // Check if media in region
+        // Remove old copy before inserting fresh copy
+        const mediaInRegion = regionObject.html.querySelector('.' + mediaId);
+
+        if (mediaInRegion) {
+            mediaInRegion.remove();
+        }
+
+        // Append media to its region
+        regionObject.html.appendChild(media.html as HTMLElement);
+    };
+
+    const prepareAudio = (media: IMedia) => {
+        const mediaId = getMediaId(media);
+        if (media.url !== null) {
+            (media.html as HTMLAudioElement).src = media.url;
+        }
+
+        // Check if media in region
+        // Remove old copy before inserting fresh copy of the media
+        const mediaInRegion = regionObject.html.querySelector('.' + mediaId);
+
+        if (mediaInRegion) {
+            mediaInRegion.remove();
+        }
+
+        // Append media to its region
+        regionObject.html.appendChild(media.html as HTMLAudioElement);
+    };
+
+    const prepareHtml = (media: IMedia) => {
+        // Set state as false ( for now )
+        media.ready = false;
+
+        if (media.html) {
+            const mediaId = getMediaId(media);
+
+            // Clean up old copy of the media
+            // before inserting fresh copy
+            const mediaInRegion = regionObject.html.querySelector('.' + mediaId);
+
+            // Append iframe
+            media.html.innerHTML = '';
+            media.html.appendChild(media.iframe as Node);
+
+            if (!mediaInRegion) {
+                // Add fresh copy of the media into the region
+                regionObject.html.appendChild(media.html as HTMLElement);
+                media.ready = true;
+            }
+        }
+    };
+
+    regionObject.prepareFirstMedia = () => {
+        regionObject.currentMediaIndex = 0;
+        regionObject.oldMedia = undefined;
+        regionObject.currMedia = regionObject.mediaObjects[regionObject.currentMediaIndex];
+        const firstMedia = regionObject.currMedia;
+
+        if (firstMedia) {
+            if (firstMedia.mediaType === 'video') {
+                prepareVideoMedia(firstMedia);
+            } else if (firstMedia.mediaType === 'image' && firstMedia.url !== null) {
+                prepareImageMedia(firstMedia);
+            } else if (firstMedia.mediaType === 'audio') {
+                prepareAudio(firstMedia);
+            } else if ((firstMedia.render === 'html' || firstMedia.mediaType === 'webpage') &&
+              firstMedia.iframe && firstMedia.checkIframeStatus
+            ) {
+                prepareHtml(firstMedia);
+            }
+        }
+    };
+
+    regionObject.prepareNextMedia = () => {
+        regionObject.oldMedia = regionObject.currMedia;
+
+        const nextMediaIndex = (regionObject.currentMediaIndex + 1) % regionObject.totalMediaObjects;
+
+        regionObject.currMedia = regionObject.mediaObjects[nextMediaIndex];
+
+        if (regionObject.currMedia.mediaType === 'video') {
+            prepareVideoMedia(regionObject.currMedia);
+        } else if (regionObject.currMedia.mediaType === 'image' && regionObject.currMedia.url !== null) {
+            prepareImageMedia(regionObject.currMedia);
+        } else if (regionObject.currMedia.mediaType === 'audio' && regionObject.currMedia.url !== null) {
+            prepareAudio(regionObject.currMedia);
+        } else if ((regionObject.currMedia.render === 'html' || regionObject.currMedia.mediaType === 'webpage') &&
+          regionObject.currMedia.iframe && regionObject.currMedia.checkIframeStatus
+        ) {
+            prepareHtml(regionObject.currMedia);
+        }
+
+        regionObject.currentMediaIndex = nextMediaIndex;
+        regionObject.nxtMedia = regionObject.mediaObjects[
+            (regionObject.currentMediaIndex + 1) % regionObject.totalMediaObjects
+          ];
     };
 
     regionObject.finished = function() {
@@ -198,7 +353,7 @@ export default function Region(
 
             self.currMedia = self.mediaObjects[self.currentMediaIndex];
 
-            nextMediaIndex = self.currentMediaIndex + 1;
+            nextMediaIndex = (self.currentMediaIndex + 1) % self.totalMediaObjects;
 
             if (nextMediaIndex >= self.mediaObjects.length ||
                 (
@@ -210,7 +365,9 @@ export default function Region(
             }
 
             if (Boolean(self.mediaObjects[nextMediaIndex])) {
-                self.nxtMedia = self.mediaObjects[nextMediaIndex];
+                self.nxtMedia = (self.currentMediaIndex === nextMediaIndex)
+                  ? {...self.mediaObjects[nextMediaIndex]}
+                  : self.mediaObjects[nextMediaIndex];
             }
 
             console.debug('<> XLR.debug prepareMediaObjects::oldMedia', {
@@ -218,29 +375,69 @@ export default function Region(
                 oldMedia: self.oldMedia?.containerName,
             });
 
-            const $region = document.getElementById(`${self.containerName}`);
-            // Append available media to region DOM
-            if (self.currMedia) {
-                self.currEl = createMediaElement(self.currMedia, 'current');
-                self.currMedia.html = self.currEl;
-
-                console.debug('<> XLR.debug prepareMediaObjects::currMedia', {
-                    currentMedia: self.currMedia.containerName,
-                    regionId: self.id,
-                });
-                ($region) && $region.insertBefore(self.currEl as Node, $region.lastElementChild);
-            }
-
-            if (self.totalMediaObjects > 1 && self.nxtMedia) {
-                self.nxtEl = createMediaElement(self.nxtMedia, 'next');
-                self.nxtMedia.html = self.nxtEl;
-
-                console.debug('<> XLR.debug prepareMediaObjects::nxtMedia', {
-                    nextMedia: self.nxtMedia.containerName,
-                    regionId: self.id,
-                });
-                ($region) && $region.insertBefore(self.nxtEl as Node, $region.lastElementChild);
-            }
+        //     const $region = document.getElementById(`${self.containerName}`);
+        //     // Append available media to region DOM
+        //     if (self.currMedia) {
+        //         console.debug('<> XLR.debug prepareMediaObjects::currMedia', {
+        //             currentMedia: self.currMedia.containerName,
+        //             regionId: self.id,
+        //         });
+        //
+        //         if (self.currMedia.mediaType === 'video') {
+        //             const currVidPlayer = videojs.getPlayer(self.currMedia.containerName);
+        //             // Clean up first if media has player already
+        //             if (currVidPlayer) {
+        //                 currVidPlayer.dispose();
+        //                 self.currMedia.player = undefined;
+        //             }
+        //         }
+        //
+        //         ($region) && $region.insertBefore(self.currMedia.html as Node, $region.lastElementChild);
+        //
+        //         if (self.currMedia.mediaType === 'video') {
+        //             if (self.currMedia.player === undefined) {
+        //                 self.currMedia.player = videojs(self.currMedia.html, {
+        //                     controls: false,
+        //                     preload: 'auto',
+        //                     autoplay: false,
+        //                     muted: true,
+        //                     errorDisplay: xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+        //                     loop: self.currMedia.loop,
+        //                 });
+        //             }
+        //         }
+        //     }
+        //
+        //     if (self.totalMediaObjects > 1 && self.nxtMedia) {
+        //         console.debug('<> XLR.debug prepareMediaObjects::nxtMedia', {
+        //             nextMedia: self.nxtMedia.containerName,
+        //             regionId: self.id,
+        //         });
+        //
+        //         if (self.nxtMedia.mediaType === 'video') {
+        //             const nxtVidPlayer = videojs.getPlayer(self.nxtMedia.containerName);
+        //             // Clean up first if media has player already
+        //             if (nxtVidPlayer) {
+        //                 nxtVidPlayer.dispose();
+        //                 self.nxtMedia.player = undefined;
+        //             }
+        //         }
+        //
+        //         ($region) && $region.insertBefore(self.nxtMedia.html as Node, $region.lastElementChild);
+        //
+        //         if (self.nxtMedia.mediaType === 'video') {
+        //             if (self.nxtMedia.player === undefined) {
+        //                 self.nxtMedia.player = videojs(self.nxtMedia.html, {
+        //                     controls: false,
+        //                     preload: 'auto',
+        //                     autoplay: false,
+        //                     muted: true,
+        //                     errorDisplay: xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+        //                     loop: self.nxtMedia.loop,
+        //                 });
+        //             }
+        //         }
+        //     }
         }
     };
 
@@ -392,8 +589,8 @@ export default function Region(
             self.oldMedia = undefined;
         }
 
-        self.currentMediaIndex = self.currentMediaIndex + 1;
-        self.prepareMediaObjects();
+        // self.currentMediaIndex = self.currentMediaIndex + 1;
+        // self.prepareMediaObjects();
 
         console.debug('region::playNextMedia', self);
         self.transitionNodes(self.oldMedia, self.currMedia);
