@@ -197,20 +197,18 @@ export default function Region(
             // Clean up video.js instance
             const existingPlayer = videojs.getPlayer(mediaId);
 
-            if (existingPlayer) {
+            if (existingPlayer !== undefined) {
                 existingPlayer.dispose();
                 media.player = undefined;
             }
 
-            // const mediaInRegion = regionObject.html.querySelector('.' + mediaId);
-            //
-            // if (mediaInRegion) {
-            //     // Clean up region of this media first before appending again
-            //     // To avoid duplicate copy of the exact same media in the region
-            //     mediaInRegion.remove();
-            // }
+            const $region = document.getElementById(regionObject.containerName);
+            const mediaInRegion = $region?.querySelector('.' + mediaId);
 
-            media.html = createMediaElement(media);
+            if (!mediaInRegion) {
+                media.html = createMediaElement(media);
+            }
+
             // Append fresh copy of the media into the region
             regionObject.html.appendChild(media.html);
 
@@ -305,28 +303,20 @@ export default function Region(
     };
 
     regionObject.prepareNextMedia = () => {
-        regionObject.oldMedia = regionObject.currMedia;
-
         const nextMediaIndex = (regionObject.currentMediaIndex + 1) % regionObject.totalMediaObjects;
+        const nextMedia = regionObject.mediaObjects[nextMediaIndex];
 
-        regionObject.currMedia = regionObject.mediaObjects[nextMediaIndex];
-
-        if (regionObject.currMedia.mediaType === 'video') {
-            prepareVideoMedia(regionObject.currMedia);
-        } else if (regionObject.currMedia.mediaType === 'image' && regionObject.currMedia.url !== null) {
-            prepareImageMedia(regionObject.currMedia);
-        } else if (regionObject.currMedia.mediaType === 'audio' && regionObject.currMedia.url !== null) {
-            prepareAudio(regionObject.currMedia);
-        } else if ((regionObject.currMedia.render === 'html' || regionObject.currMedia.mediaType === 'webpage') &&
-          regionObject.currMedia.iframe && regionObject.currMedia.checkIframeStatus
+        if (nextMedia.mediaType === 'video') {
+            prepareVideoMedia(nextMedia);
+        } else if (nextMedia.mediaType === 'image' && nextMedia.url !== null) {
+            prepareImageMedia(nextMedia);
+        } else if (nextMedia.mediaType === 'audio' && nextMedia.url !== null) {
+            prepareAudio(nextMedia);
+        } else if ((nextMedia.render === 'html' || nextMedia.mediaType === 'webpage') &&
+          nextMedia.iframe && nextMedia.checkIframeStatus
         ) {
-            prepareHtml(regionObject.currMedia);
+            prepareHtml(nextMedia);
         }
-
-        regionObject.currentMediaIndex = nextMediaIndex;
-        regionObject.nxtMedia = regionObject.mediaObjects[
-            (regionObject.currentMediaIndex + 1) % regionObject.totalMediaObjects
-          ];
     };
 
     regionObject.finished = function() {
@@ -541,13 +531,12 @@ export default function Region(
     regionObject.playNextMedia = function() {
         const self = regionObject;
 
-        console.debug('<> XLR.debug Region playing next media', {
+        console.debug('??? XLR.debug >> Start Region::playNextMedia:', {
             regionId: self.id,
             currentMediaIndex: self.currentMediaIndex,
             mediaItemsLn: self.mediaObjects.length,
             oldMedia: self.oldMedia?.containerName,
             currMedia: self.currMedia?.containerName,
-            nxtMedia: self.nxtMedia?.containerName,
         })
 
         /* The current media has finished running */
@@ -589,10 +578,21 @@ export default function Region(
             self.oldMedia = undefined;
         }
 
-        // self.currentMediaIndex = self.currentMediaIndex + 1;
-        // self.prepareMediaObjects();
+        self.currentMediaIndex = (self.currentMediaIndex + 1) % self.totalMediaObjects;
+        self.currMedia = self.mediaObjects[self.currentMediaIndex];
+        self.nxtMedia = self.mediaObjects[
+            (self.currentMediaIndex + 1) % self.totalMediaObjects
+        ];
 
-        console.debug('region::playNextMedia', self);
+        console.debug('??? XLR.debug >> End Region::playNextMedia > execute transitionNodes', {
+            regionId: self.id,
+            currentMediaIndex: self.currentMediaIndex,
+            mediaItemsLn: self.mediaObjects.length,
+            oldMedia: self.oldMedia?.containerName,
+            currMedia: self.currMedia?.containerName,
+            nxtMedia: self.nxtMedia?.containerName,
+        })
+
         self.transitionNodes(self.oldMedia, self.currMedia);
     };
     
@@ -605,6 +605,7 @@ export default function Region(
             return;
         }
 
+        // @TODO Update with new logic
         self.prepareMediaObjects();
 
         console.debug('region::playPreviousMedia', self);

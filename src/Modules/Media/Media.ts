@@ -196,6 +196,7 @@ export class Media implements IMedia {
     private startMediaTimer(media: IMedia) {
         const preloadTimeMs = 2000;
         let preloadTimeBufferMs = (media.duration * 1000) - preloadTimeMs;
+        let isPreparingNextMedia = false;
 
         if (preloadTimeBufferMs < preloadTimeMs) {
             // Use media duration when preloadTimeBufferMs is less than the preloadTimeMs
@@ -206,7 +207,11 @@ export class Media implements IMedia {
             this.mediaTimeCount++;
             const elapsedTimeMs = (this.mediaTimeCount * 1000);
             // prepare region's next media
-            if (this.region.totalMediaObjects > 1 && elapsedTimeMs >= preloadTimeBufferMs) {
+            if (this.region.totalMediaObjects > 1 &&
+              elapsedTimeMs >= preloadTimeBufferMs &&
+              !isPreparingNextMedia
+            ) {
+                isPreparingNextMedia = true;
                 this.region.prepareNextMedia();
             }
 
@@ -367,15 +372,22 @@ export class Media implements IMedia {
                     // Make sure that vjs is available on the media
                     // Else, re-initialize
                     if (this.player !== undefined) {
-                        if (this.player.isDisposed_) {
-                            this.player = undefined;
-                            this.player = videojs($mediaId, {
-                                ...vjsDefaultOptions({
-                                    errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
-                                    loop: this.loop,
-                                }),
-                            })
+                        const existingPlayer = videojs($mediaId);
+
+                        if (existingPlayer) {
+                            this.player = existingPlayer;
+                        } else {
+                            if (this.player.isDisposed_) {
+                                this.player = undefined;
+                                this.player = videojs($mediaId, {
+                                    ...vjsDefaultOptions({
+                                        errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                                        loop: this.loop,
+                                    }),
+                                })
+                            }
                         }
+
                     }
                 } else if ((this.render === 'html' || this.mediaType === 'webpage') &&
                     this.iframe && this.checkIframeStatus

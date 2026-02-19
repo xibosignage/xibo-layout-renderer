@@ -367,18 +367,20 @@ export function createMediaElement(mediaObject: IMedia) {
     $media.className = `media--item ${mediaId}`;
 
     /* Scale the Content Container */
-    $media.style.cssText = `
-            width: ${self.divWidth}px;
-            height: ${self.divHeight}px;
-            position: absolute;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        `;
+    let cssText = `
+        width: ${self.divWidth}px;
+        height: ${self.divHeight}px;
+        position: absolute;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    `;
 
     if (self.mediaType !== 'video') {
-        $media.style.cssText.concat('display: none;');
+        cssText += 'display: none;';
     }
+
+    $media.style.cssText = cssText;
 
     if ((self.render === 'html' || self.render === 'webpage') && self.url !== null) {
         $mediaIframe.src = self.url;
