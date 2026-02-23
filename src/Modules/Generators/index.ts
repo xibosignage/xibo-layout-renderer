@@ -19,4 +19,5 @@ export {
     composeBgUrlByPlatform,
     hasDefaultOnly,
     isLayoutValid,
+    createMediaElement,
 } from './Generators';

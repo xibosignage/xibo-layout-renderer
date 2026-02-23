@@ -450,10 +450,7 @@ export function createMediaElement(mediaObject: IMedia) {
     $media.className = 'media--item';
 
     /* Scale the Content Container */
-    $media.style.cssText = `
-        visibility: hidden;
-        opacity: 0;
-        z-index: 0;
+    let cssText = `
         width: ${self.divWidth}px;
         height: ${self.divHeight}px;
         position: absolute;
@@ -461,6 +458,16 @@ export function createMediaElement(mediaObject: IMedia) {
         background-repeat: no-repeat;
         background-position: center;
     `;
+
+    if (self.mediaType !== 'video') {
+        cssText += `
+            visibility: hidden;
+            opacity: 0;
+            z-index: 0;
+        `
+    }
+
+    $media.style.cssText = cssText;
 
     if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
         self.checkIframeStatus = true;

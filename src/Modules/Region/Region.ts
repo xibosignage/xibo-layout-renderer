@@ -38,6 +38,7 @@ import {
 import {IXlr} from '../../Types/XLR';
 import {getAllAttributes} from '../Generators/Generators';
 import { BlobLoader } from "../../Lib";
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export default class Region implements IRegion {
     // ===== Properties =====
@@ -347,10 +348,11 @@ export default class Region implements IRegion {
     }
 
     private async prepareVideo(media: IMedia, container: HTMLElement | null) {
-        const blobUrl = await BlobLoader.load(media.url as string);
-
         const video = media.html as HTMLVideoElement;
-        video.src = blobUrl;
+
+        if (media.url !== null) {
+            video.src = media.url;
+        }
 
         (container!== null) && container.appendChild(media.html as HTMLVideoElement);
 
@@ -359,8 +361,14 @@ export default class Region implements IRegion {
             // Initialize Video.js
             media.player = videojs(video, {
                 ...defaultVjsOpts,
-                sources: [{ src: blobUrl, type: vidType }] // Adjust MIME type if dynamic
+                errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                loop: media.loop,
+                sources: [{ src: media.url as string, type: vidType }] // Adjust MIME type if dynamic
             });
+
+            (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
+            (media.player.el() as HTMLElement).style.setProperty('z-index', '0');
+            (media.player.el() as HTMLElement).style.setProperty('opacity', '0');
 
             // Register video handler
             media.videoHandler = videoMediaHandler(media, this.xlr.config.platform);

@@ -20,25 +20,30 @@
  */
 import {createNanoEvents, Emitter} from 'nanoevents';
 import Player from "video.js/dist/types/player";
+import videojs from "video.js";
 
-import { OptionsType } from '../../Types/Layout';
-import { IRegion } from '../../Types/Region';
-import { IMedia, MediaState } from '../../Types/Media';
+import {OptionsType} from '../../Types/Layout';
+import {IRegion} from '../../Types/Region';
+import {IMedia, MediaState} from '../../Types/Media';
 import {
-    capitalizeStr,
-    getMediaId,
-    nextId,
-    composeResourceUrl,
-    composeResourceUrlByPlatform,
-    composeMediaUrl,
+  capitalizeStr,
+  composeMediaUrl,
+  composeResourceUrl,
+  composeResourceUrlByPlatform,
+  getFileExt,
+  getMediaId,
+  nextId,
+  videoFileType,
+  createMediaElement,
 } from '../Generators';
-import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
-import { AudioMedia } from './AudioMedia';
+import {compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions} from '../Transitions';
+import {AudioMedia} from './AudioMedia';
 import {IXlr} from '../../Types/XLR';
 import {IMediaEvents} from "../../Types/Events";
 
 import 'video.js/dist/video-js.min.css';
-import {createMediaElement} from "../Generators/Generators";
+import {defaultVjsOpts, IVideoMediaHandler, videoMediaHandler} from "./VideoMedia";
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export class Media implements IMedia {
     attachedAudio: boolean = false;
@@ -79,6 +84,7 @@ export class Media implements IMedia {
     url: string | null = null;
     useDuration: boolean = false;
     xml: Element | null = null;
+    videoHandler?: IVideoMediaHandler;
 
     private mediaTimer: ReturnType<typeof setInterval> | undefined;
     private mediaTimeCount = 0;
@@ -343,21 +349,39 @@ export class Media implements IMedia {
             });
 
             if ($media) {
-                $media.style.setProperty('visibility', 'visible');
-                $media.style.setProperty('z-index', '10');
-                $media.style.setProperty('opacity', '1');
+                if (this.mediaType === 'video' && this.player !== undefined && !this.player.isDisposed()) {
+                    // Make sure that video.js is available on the media
+                    // Else, re-initialize
+                    if (this.player !== undefined) {
+                        const existingPlayer = videojs($mediaId);
 
-                if (this.mediaType === 'video') {
-                    // @ts-ignore
-                    if ($media !== null && $media?.parentElement?.classList.contains('video-js')) {
-                        const $videoWrapper = $media.parentElement;
-
-                        if ($videoWrapper !== null) {
-                            $videoWrapper.style.setProperty('visibility', 'visible');
-                            $videoWrapper.style.setProperty('z-index', '10');
-                            $videoWrapper.style.setProperty('opacity', '1');
+                        if (existingPlayer) {
+                            this.player = existingPlayer;
+                            this.videoHandler = videoMediaHandler(this, this.xlr.config.platform);
+                        } else {
+                          if (this.videoHandler?.player?.isDisposed_) {
+                            const vidType = videoFileType(getFileExt(this.uri)) as string;
+                            this.player = undefined;
+                            this.player = videojs($mediaId, {
+                              ...defaultVjsOpts,
+                              errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                              loop: this.loop,
+                              sources: [{ src: this.url, type: vidType }],
+                            });
+                          }
                         }
                     }
+
+                    // @ts-ignore
+                    if (this.videoHandler?.player?.el_ !== null) {
+                      (this.videoHandler?.player?.el() as HTMLElement).style.setProperty('visibility', 'visible');
+                      (this.videoHandler?.player?.el() as HTMLElement).style.setProperty('z-index', '10');
+                      (this.videoHandler?.player?.el() as HTMLElement).style.setProperty('opacity', '1');
+                    }
+                } else {
+                  $media.style.setProperty('visibility', 'visible');
+                  $media.style.setProperty('z-index', '10');
+                  $media.style.setProperty('opacity', '1');
                 }
 
                 if (Boolean(this.options['transin'])) {
@@ -448,17 +472,17 @@ export class Media implements IMedia {
             commandString = options.globalcommand || '';
         } else {
             // Use platform-specific command when available
-            if (this.xlr.config.platform === 'chromeOS') {
+            if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                 commandString = options.chromeoscommand || '';
-            } else if (this.xlr.config.platform === 'android') {
+            } else if (this.xlr.config.platform === ConsumerPlatform.ANDROID) {
                 commandString = options.androidcommand || '';
-            } else if (this.xlr.config.platform === 'linux') {
+            } else if (this.xlr.config.platform === ConsumerPlatform.LINUX) {
                 commandString = options.linuxcommand || '';
-            } else if (this.xlr.config.platform === 'tizen') {
+            } else if (this.xlr.config.platform === ConsumerPlatform.TIZEN) {
                 commandString = options.tizencommand || '';
-            } else if (this.xlr.config.platform === 'webos') {
+            } else if (this.xlr.config.platform === ConsumerPlatform.WEBOS) {
                 commandString = options.weboscommand || '';
-            } else if (this.xlr.config.platform === 'windows') {
+            } else if (this.xlr.config.platform === ConsumerPlatform.WINDOWS) {
                 commandString = options.windowscommand || '';
             }
 
