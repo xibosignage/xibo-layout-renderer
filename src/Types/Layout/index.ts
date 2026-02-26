@@ -27,4 +27,5 @@ export {
     OptionsType,
     initialLayout,
     ELayoutState,
+    LayoutPlaybackType,
 } from './Layout.types';

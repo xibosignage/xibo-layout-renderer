@@ -22,6 +22,7 @@ import { DefaultEvents, Emitter, Unsubscribe } from 'nanoevents';
 import {ILayout, initialLayout} from '../Layout';
 import {IMedia} from '../Media';
 import {IRegionEvents} from "../Events";
+import {IXlr} from "../XLR";
 
 
 export interface IRegion {
@@ -87,7 +88,8 @@ export interface IRegion {
     uniqueId: string;
     xml: null | Element;
     zIndex: number;
-    prepareNextMedia(): Promise<void>;
+    prepareNextMedia(): void;
+    xlr: IXlr;
 }
 
 export const initialRegion: IRegion = {
@@ -145,7 +147,7 @@ export const initialRegion: IRegion = {
     uniqueId: '',
     xml: null,
     zIndex: 0,
-    prepareNextMedia(): Promise<void> {
-        return Promise.resolve();
-    }
+    prepareNextMedia() {
+    },
+    xlr: <IXlr>{},
 };

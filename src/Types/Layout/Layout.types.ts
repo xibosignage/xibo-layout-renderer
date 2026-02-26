@@ -33,6 +33,12 @@ export enum ELayoutState {
     ERROR,
 }
 
+export enum LayoutPlaybackType {
+    CURRENT = 'current',
+    NEXT = 'next',
+    OVERLAY = 'overlay',
+}
+
 export type InputLayoutType = {
     response: any;
     layoutId: number;
@@ -104,12 +110,12 @@ export interface ILayout {
     path?: string;
     prepareLayout(): void;
     parseXlf(): void;
-    run(): Promise<void>;
+    run(): void;
     emitter: Emitter<ILayoutEvents>;
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;
-    regionEnded(): Promise<void>;
+    regionEnded(): void;
     stopAllMedia(): Promise<void>;
     resetLayout(): Promise<void>;
     index: number;
@@ -118,7 +124,7 @@ export interface ILayout {
     xlr: IXlr,
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
-    removeLayout(): void;
+    removeLayout(caller?: LayoutPlaybackType): void;
     xlfString: string;
     getXlf(): string;
     ad: any;
@@ -175,8 +181,7 @@ export const initialLayout: ILayout = {
     },
     parseXlf() {
     },
-    run(): Promise<void> {
-        return Promise.resolve();
+    run() {
     },
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe {
         return <Unsubscribe>{};
@@ -185,8 +190,7 @@ export const initialLayout: ILayout = {
     },
     end() {
     },
-    regionEnded(): Promise<void> {
-        return Promise.resolve();
+    regionEnded() {
     },
     stopAllMedia() {
         return Promise.resolve();

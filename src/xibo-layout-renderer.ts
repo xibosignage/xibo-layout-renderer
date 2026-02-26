@@ -22,7 +22,7 @@ import {createNanoEvents} from 'nanoevents';
 
 import Layout, {getXlf, initRenderingDOM} from './Modules/Layout';
 import {ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType,} from './Types/Layout';
-import {ELayoutType, initialXlr, IXlr, IXlrEvents, IXlrPlayback} from './Types/XLR';
+import {ELayoutType, initialXlr, IXlr, IXlrEvents} from './Types/XLR';
 import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
 import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
 import {getLayoutIndexByLayoutId, hasSspLayout} from "./Modules/Generators/Generators";
@@ -145,7 +145,7 @@ export default function XiboLayoutRenderer(
         });
     };
 
-    xlrObject.playLayouts = async function(xlr: IXlr) {
+    xlrObject.playLayouts = function(xlr: IXlr) {
         const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
         // Check if there's a current layout
         if (xlr.currentLayout !== undefined) {
@@ -155,7 +155,7 @@ export default function XiboLayoutRenderer(
 
             if (!xlr.currentLayout.done) {
                 console.log('>>>> XLR.debug XLR::playSchedules > Running currentLayout', xlr.currentLayout);
-                await xlr.currentLayout.run();
+                xlr.currentLayout.run();
 
                 // Hide overlays when current layout is interrupt
                 if (xlr.currentLayout.isInterrupt()) {
@@ -172,16 +172,15 @@ export default function XiboLayoutRenderer(
     }
 
     xlrObject.playSchedules = async function(xlr: IXlr) {
-        await xlrObject.playLayouts(xlr);
+        xlrObject.playLayouts(xlr);
 
         if (xlr.currentLayout !== undefined && !xlr.currentLayout.isInterrupt()) {
             // Run overlay layouts separately
-            runOverlayLayouts();
+            await runOverlayLayouts();
         }
     };
 
     xlrObject.renderOverlayLayouts = async function() {
-        const self = this;
         // Parse this.overlays if overlays are available
         const overlayLayouts = this.overlays.reduce((collection: ILayout[], item) => {
             let inputOverlay: InputLayoutType = <InputLayoutType>{};
@@ -311,7 +310,7 @@ export default function XiboLayoutRenderer(
                 }
             }
 
-            this.playSchedules(this);
+            await this.playSchedules(this);
         } else {
             // Remove next layout if it is in the DOM
             if (this.nextLayout &&

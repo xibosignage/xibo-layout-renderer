@@ -30,10 +30,8 @@ import {
   composeMediaUrl,
   composeResourceUrl,
   composeResourceUrlByPlatform,
-  getFileExt,
   getMediaId,
   nextId,
-  videoFileType,
   createMediaElement,
 } from '../Generators';
 import {compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions} from '../Transitions';
@@ -42,7 +40,7 @@ import {IXlr} from '../../Types/XLR';
 import {IMediaEvents} from "../../Types/Events";
 
 import 'video.js/dist/video-js.min.css';
-import {defaultVjsOpts, IVideoMediaHandler, videoMediaHandler} from "./VideoMedia";
+import {IVideoMediaHandler, VideoMedia, vjsDefaultOptions} from "./VideoMedia";
 import {ConsumerPlatform} from "../../Types/Platform";
 
 export class Media implements IMedia {
@@ -121,10 +119,10 @@ export class Media implements IMedia {
 
             media.state = MediaState.PLAYING;
             if (media.mediaType === 'video') {
-                // const videoMedia = VideoMedia(media, this.xlr);
-                //
-                // videoMedia.init();
-                media.videoHandler?.player?.play();
+                const videoMedia = VideoMedia(media, this.xlr);
+
+                videoMedia.init();
+                videoMedia.play();
 
                 if (media.duration > 0) {
                     this.startMediaTimer(media);
@@ -201,8 +199,27 @@ export class Media implements IMedia {
     }
 
     private startMediaTimer(media: IMedia) {
+        const preloadTimeMs = 2000;
+        let preloadTimeBufferMs = (media.duration * 1000) - preloadTimeMs;
+        let isPreparingNextMedia = false;
+
+        if (preloadTimeBufferMs < preloadTimeMs) {
+            // Use media duration when preloadTimeBufferMs is less than the preloadTimeMs
+            preloadTimeBufferMs = (media.duration * 1000);
+        }
+
         this.mediaTimer = setInterval(() => {
             this.mediaTimeCount++;
+            const elapsedTimeMs = (this.mediaTimeCount * 1000);
+            // prepare region's next media
+            if (this.region.totalMediaObjects > 1 &&
+              elapsedTimeMs >= preloadTimeBufferMs &&
+              !isPreparingNextMedia
+            ) {
+                isPreparingNextMedia = true;
+                this.region.prepareNextMedia();
+            }
+
             if (this.mediaTimeCount > media.duration) {
                 console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
 
@@ -278,9 +295,9 @@ export class Media implements IMedia {
 
         let tmpUrl = '';
 
-        if (this.xlr.config.platform === 'CMS') {
+        if (this.xlr.config.platform === ConsumerPlatform.CMS) {
             tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
-        } else if (this.xlr.config.platform === 'chromeOS') {
+        } else if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
             tmpUrl = composeResourceUrl(this.xlr.config, resourceUrlParams);
 
             if (this.mediaType === 'image' || this.mediaType === 'video' || this.mediaType === 'audio') {
@@ -350,38 +367,36 @@ export class Media implements IMedia {
 
             if ($media) {
                 if (this.mediaType === 'video' && this.player !== undefined && !this.player.isDisposed()) {
-                    // Make sure that video.js is available on the media
+                    (this.player.el() as HTMLElement).style.setProperty('visibility', 'visible');
+                    (this.player.el() as HTMLElement).style.setProperty('z-index', '10');
+                    (this.player.el() as HTMLElement).style.setProperty('opacity', '1');
+                } else {
+                    $media.style.setProperty('visibility', 'visible');
+                    $media.style.setProperty('z-index', '10');
+                    $media.style.setProperty('opacity', '1');
+                }
+
+                if (this.mediaType === 'video') {
+                    // Make sure that vjs is available on the media
                     // Else, re-initialize
                     if (this.player !== undefined) {
                         const existingPlayer = videojs($mediaId);
 
                         if (existingPlayer) {
                             this.player = existingPlayer;
-                            this.videoHandler = videoMediaHandler(this, this.xlr.config.platform);
                         } else {
-                          if (this.videoHandler?.player?.isDisposed_) {
-                            const vidType = videoFileType(getFileExt(this.uri)) as string;
-                            this.player = undefined;
-                            this.player = videojs($mediaId, {
-                              ...defaultVjsOpts,
-                              errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
-                              loop: this.loop,
-                              sources: [{ src: this.url, type: vidType }],
-                            });
-                          }
+                            if (this.player.isDisposed_) {
+                                this.player = undefined;
+                                this.player = videojs($mediaId, {
+                                    ...vjsDefaultOptions({
+                                        errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                                        loop: this.loop,
+                                    }),
+                                })
+                            }
                         }
                     }
 
-                    // @ts-ignore
-                    if (this.videoHandler?.player?.el_ !== null) {
-                      (this.videoHandler?.player?.el() as HTMLElement).style.setProperty('visibility', 'visible');
-                      (this.videoHandler?.player?.el() as HTMLElement).style.setProperty('z-index', '10');
-                      (this.videoHandler?.player?.el() as HTMLElement).style.setProperty('opacity', '1');
-                    }
-                } else {
-                  $media.style.setProperty('visibility', 'visible');
-                  $media.style.setProperty('z-index', '10');
-                  $media.style.setProperty('opacity', '1');
                 }
 
                 if (Boolean(this.options['transin'])) {
@@ -392,25 +407,6 @@ export class Media implements IMedia {
                     (this.region.layout.isOverlay && this.region.totalMediaObjects > 1)
                 ) {
                     this.emitter.emit('start', <IMedia>this);
-
-                    // Prepare next media while current media is running with some buffer
-                    const preloadBufferMs = 1500; // Trial default
-                    let durationMs = this.duration * 1000;
-
-                    if (this.mediaType === 'video' && this.player) {
-                        const playerDuration = this.player.duration();
-
-                        if (playerDuration) {
-                            durationMs = playerDuration * 1000;
-                        }
-                    }
-
-                    setTimeout(async () => {
-                        console.debug('??? XLR.debug >> Media run - preparing next media:', {
-
-                        })
-                        await this.region.prepareNextMedia();
-                    }, durationMs - preloadBufferMs);
                 }
             }
         };

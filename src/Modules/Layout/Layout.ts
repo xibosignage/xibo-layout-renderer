@@ -24,10 +24,10 @@ import {
     GetLayoutParamType,
     GetLayoutType,
     ILayout,
-    initialLayout,
+    initialLayout, LayoutPlaybackType,
     OptionsType,
 } from '../../Types/Layout';
-import {ILayoutEvents} from "../../types";
+import {ConsumerPlatform, ILayoutEvents} from "../../types";
 import {IXlr} from '../../Types/XLR';
 import {composeBgUrlByPlatform, nextId} from '../Generators';
 import {Region} from '../Region';
@@ -96,10 +96,10 @@ export async function getXlf(layoutOptions: OptionsType) {
     let xlfUrl = layoutOptions.xlfUrl;
     let fetchOptions: RequestInit = {};
 
-    if (layoutOptions.platform === 'CMS') {
+    if (layoutOptions.platform === ConsumerPlatform.CMS) {
         xlfUrl = layoutOptions.xlfUrl;
         fetchOptions.mode = 'no-cors';
-    } else if (layoutOptions.platform === 'chromeOS') {
+    } else if (layoutOptions.platform === ConsumerPlatform.CHROMEOS) {
         xlfUrl = layoutOptions.xlfUrl;
         fetchOptions.mode = 'cors';
         fetchOptions.headers = {
@@ -303,7 +303,18 @@ export default class Layout implements ILayout {
             console.debug({$layout});
 
             if ($layout !== null) {
-                $layout.parentElement?.removeChild($layout);
+                $layout.style.setProperty('visibility', 'hidden');
+                $layout.style.setProperty('opacity', '0');
+                $layout.style.setProperty('z-index', '-99');
+                console.debug('??? XLR.debug >> Layout.on("end") - Hiding currentLayout...');
+
+                setTimeout(() => {
+                    console.debug('??? XLR.debug >> Layout.on("end") > setTimeout - Removing currentLayout', {
+                        layoutId: layout.layoutId,
+                    });
+
+                    $layout.parentElement?.removeChild($layout);
+                }, 500);
             }
 
             // Check if stats are enabled for the layout
@@ -320,7 +331,7 @@ export default class Layout implements ILayout {
             console.debug('>>>>> XLR.debug Awaited XLR::emitSync > End - Calling layoutEnd event');
             await layout.xlr.emitSync('layoutEnd', layout);
 
-            if (this.xlr.config.platform !== 'CMS' && layout.inLoop) {
+            if (this.xlr.config.platform !== ConsumerPlatform.CMS && layout.inLoop) {
                 // Transition next layout to current layout and prepare next layout if exist
                 this.xlr.prepareLayouts().then(async (_xlr) => {
                     console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
@@ -381,11 +392,15 @@ export default class Layout implements ILayout {
         let $screen = document.getElementById('screen_container');
         ($screen) && $screen.append($layout);
 
+        let cssText = `
+            position: absolute;
+            overflow: hidden;
+        `;
+
         if ($layout) {
             $layout.dataset.sequence = `${this.index}`;
-            $layout.style.display = 'none';
-            if (this.xlr.config.platform === 'CMS') {
-                $layout.style.outline = 'red solid thin';
+            if (this.xlr.config.platform === ConsumerPlatform.CMS) {
+                cssText += 'outline: red solid thin;';
             }
 
             // Add is-overlay className
@@ -412,16 +427,20 @@ export default class Layout implements ILayout {
 
         /* Scale the Layout Container */
         if ($layout) {
-            $layout.style.width = `${this.sWidth}px`;
-            $layout.style.height = `${this.sHeight}px`;
-            $layout.style.position = 'absolute';
-            $layout.style.left = `${this.offsetX}px`;
-            $layout.style.top = `${this.offsetY}px`;
-            $layout.style.overflow = 'hidden';
+            cssText += `
+                visibility: hidden;
+                opacity: 0;
+                z-index: -99;
+                width: ${this.sWidth}px;
+                height: ${this.sHeight}px;
+                left: ${this.offsetX}px;
+                top: ${this.offsetY}px;
+            `;
+            $layout.style.cssText = cssText;
         }
 
-        if ($layout && this.zIndex !== null) {
-            $layout.style.zIndex = this.isOverlay ? '999' : `${this.zIndex}`;
+        if ($layout && this.zIndex !== null && this.isOverlay) {
+            $layout.style.setProperty('z-index', '999');
         }
 
         /* Set the layout background */
@@ -442,22 +461,24 @@ export default class Layout implements ILayout {
 
             if ($layout) {
                 if (!this.isOverlay) {
-                    $layout.style.backgroundImage = `url("${bgImageUrl}")`;
-                    $layout.style.backgroundRepeat = 'no-repeat';
-                    $layout.style.backgroundSize = `${this.sWidth}px ${this.sHeight}px`;
-                    $layout.style.backgroundPosition = '0px 0px';
+                    $layout.style.setProperty('background-image',`url("${bgImageUrl}")`);
+                    $layout.style.setProperty('background-repeat','no-repeat');
+                    $layout.style.setProperty('background-size',`${this.sWidth}px ${this.sHeight}px`);
+                    $layout.style.setProperty('background-position','0px 0px');
                 }
             }
         }
 
         // Set the background color
         if ($layout && this.bgColor) {
-            $layout.style.backgroundColor = this.isOverlay ? 'transparent' : `${this.bgColor}`;
+            $layout.style.setProperty('background-color', this.isOverlay ? 'transparent' : `${this.bgColor}`);
         }
 
         // Hide if layout is not the currentLayout
         if ($layout && this.xlr.currentLayoutId !== undefined && this.xlr.currentLayoutId !== this.id) {
-            $layout.style.display = 'none';
+            $layout.style.setProperty('visibility', 'hidden');
+            $layout.style.setProperty('opacity', '0');
+            $layout.style.setProperty('z-index', '-99');
         }
 
         // For overlay layout
@@ -507,7 +528,7 @@ export default class Layout implements ILayout {
         this.actionController.initKeyboardActions();
     };
 
-    async run(): Promise<void> {
+    run(): void {
         const $layoutContainer = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
         const $splashScreen = document.getElementById(`splash_${this.id}`);
 
@@ -516,7 +537,10 @@ export default class Layout implements ILayout {
         }
 
         if ($layoutContainer) {
-            $layoutContainer.style.display = 'block';
+            $layoutContainer.style.setProperty('visibility', 'visible');
+            $layoutContainer.style.setProperty('opacity', '1');
+            $layoutContainer.style.setProperty('z-index', this.zIndex !== null ? `${this.zIndex}` : '1');
+
             // Only set the body color when this.isOverlay === false
             if (!this.isOverlay) {
                 // Also set the background color of the player window > body
@@ -527,21 +551,13 @@ export default class Layout implements ILayout {
             this.emitter.emit('start', this);
 
             // Play regions
-            await this.playRegions();
+            this.playRegions();
         }
     }
 
-    async playRegions() {
+    playRegions() {
         console.debug('??? XLR.debug >> Layout playRegions() - Layout running > Layout ID > ', this.id);
         console.debug('??? XLR.debug >> Layout playRegions() - Layout Regions > ', this.regions);
-
-        // Wait until all regions are ready before starting to run them
-        while (!this.regions.every(region => region.ready)) {
-            console.debug('??? XLR.debug >> Layout playRegions() - Waiting for regions to be ready');
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-
-        console.debug('??? XLR.debug >> Layout playRegions() - All regions ready, starting playback');
 
         for (let i = 0; i < this.regions.length; i++) {
             // playLog(4, "debug", "Running region " + self.regions[i].id, false);
@@ -574,7 +590,7 @@ export default class Layout implements ILayout {
         }
     }
 
-    async regionEnded(): Promise<void> {
+    regionEnded(): void {
         this.allEnded = true;
 
         for (let i = 0; i < this.regions.length; i++) {
@@ -584,10 +600,8 @@ export default class Layout implements ILayout {
         }
 
         if (this.allEnded) {
-            await this.stopAllMedia();
-
             console.debug('starting to end layout . . .');
-            if (this.xlr.config.platform === 'CMS') {
+            if (this.xlr.config.platform === ConsumerPlatform.CMS) {
                 const $end = document.getElementById('play_ended');
                 const $preview = document.getElementById('screen_container');
 
@@ -633,7 +647,13 @@ export default class Layout implements ILayout {
         return Promise.all(this.regions.map(region => region.finished()));
     }
 
-    removeLayout(): void {
+    removeLayout(caller: LayoutPlaybackType = LayoutPlaybackType.CURRENT): void {
+        console.debug('??? XLR.debug >> Layout::removeLayout', {
+            containerName: this.containerName,
+            index: this.index,
+            caller,
+        });
+
         /* Remove layout that does not exist */
         const $layout = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
 
