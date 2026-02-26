@@ -22,8 +22,11 @@ import { IMedia } from '../../Types/Media';
 import {InputLayoutType, OptionsType} from '../../Types/Layout';
 import {IXlr} from "../../Types/XLR";
 import {nanoid} from "nanoid";
-import {composeVideoSource} from "../Media/VideoMedia";
+import {composeVideoSource, defaultVjsOpts} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
+import {IRegion} from "../../Types/Region";
+import videojs from "video.js";
+import {ConsumerPlatform} from "../../Types/Platform";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -427,7 +430,9 @@ export function prepareAudio(media: IMedia, container: HTMLAudioElement) {
 export function createMediaElement(mediaObject: IMedia) {
     const self = mediaObject;
 
-    let $media = <HTMLElement>(self.region.html.querySelector!(`#${self.containerName}`));
+    const mediaId = getMediaId(self);
+    const mediaSelector = `.media--item.${mediaId}`;
+    let $media = <HTMLElement>(self.region.html.querySelector!(mediaSelector));
 
     if ($media === null) {
         if (self.mediaType === 'video') {
@@ -438,7 +443,7 @@ export function createMediaElement(mediaObject: IMedia) {
             $media = document.createElement('div');
         }
 
-        $media.id = getMediaId(self);
+        $media.id = mediaId;
     }
 
     $media.dataset.mediaId = self.id;
@@ -447,7 +452,7 @@ export function createMediaElement(mediaObject: IMedia) {
     $media.dataset.render = self.render;
     $media.dataset.duration = String(self.duration);
     $media.dataset.fileId = self.fileId;
-    $media.className = 'media--item';
+    $media.className = `media--item ${mediaId}`;
 
     /* Scale the Content Container */
     let cssText = `
@@ -533,3 +538,98 @@ export function createMediaElement(mediaObject: IMedia) {
 
     return $media;
 }
+
+export function prepareVideoMedia(media: IMedia, region: IRegion) {
+    const mediaId = getMediaId(media);
+    // Check if html is ready and is in the DOM
+    if (media.html !== null) {
+
+        // Clean up video.js instance
+        const existingPlayer = videojs.getPlayer(mediaId);
+
+        if (existingPlayer !== undefined) {
+            existingPlayer.dispose();
+            media.player = undefined;
+        }
+
+        const $region = document.getElementById(region.containerName);
+        const mediaInRegion = $region?.querySelector('.' + mediaId);
+
+        if (!mediaInRegion) {
+            media.html = createMediaElement(media);
+        }
+
+        // Append fresh copy of the media into the region
+        region.html.appendChild(media.html);
+
+        // Initialize video.js
+        media.player = videojs(getMediaId(media), {
+            ...defaultVjsOpts,
+                errorDisplay: region.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                loop: media.loop,
+            },
+        );
+        (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
+        (media.player.el() as HTMLElement).style.setProperty('opacity', '0');
+        (media.player.el() as HTMLElement).style.setProperty('z-index', '-99');
+    }
+};
+
+export function prepareImageMedia(media: IMedia, region: IRegion) {
+    const mediaId = getMediaId(media);
+    (media.html as HTMLElement).style
+      .setProperty('background-image', `url(${media.url}`);
+
+    // Check if media in region
+    // Remove old copy before inserting fresh copy
+    const mediaInRegion = region.html.querySelector('.' + mediaId);
+
+    if (mediaInRegion) {
+        mediaInRegion.remove();
+    }
+
+    // Append media to its region
+    region.html.appendChild(media.html as HTMLElement);
+}
+
+export function prepareAudioMedia(media: IMedia, region: IRegion) {
+    const mediaId = getMediaId(media);
+    if (media.url !== null) {
+        (media.html as HTMLAudioElement).src = media.url;
+    }
+
+    // Check if media in region
+    // Remove old copy before inserting fresh copy of the media
+    const mediaInRegion = region.html.querySelector('.' + mediaId);
+
+    if (mediaInRegion) {
+        mediaInRegion.remove();
+    }
+
+    // Append media to its region
+    region.html.appendChild(media.html as HTMLAudioElement);
+}
+
+export function prepareHtmlMedia(media: IMedia, region: IRegion) {
+    // Set state as false ( for now )
+    media.ready = false;
+
+    if (media.html) {
+        const mediaId = getMediaId(media);
+
+        // Clean up old copy of the media
+        // before inserting fresh copy
+        const mediaInRegion = region.html.querySelector('.' + mediaId);
+
+        // Append iframe
+        media.html.innerHTML = '';
+        media.html.appendChild(media.iframe as Node);
+
+        if (!mediaInRegion) {
+            // Add fresh copy of the media into the region
+            region.html.appendChild(media.html as HTMLElement);
+            media.ready = true;
+        }
+    }
+}
+

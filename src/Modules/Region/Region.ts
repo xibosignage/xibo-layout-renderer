@@ -36,7 +36,13 @@ import {
     transitionElement,
 } from '../Transitions';
 import {IXlr} from '../../Types/XLR';
-import {getAllAttributes} from '../Generators/Generators';
+import {
+    getAllAttributes,
+    prepareAudioMedia,
+    prepareHtmlMedia,
+    prepareImageMedia,
+    prepareVideoMedia
+} from '../Generators/Generators';
 import { BlobLoader } from "../../Lib";
 import {ConsumerPlatform} from "../../Types/Platform";
 
@@ -187,21 +193,21 @@ export default class Region implements IRegion {
         console.debug('??? XLR.debug >> Region - done looping through media', {
           mediaObjects: this.mediaObjects,
         });
-
-        (async () => {
-          // prepare first media
-          if (this.mediaObjects.length > 0) {
-            const firstMedia = this.mediaObjects[0];
-            await this.prepareFirstMedia(firstMedia);
-
-            this.ready = true;
-            console.debug('??? XLR.debug >> Region prepareRegion - prepared first media', {
-              mediaId: firstMedia.id,
-              mediaType: firstMedia.mediaType,
-              containerName: firstMedia.containerName,
-            })
-          }
-        })();
+        //
+        // (async () => {
+        //   // prepare first media
+        //   if (this.mediaObjects.length > 0) {
+        //     const firstMedia = this.mediaObjects[0];
+        //     await this.prepareFirstMedia(firstMedia);
+        //
+        //     this.ready = true;
+        //     console.debug('??? XLR.debug >> Region prepareRegion - prepared first media', {
+        //       mediaId: firstMedia.id,
+        //       mediaType: firstMedia.mediaType,
+        //       containerName: firstMedia.containerName,
+        //     })
+        //   }
+        // })();
 
         // Add media to region for targeted actions
         this.layout.actionController?.actions.forEach((action) => {
@@ -227,61 +233,68 @@ export default class Region implements IRegion {
                 });
             }
         });
+
+        console.debug('??? XLR.debug >> Region::prepareRegion', {
+            mediaItems: this.mediaObjects,
+            totalMediaItems: this.totalMediaObjects,
+        });
+
+        // Prepare first media
+        if (this.mediaObjects.length > 0) {
+            // Clean up region first
+            if (this.html?.children.length > 0) {
+                this.html.innerHTML = '';
+            }
+
+            this.prepareFirstMedia();
+        }
     };
 
-    async prepareFirstMedia(media: IMedia) {
-        this.currentMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
-        this.oldMedia = undefined;
-        this.currMedia = media;
-
-        await this.prepareMedia(media);
+    prepareMedia(media: IMedia) {
+        if (media.mediaType === 'video') {
+            prepareVideoMedia(media, this);
+        } else if (media.mediaType === 'image' && media.url !== null) {
+            prepareImageMedia(media, this);
+        } else if (media.mediaType === 'audio' && media.url !== null) {
+            prepareAudioMedia(media, this);
+        } else if ((media.render === 'html' || media.mediaType === 'webpage') &&
+          media.iframe && media.checkIframeStatus
+        ) {
+            prepareHtmlMedia(media, this);
+        }
     }
 
-    async prepareNextMedia() {
-        // this.oldMedia = this.currMedia;
-        // const currentMediaIndex = this.currentMediaIndex;
-        let nextMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
-        let nextMedia = this.mediaObjects[nextMediaIndex];
-        //
-        console.debug('??? XLR.debug >> Region prepareNextMedia', {
-            currentMediaIndex: this.currentMediaIndex,
-            nextMediaIndex,
-            nextMedia,
-            oldMedia: this.oldMedia?.html,
-            currMedia: this.currMedia?.html,
-        })
-        //
-        // // this.oldMedia = this.mediaObjects[currentMediaIndex];
-        // this.currMedia = nextMedia;
-        // this.currentMediaIndex = nextMediaIndex;
-        //
-        // console.debug('??? XLR.debug >> Region prepareNextMedia after:', {
-        //     currMedia: this.currMedia?.html,
-        //     oldMedia: this.oldMedia?.html,
-        // })
-        this.nxtMedia = nextMedia;
+    prepareFirstMedia() {
+        this.currentMediaIndex = 0;
+        this.oldMedia = undefined;
+        this.currMedia = this.mediaObjects[this.currentMediaIndex];
+        const firstMedia = this.currMedia;
 
-        if (this.currMedia && this.currMedia.id !== nextMedia.id) {
-            await this.prepareMedia(nextMedia);
-        } else {
-            console.debug('??? XLR.debug >> Region >> prepareNextMedia - currMedia and nxtMedia are the same', {
-                currMedia: this.currMedia?.id,
-                nextMedia: this.nxtMedia?.id,
-                regionId: this.id,
-            })
+        if (firstMedia) {
+            this.prepareMedia(firstMedia);
         }
+    }
+
+    prepareNextMedia() {
+        const nextMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
+        const nextMedia = this.mediaObjects[nextMediaIndex];
+
+        this.prepareMedia(nextMedia);
     }
 
     prepareMediaObjects() {
         this.currentMediaIndex = (this.currentMediaIndex + 1) % this.mediaObjects.length;
-        let nextMediaIndex = (this.currentMediaIndex + 1) % this.mediaObjects.length;
+        let nextMediaIndex;
 
         if (this.mediaObjects.length > 0) {
 
             this.currMedia = this.mediaObjects[this.currentMediaIndex];
+            nextMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
 
             if (Boolean(this.mediaObjects[nextMediaIndex])) {
-                this.nxtMedia = this.mediaObjects[nextMediaIndex];
+                this.nxtMedia = (this.currentMediaIndex === nextMediaIndex)
+                  ? {...this.mediaObjects[nextMediaIndex]}
+                  : this.mediaObjects[nextMediaIndex];
             }
 
             console.debug('<> XLR.debug prepareMediaObjects::oldMedia', {
@@ -333,18 +346,6 @@ export default class Region implements IRegion {
         this.complete = true;
         this.layout.regions[this.index] = this;
         this.layout.regionExpired();
-    }
-
-    async prepareMedia(media: IMedia) {
-        const $region = document.getElementById(`${this.containerName}`);
-
-        if (media.mediaType === 'video') {
-            await this.prepareVideo(media, $region);
-        } else if (media.mediaType === 'image') {
-            await this.prepareImage(media, $region);
-        } else if (media.render === 'html' || media.mediaType === 'webpage' || media.mediaType === 'ticker') {
-            await this.prepareIframe(media, $region);
-        }
     }
 
     private async prepareVideo(media: IMedia, container: HTMLElement | null) {
@@ -620,10 +621,21 @@ export default class Region implements IRegion {
             this.oldMedia = undefined;
         }
 
-        this.currMedia = this.nxtMedia;
-        this.currentMediaIndex = this.mediaObjects.indexOf(this.currMedia as IMedia);
+        this.currentMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
+        this.currMedia = this.mediaObjects[this.currentMediaIndex];
+        this.nxtMedia = this.mediaObjects[
+            (this.currentMediaIndex + 1) % this.totalMediaObjects
+        ];
 
-        console.debug('region::playNextMedia', self);
+        console.debug('??? XLR.debug >> End Region::playNextMedia > execute transitionNodes', {
+            regionId: this.id,
+            currentMediaIndex: this.currentMediaIndex,
+            mediaItemsLn: this.mediaObjects.length,
+            oldMedia: this.oldMedia?.containerName,
+            currMedia: this.currMedia?.containerName,
+            nxtMedia: this.nxtMedia?.containerName,
+        })
+
         this.transitionNodes(this.oldMedia, this.currMedia);
     };
 
@@ -656,7 +668,7 @@ export default class Region implements IRegion {
         const $region = document.getElementById(`${this.containerName}`);
 
         if ($region) {
-            $region.style.display = 'none';
+            // $region.style.display = 'none';
         }
 
         console.debug('Called Region::exitTransition ', this.id);

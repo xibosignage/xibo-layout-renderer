@@ -97,7 +97,7 @@ export interface IXlr {
 
     parseLayouts(loopUpdate?: boolean): IXlrPlayback;
 
-    playLayouts(xlr: IXlr): Promise<void>;
+    playLayouts(xlr: IXlr): void;
 
     playSchedules(xlr: IXlr): Promise<void>;
 
@@ -165,8 +165,7 @@ export const initialXlr: IXlr = {
     parseLayouts(): IXlrPlayback {
         return <IXlrPlayback>{};
     },
-    playLayouts(xlr: IXlr): Promise<void> {
-        return Promise.resolve();
+    playLayouts(xlr: IXlr) {
     },
     playSchedules(xlr: IXlr): Promise<void> {
         return Promise.resolve();
