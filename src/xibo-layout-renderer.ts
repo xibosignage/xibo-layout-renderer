@@ -34,7 +34,7 @@ export default function XiboLayoutRenderer(
     overlays: InputLayoutType[],
     options?: OptionsType,
 ) {
-    console.debug('??? DAN: Xibo Layout Renderer loaded');
+    console.debug('??? Xibo Layout Renderer loaded');
 
     // Init ID counter if we have options
     if (options && options.idCounter == null) {
