@@ -487,7 +487,7 @@ export default class Region implements IRegion {
                             let $videoWrapper = null;
                             if (oldMedia.mediaType === 'video') {
                                 // @ts-ignore
-                                if ($oldMedia !== null && $oldMedia?.parentElement.classList.contains('video-js')) {
+                                if ($oldMedia !== null && $oldMedia?.parentElement?.classList.contains('video-js')) {
                                     $videoWrapper = $oldMedia.parentElement;
 
                                     if ($videoWrapper !== null) {
