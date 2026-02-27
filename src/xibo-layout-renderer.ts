@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -99,6 +99,11 @@ export default function XiboLayoutRenderer(
 
     /**
      * Asynchronous event emitter. Extended nanoevents event emitter.
+     *
+     * NOTE: Known limitation — nanoevents emit() is synchronous.
+     * Any async event handlers registered via .on() are fire-and-forget;
+     * emitSync does NOT await them. The returned Promise resolves
+     * immediately after handlers are invoked, not after they complete.
      *
      * @param eventName
      * @param args
@@ -223,21 +228,21 @@ export default function XiboLayoutRenderer(
         console.debug('XLR::updateScheduleLayouts > Updating schedule layouts . . .');
         const inputLayoutIds: (number | string)[] = [];
 
-        await Promise.all(scheduleLayouts.map((_layout, layoutIndex) => {
+        for (const [layoutIndex, _layout] of scheduleLayouts.entries()) {
             const uniqueLayout = _layout;
             uniqueLayout.index = layoutIndex;
             uniqueLayout.id = _layout.layoutId;
 
             this.uniqueLayouts[_layout.layoutId] = uniqueLayout;
             inputLayoutIds.push(_layout.layoutId);
-        }));
+        }
 
         // Cross-check if we need to remove non-existing layouts based on inputLayouts
-        await Promise.all(Object.keys(this.uniqueLayouts).map((layoutId) => {
+        for (const layoutId of Object.keys(this.uniqueLayouts)) {
             if (!inputLayoutIds.includes(parseInt(layoutId))) {
                 delete this.uniqueLayouts[layoutId];
             }
-        }))
+        }
     };
 
     xlrObject.isLayoutInDOM = function (containerName: string, layoutIndex: number) {
@@ -571,9 +576,15 @@ export default function XiboLayoutRenderer(
     };
 
     xlrObject.prepareLayoutXlf = async function (inputLayout: ILayout) {
+        if (!inputLayout) {
+            console.warn('XLR::prepareLayoutXlf called with undefined inputLayout');
+            return initialLayout;
+        }
+
         const self = this;
         // Compose layout props first
-        let newOptions = props.options as OptionsType;
+        // Clone options to avoid mutating the shared xlfUrl template
+        let newOptions = { ...props.options } as OptionsType;
 
         if (self.config.platform === 'CMS' &&
             inputLayout && Boolean(inputLayout.layoutId)
@@ -660,10 +671,17 @@ export default function XiboLayoutRenderer(
 
             // Get next valid layout
             // We will skip next layout that has no valid xlf
-            const inputLayout = self.inputLayouts[_nextLayout.index + 1];
-            const nextLayout = self.getLayout(inputLayout);
+            const nextIndex = _nextLayout.index + 1;
+            if (nextIndex >= self.inputLayouts.length) {
+                break;
+            }
 
-            _nextLayout = await self.prepareLayoutXlf(nextLayout);
+            const inputLayout = self.inputLayouts[nextIndex];
+            if (!inputLayout) break;
+
+            const nextLayoutObj = self.getLayout(inputLayout);
+
+            _nextLayout = await self.prepareLayoutXlf(nextLayoutObj);
         }
 
         return _nextLayout;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -18,30 +18,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {createNanoEvents, Emitter} from 'nanoevents';
+import { createNanoEvents, Emitter } from 'nanoevents';
 import Player from "video.js/dist/types/player";
 import videojs from "video.js";
 
-import {OptionsType} from '../../Types/Layout';
-import {IRegion} from '../../Types/Region';
-import {IMedia, MediaState} from '../../Types/Media';
+import { OptionsType } from '../../Types/Layout';
+import { IRegion } from '../../Types/Region';
+import { IMedia, MediaState } from '../../Types/Media';
 import {
-  capitalizeStr,
-  composeMediaUrl,
-  composeResourceUrl,
-  composeResourceUrlByPlatform,
-  getMediaId,
-  nextId,
-  createMediaElement,
+    capitalizeStr,
+    composeMediaUrl,
+    composeResourceUrl,
+    composeResourceUrlByPlatform,
+    getMediaId,
+    nextId,
+    createMediaElement,
 } from '../Generators';
-import {compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions} from '../Transitions';
-import {AudioMedia} from './AudioMedia';
-import {IXlr} from '../../Types/XLR';
-import {IMediaEvents} from "../../Types/Events";
+import { compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions } from '../Transitions';
+import { AudioMedia } from './AudioMedia';
+import { IXlr } from '../../Types/XLR';
+import { IMediaEvents } from "../../Types/Events";
+import { BlobLoader } from "../../Lib";
 
 import 'video.js/dist/video-js.min.css';
-import {IVideoMediaHandler, VideoMedia, vjsDefaultOptions} from "./VideoMedia";
-import {ConsumerPlatform} from "../../Types/Platform";
+import { IVideoMediaHandler, VideoMedia, vjsDefaultOptions } from "./VideoMedia";
+import { ConsumerPlatform } from "../../Types/Platform";
 
 export class Media implements IMedia {
     attachedAudio: boolean = false;
@@ -76,7 +77,7 @@ export class Media implements IMedia {
     singlePlay: boolean = false;
     state: MediaState = MediaState.IDLE;
     tempSrc: string = '';
-    timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {}, 0);
+    timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => { }, 0);
     type: string = '';
     uri: string = '';
     url: string | null = null;
@@ -213,8 +214,8 @@ export class Media implements IMedia {
             const elapsedTimeMs = (this.mediaTimeCount * 1000);
             // prepare region's next media
             if (this.region.totalMediaObjects > 1 &&
-              elapsedTimeMs >= preloadTimeBufferMs &&
-              !isPreparingNextMedia
+                elapsedTimeMs >= preloadTimeBufferMs &&
+                !isPreparingNextMedia
             ) {
                 isPreparingNextMedia = true;
                 this.region.prepareNextMedia();
@@ -266,7 +267,7 @@ export class Media implements IMedia {
         }
 
         // Show in fullscreen?
-        if(this.options.showfullscreen === "1") {
+        if (this.options.showfullscreen === "1") {
             // Set dimensions as the layout ones
             this.divWidth = this.region.layout.sWidth;
             this.divHeight = this.region.layout.sHeight;
@@ -332,9 +333,9 @@ export class Media implements IMedia {
             transInDirection = this.options.transindirection;
         }
 
-        let defaultTransInOptions: TransitionElementOptions = {duration: transInDuration};
-        let transIn = transitionElement('defaultIn', {duration: defaultTransInOptions.duration});
-        
+        let defaultTransInOptions: TransitionElementOptions = { duration: transInDuration };
+        let transIn = transitionElement('defaultIn', { duration: defaultTransInOptions.duration });
+
         if (Boolean(this.options['transin'])) {
             let transInName = this.options['transin'];
 
@@ -352,7 +353,7 @@ export class Media implements IMedia {
         }
 
         const showCurrentMedia = () => {
-            let $mediaId = getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName});
+            let $mediaId = getMediaId(<IMedia>{ mediaType: this.mediaType, containerName: this.containerName });
             let $media = this.html;
 
             if (!$media) {
@@ -431,12 +432,17 @@ export class Media implements IMedia {
 
     async stop() {
         const $media = document.getElementById(
-            getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName})
+            getMediaId(<IMedia>{ mediaType: this.mediaType, containerName: this.containerName })
         );
 
         if ($media) {
             $media.style.display = 'none';
             $media.remove();
+        }
+
+        // Release blob URLs for image media to prevent memory leaks on long-running signage
+        if (this.mediaType === 'image' && this.url) {
+            BlobLoader.release(this.url);
         }
     }
 
