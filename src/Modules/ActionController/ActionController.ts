@@ -187,6 +187,12 @@ export default class ActionController {
                 };
             }
 
+            // Only render webhook controller in CMS
+            if (this.parent.xlr.config.platform !== 'CMS') {
+                this.$actionController.style.display = 'none';
+                return;
+            }
+
             const $webhookActions = this.$actionController.querySelectorAll<HTMLElement>('.action[triggertype="webhook"]');
             // Display according to the number of clickable actions
             this.$actionController.style.setProperty(
