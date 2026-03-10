@@ -421,7 +421,7 @@ export default function XiboLayoutRenderer(
                     } else {
                         _currentLayout = this.nextLayout;
                         _currentLayoutIndex = _currentLayout.index;
-                        _nextLayoutIndex = _currentLayoutIndex + 1 > this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
+                        _nextLayoutIndex = (_currentLayoutIndex + 1) % this.inputLayouts.length;
                         _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                     }
                 }

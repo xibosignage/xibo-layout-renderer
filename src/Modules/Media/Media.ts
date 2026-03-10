@@ -123,7 +123,6 @@ export class Media implements IMedia {
                 const videoMedia = VideoMedia(media, this.xlr);
 
                 videoMedia.init();
-                videoMedia.play();
 
                 if (media.duration > 0) {
                     this.startMediaTimer(media);
@@ -214,17 +213,17 @@ export class Media implements IMedia {
             const elapsedTimeMs = (this.mediaTimeCount * 1000);
             // prepare region's next media
             if (this.region.totalMediaObjects > 1 &&
-                elapsedTimeMs >= preloadTimeBufferMs &&
-                !isPreparingNextMedia
+              elapsedTimeMs >= preloadTimeBufferMs &&
+              !isPreparingNextMedia
             ) {
                 isPreparingNextMedia = true;
                 this.region.prepareNextMedia();
             }
 
             if (this.mediaTimeCount > media.duration) {
-                console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
+                console.debug('??? XLR.debug >> Media::startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
 
-                console.debug('Media::Emitter > End', {
+                console.debug('??? XLR.debug >> Media::startMediaTimer - Media::Emitter > End', {
                     currentLayout: this.xlr.currentLayout,
                     media,
                     region: media.region,
@@ -235,8 +234,10 @@ export class Media implements IMedia {
 
                 if (media.mediaType === 'video') {
                     // Dispose the video media
-                    console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    (media.videoHandler) && media.videoHandler.stop(true);
+                    console.debug(`??? XLR.debug >> VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                    if (media.player !== undefined) {
+                        VideoMedia(media, this.xlr).stop(true);
+                    }
                 }
             }
         }, 1000);
@@ -353,42 +354,40 @@ export class Media implements IMedia {
         }
 
         const showCurrentMedia = () => {
-            let $mediaId = getMediaId(<IMedia>{ mediaType: this.mediaType, containerName: this.containerName });
-            let $media = this.html;
+            const mediaId = getMediaId(<IMedia>{ mediaType: this.mediaType, containerName: this.containerName });
+            const $region = document.querySelector('#' + this.region.containerName) as (HTMLElement | null);
+            let $media = $region !== null && $region.querySelector('.' + mediaId) as (HTMLElement | null);
 
             if (!$media) {
                 $media = getNewMedia();
             }
 
             console.debug('??? XLR.debug >> Media run - show current media:', {
-                $mediaId,
+                inDOM: document.body.contains($media),
+                mediaId,
                 $media,
                 mediaObject: this,
             });
 
             if ($media) {
-                if (this.mediaType === 'video' && this.player !== undefined && !this.player.isDisposed()) {
-                    (this.player.el() as HTMLElement).style.setProperty('visibility', 'visible');
-                    (this.player.el() as HTMLElement).style.setProperty('z-index', '10');
-                    (this.player.el() as HTMLElement).style.setProperty('opacity', '1');
-                } else {
-                    $media.style.setProperty('visibility', 'visible');
-                    $media.style.setProperty('z-index', '10');
-                    $media.style.setProperty('opacity', '1');
-                }
-
                 if (this.mediaType === 'video') {
+                    console.debug('??? XLR.debug >> Media.run() > showCurrentMedia() - Video media::START', {
+                        mediaPlayer: this.player,
+                        isDisposed: this.player?.isDisposed(),
+                        el: this.player?.el_,
+                    });
+
                     // Make sure that vjs is available on the media
                     // Else, re-initialize
                     if (this.player !== undefined) {
-                        const existingPlayer = videojs($mediaId);
+                        const existingPlayer = videojs(mediaId);
 
                         if (existingPlayer) {
                             this.player = existingPlayer;
                         } else {
                             if (this.player.isDisposed_) {
                                 this.player = undefined;
-                                this.player = videojs($mediaId, {
+                                this.player = videojs(mediaId, {
                                     ...vjsDefaultOptions({
                                         errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
                                         loop: this.loop,
@@ -398,6 +397,27 @@ export class Media implements IMedia {
                         }
                     }
 
+                    console.debug('??? XLR.debug >> Media.run() > showCurrentMedia() - Video media::END', {
+                        mediaPlayer: this.player,
+                        isDisposed: this.player?.isDisposed(),
+                        el: this.player?.el_,
+                    });
+
+                    if (this.player !== undefined && this.player.el_ !== null) {
+                        (this.player.el() as HTMLElement).style.setProperty('visibility', 'visible');
+                        (this.player.el() as HTMLElement).style.setProperty('z-index', '10');
+                        (this.player.el() as HTMLElement).style.setProperty('opacity', '1');
+                    }
+                } else {
+                    console.debug('??? XLR.debug >> Media::run() > showCurrentMedia', {
+                        mediaType: this.mediaType,
+                        render: this.render,
+                        $media,
+                        state: this.state,
+                    })
+                    $media.style.setProperty('visibility', 'visible');
+                    $media.style.setProperty('z-index', '10');
+                    $media.style.setProperty('opacity', '1');
                 }
 
                 if (Boolean(this.options['transin'])) {

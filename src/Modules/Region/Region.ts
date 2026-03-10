@@ -26,7 +26,7 @@ import { ILayout, OptionsType } from '../../Types/Layout';
 import { IRegion } from '../../Types/Region';
 import { IMedia } from '../../Types/Media';
 import { IRegionEvents } from "../../Types/Events";
-import { getFileExt, nextId, videoFileType } from '../Generators';
+import {getFileExt, getMediaId, nextId, videoFileType} from '../Generators';
 import { defaultVjsOpts, Media, videoMediaHandler } from '../Media';
 import {
     TransitionElementOptions,
@@ -150,8 +150,6 @@ export default class Region implements IRegion {
             $region.id = this.containerName;
         }
 
-        ($layout) && $layout.appendChild($region);
-
         /* Scale the Layout Container */
         /* Add region styles */
         $region.style.cssText = `
@@ -177,6 +175,8 @@ export default class Region implements IRegion {
         const regionMediaItems = Array.from(this.xml!.getElementsByTagName('media'));
         this.totalMediaObjects = regionMediaItems.length;
 
+        ($layout) && $layout.appendChild(this.html);
+
         Array.from(regionMediaItems).forEach(async (mediaXml, indx) => {
             const mediaObj = new Media(
                 this,
@@ -193,21 +193,6 @@ export default class Region implements IRegion {
         console.debug('??? XLR.debug >> Region - done looping through media', {
             mediaObjects: this.mediaObjects,
         });
-        //
-        // (async () => {
-        //   // prepare first media
-        //   if (this.mediaObjects.length > 0) {
-        //     const firstMedia = this.mediaObjects[0];
-        //     await this.prepareFirstMedia(firstMedia);
-        //
-        //     this.ready = true;
-        //     console.debug('??? XLR.debug >> Region prepareRegion - prepared first media', {
-        //       mediaId: firstMedia.id,
-        //       mediaType: firstMedia.mediaType,
-        //       containerName: firstMedia.containerName,
-        //     })
-        //   }
-        // })();
 
         // Add media to region for targeted actions
         this.layout.actionController?.actions.forEach((action) => {
@@ -242,9 +227,9 @@ export default class Region implements IRegion {
         // Prepare first media
         if (this.mediaObjects.length > 0) {
             // Clean up region first
-            if (this.html?.children.length > 0) {
-                this.html.innerHTML = '';
-            }
+            // if (this.html?.children.length > 0) {
+            //     this.html.innerHTML = '';
+            // }
 
             this.prepareFirstMedia();
         }
@@ -474,7 +459,11 @@ export default class Region implements IRegion {
             const hideOldMedia = () => {
                 // Hide oldMedia
                 if (oldMedia) {
-                    const $oldMedia = oldMedia.html;
+                    const $region = this.layout.html?.querySelector('#' + this.containerName);
+                    const $oldMedia = ($region)
+                      ? $region.querySelector('.' + getMediaId(oldMedia)) as HTMLElement
+                      : null;
+
                     if ($oldMedia) {
                         const removeOldMedia = () => {
                             console.debug('??? XLR.debug >> Region transitionNodes - removeOldMedia fn', {
