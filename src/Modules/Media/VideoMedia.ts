@@ -188,7 +188,7 @@ export function videoMediaHandler(media: IMedia, platform: OptionsType['platform
 }
 
 export function VideoMedia(media: IMedia, xlr: IXlr) {
-    const vjsPlayer = videojs(getMediaId(media));
+    const mediaId = getMediaId(media);
     const videoPlayer = {
         duration: 0,
         init: function () {
@@ -196,6 +196,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
 
             videoPlayer.duration = media.duration;
 
+            const vjsPlayer = videojs(mediaId);
             if (vjsPlayer) {
                 vjsPlayer.on('loadstart', () => {
                     console.debug(`??? XLR.debug >> VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
@@ -231,6 +232,13 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                 // Please visit https://developer.chrome.com/blog/autoplay/ for more info.
 
                 vjsPlayer.ready(() => {
+                    // Add guard making sure that video element is present
+                    const videoElem = document.querySelector(`.media--item.${mediaId}`);
+                    if (!document.body.contains(videoElem)) {
+                        media.emitter.emit('cancelled', media);
+                        return;
+                    }
+
                     if (vjsPlayer !== undefined) {
                         vjsPlayer.muted(true);
 
@@ -358,7 +366,8 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
             }
         },
         play: function() {
-            if (vjsPlayer) {
+            const vjsPlayer = videojs(mediaId);
+            if (vjsPlayer !== undefined) {
                 vjsPlayer.play()
                   ?.catch(async (error) => {
                       if (error === 'Timeout') {

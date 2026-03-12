@@ -553,15 +553,22 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
             media.player = undefined;
         }
 
+        const $layout = region.layout.html;
+        const layoutSelector = '#' + region.layout.containerName +
+          '[data-sequence="' + region.layout.index + '"]';
+        const $layoutWithIndex = document.querySelector(layoutSelector);
         const $region = document.querySelector('#' + region.containerName);
         const mediaInRegion = $region?.querySelector('.' + mediaId);
 
-        console.debug('[Generators::prepareVideoMedia]', {
-          $region,
-          mediaInRegion,
-          mediaHtml: media.html,
-          existingPlayer,
-          mediaId,
+        console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
+            layoutSelector,
+            $layoutWithIndex,
+            $region,
+            mediaInRegion,
+            mediaHtml: media.html,
+            existingPlayer,
+            mediaId,
+            layoutInDOM: document.body.contains($layout),
         })
         if (!mediaInRegion) {
             media.html = createMediaElement(media);
@@ -573,20 +580,28 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
         // Append fresh copy of the media into the region
         ($region !== null) && $region.appendChild(media.html);
 
+        const isMediaInDOM = document.body.contains(media.html);
+
+        console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
+            isMediaInDOM,
+            mediaHtml: media.html,
+            mediaId,
+        })
+
         // Initialize video.js
-        media.player = videojs(getMediaId(media), {
-            ...defaultVjsOpts,
-                errorDisplay: region.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
-                loop: media.loop,
-            },
+        media.player = videojs(mediaId, {
+              ...defaultVjsOpts,
+              errorDisplay: region.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+              loop: media.loop,
+          },
         );
 
         media.player.on('error', async (err: any) => {
             if (media.region.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                 playerReportFault('Video file not supported', media)
-                .then(() => {
-                    media.emitter.emit('end', media);
-                })
+                    .then(() => {
+                        media.emitter.emit('end', media);
+                    });
             }
         });
 
@@ -594,7 +609,7 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
         (media.player.el() as HTMLElement).style.setProperty('opacity', '0');
         (media.player.el() as HTMLElement).style.setProperty('z-index', '-99');
     }
-};
+}
 
 export function prepareImageMedia(media: IMedia, region: IRegion) {
     const mediaId = getMediaId(media);

@@ -85,7 +85,7 @@ export class Media implements IMedia {
     xml: Element | null = null;
     videoHandler?: IVideoMediaHandler;
 
-    private mediaTimer: ReturnType<typeof setInterval> | undefined;
+    mediaTimer: ReturnType<typeof setInterval> | undefined;
     private mediaTimeCount = 0;
     private xlr: IXlr = <IXlr>{};
     private readonly statsBC = new BroadcastChannel('statsBC');
@@ -166,6 +166,37 @@ export class Media implements IMedia {
         this.on('end', (media: IMedia) => {
             if (media.state === MediaState.ENDED) return;
             media.state = MediaState.ENDED;
+
+            if (this.mediaTimer) {
+                clearInterval(this.mediaTimer);
+                this.mediaTimeCount = 0;
+            }
+
+            // Check if stats are enabled for the layout
+            if (media.enableStat) {
+                this.statsBC.postMessage({
+                    action: 'END_STAT',
+                    mediaId: parseInt(media.id),
+                    layoutId: media.region.layout.id,
+                    scheduleId: media.region.layout.scheduleId,
+                    type: 'media',
+                });
+            }
+
+            // Emit media/widget end event
+            console.debug('Media::Emitter > End - Calling widgetEnd event', {
+                mediaId: media.id,
+                regionId: media.region.id,
+                layoutId: media.region.layout.id,
+            });
+            this.xlr.emitter.emit('widgetEnd', parseInt(media.id));
+
+            media.region.playNextMedia();
+        });
+
+        this.on('cancelled', (media: IMedia) => {
+            if (media.state === MediaState.CANCELLED) return;
+            media.state = MediaState.CANCELLED;
 
             if (this.mediaTimer) {
                 clearInterval(this.mediaTimer);
