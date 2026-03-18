@@ -291,16 +291,17 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                                 const preloadBufferTimeMs = 2000;
                                 const mediaDuration = vjsPlayer.duration();
                                 const currentTime = vjsPlayer.currentTime();
+                                const regionHasMultipleMedia = media.region.totalMediaObjects > 1;
                                 let remainingTimeMs = 0;
 
                                 if (mediaDuration !== undefined && currentTime !== undefined) {
                                     remainingTimeMs = (mediaDuration - currentTime) * 1000;
                                 }
 
-                                if (remainingTimeMs === 0 && !triggerTimeUpdate) {
+                                if (regionHasMultipleMedia && remainingTimeMs === 0 && !triggerTimeUpdate) {
                                     // We don't have data yet and we must immediately prepare next media
                                     media.region.prepareNextMedia();
-                                } else if (remainingTimeMs <= preloadBufferTimeMs && !triggerTimeUpdate) {
+                                } else if (regionHasMultipleMedia && remainingTimeMs <= preloadBufferTimeMs && !triggerTimeUpdate) {
                                     // Check if remaining time is less than preloadBufferTimeMs and the action hasn't been triggered yet
                                     console.log('Less than preloadBufferTimeMs remaining! Do something now.');
                                     // Prepare next media in region
