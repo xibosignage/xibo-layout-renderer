@@ -18,12 +18,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { IMedia } from '../../Types/Media';
+import {format} from "date-fns";
+import videojs from "video.js";
+
+import {IMedia} from '../../Types/Media';
 import {InputLayoutType, OptionsType} from '../../Types/Layout';
-import {IXlr} from "../../Types/XLR";
-import {nanoid} from "nanoid";
-import {composeVideoSource} from "../Media/VideoMedia";
+import {composeVideoSource, defaultVjsOpts} from "../Media";
 import {transitionElement} from "../Transitions";
+import {IRegion} from "../../Types/Region";
+import {ConsumerPlatform} from "../../Types/Platform";
+import {PwaSW} from "../../Lib";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -350,106 +354,136 @@ export function hasSspLayout(inputLayouts: InputLayoutType[], defaultValue = fal
     return inputLayouts.find(layout => layout.layoutId === -1) !== undefined;
 }
 
-export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next') {
-    const self = mediaObject;
-    const $mediaIframe = document.createElement('iframe');
-    $mediaIframe.scrolling = 'no';
-    $mediaIframe.id = self.iframeName;
-    $mediaIframe.width = `${self.divWidth}px`;
-    $mediaIframe.height = `${self.divHeight}px`;
-    $mediaIframe.style.cssText = `border: 0;`;
+export function prepareIframe(media: IMedia) {
+    const iframe = document.createElement('iframe');
 
-    const mediaSelector = `.media--item[data-role="${role}"][data-media-id="${mediaObject.id}"]`;
+    iframe.scrolling = 'no';
+    iframe.id = media.iframeName;
+    iframe.width = `${media.divWidth}px`;
+    iframe.height = `${media.divHeight}px`;
+    iframe.style.cssText = `border: 0;`;
+
+
+    if ((media.render === 'html' || media.render === 'webpage') && media.url !== null) {
+        iframe.src = media.url;
+    } else {
+        iframe.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
+    }
+
+    return iframe;
+}
+
+export function prepareImage(media: IMedia, container: HTMLElement) {
+    if (media.options['scaletype'] === 'stretch') {
+        container.style.cssText = container.style.cssText.concat(`background-size: 100% 100%;`);
+    } else if (media.options['scaletype'] === 'fit') {
+        container.style.cssText = container.style.cssText.concat(`background-size: cover;`);
+    } else {
+        // Center scale type, do we have align or valign?
+        const align = (media.options['align'] == "") ? "center" : media.options['align'];
+        const valign = (media.options['valign'] == "" || media.options['valign'] == "middle") ? "center" : media.options['valign'];
+        container.style.cssText = container.style.cssText.concat(`background-position: ${align} ${valign}`);
+    }
+
+    return container;
+}
+
+export function prepareVideo(media: IMedia, container: HTMLVideoElement) {
+    const $videoMedia = composeVideoSource(container as HTMLVideoElement, media);
+
+    let isMuted = false;
+    if (Boolean(media.options['mute'])) {
+        isMuted = media.options.mute === '1';
+    }
+
+    if (Boolean(media.options['scaletype'])) {
+        if (media.options.scaletype === 'stretch') {
+            $videoMedia.style.objectFit = 'fill';
+        }
+    }
+
+    $videoMedia.classList.add('video-js', 'vjs-default-skin');
+
+    if (media.loop) {
+        media.loop = true;
+        $videoMedia.loop = true;
+    }
+
+    media.muted = isMuted;
+
+    return $videoMedia;
+}
+
+export function prepareAudio(media: IMedia, container: HTMLAudioElement) {
+    const $audioMedia = container as HTMLAudioElement;
+
+    $audioMedia.preload = 'auto';
+    $audioMedia.textContent = 'Unsupported Audio';
+    $audioMedia.autoplay = true;
+
+    if (media.loop) {
+        $audioMedia.loop = true;
+    }
+
+    return $audioMedia;
+}
+
+export function createMediaElement(mediaObject: IMedia) {
+    const self = mediaObject;
+
+    const mediaId = getMediaId(self);
+    const mediaSelector = `.media--item.${mediaId}`;
     let $media = <HTMLElement>(self.region.html.querySelector!(mediaSelector));
 
     if ($media === null) {
         if (self.mediaType === 'video') {
-            $media = document.createElement('video');
+            $media = document.createElement('video') as HTMLVideoElement;
         } else if (self.mediaType === 'audio') {
             $media = new Audio();
         } else {
             $media = document.createElement('div');
         }
 
-        $media.id = getMediaId(self);
+        $media.id = mediaId;
     }
 
-    $media.dataset.role = role;
     $media.dataset.mediaId = self.id;
     $media.dataset.mediaType = self.mediaType;
     $media.dataset.type = self.type;
     $media.dataset.render = self.render;
     $media.dataset.duration = String(self.duration);
     $media.dataset.fileId = self.fileId;
-    $media.className = 'media--item';
+    $media.className = `media--item ${mediaId}`;
 
     /* Scale the Content Container */
-    $media.style.cssText = `
-            display: none;
-            width: ${self.divWidth}px;
-            height: ${self.divHeight}px;
-            position: absolute;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        `;
+    let cssText = `
+        width: ${self.divWidth}px;
+        height: ${self.divHeight}px;
+        position: absolute;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    `;
 
-    if ((self.render === 'html' || self.render === 'webpage') && self.url !== null) {
-        $mediaIframe.src = self.url;
-    } else {
-        $mediaIframe.src = `${self.url}&width=${self.divWidth}&height=${self.divHeight}`;
+    if (self.mediaType !== 'video') {
+        cssText += `
+            visibility: hidden;
+            opacity: 0;
+            z-index: 0;
+        `
     }
+
+    $media.style.cssText = cssText;
 
     if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
         self.checkIframeStatus = true;
-        self.iframe = $mediaIframe;
+        self.iframe = prepareIframe(self);
     }  else if (self.mediaType === "image") {
-        if (self.options['scaletype'] === 'stretch') {
-            $media.style.cssText = $media.style.cssText.concat(`background-size: 100% 100%;`);
-        } else if (self.options['scaletype'] === 'fit') {
-            $media.style.cssText = $media.style.cssText.concat(`background-size: cover;`);
-        } else {
-            // Center scale type, do we have align or valign?
-            const align = (self.options['align'] == "") ? "center" : self.options['align'];
-            const valign = (self.options['valign'] == "" || self.options['valign'] == "middle") ? "center" : self.options['valign'];
-            $media.style.cssText = $media.style.cssText.concat(`background-position: ${align} ${valign}`);
-        }
+        $media = prepareImage(self, $media);
     } else if (self.mediaType === 'video') {
-        const $videoMedia = composeVideoSource($media as HTMLVideoElement, self);
-
-        let isMuted = false;
-        if (Boolean(self.options['mute'])) {
-            isMuted = self.options.mute === '1';
-        }
-
-        if (Boolean(self.options['scaletype'])) {
-            if (self.options.scaletype === 'stretch') {
-                $videoMedia.style.objectFit = 'fill';
-            }
-        }
-
-        $videoMedia.classList.add('video-js', 'vjs-default-skin');
-
-        if (self.loop) {
-            self.loop = true;
-            $videoMedia.loop = true;
-        }
-
-        self.muted = isMuted;
-
-        $media = $videoMedia;
+        $media = prepareVideo(self, $media as HTMLVideoElement);
     } else if (self.mediaType === 'audio') {
-        const $audioMedia = $media as HTMLAudioElement;
-
-        $audioMedia.preload = 'auto';
-        $audioMedia.textContent = 'Unsupported Audio';
-        $audioMedia.autoplay = true;
-
-        if (self.loop) {
-            $audioMedia.loop = true;
-        }
-
-        $media = $audioMedia;
+        $media = prepareAudio(self, $media as HTMLAudioElement);
     }
 
     // Duration is per item condition
@@ -504,4 +538,170 @@ export function createMediaElement(mediaObject: IMedia, role: 'current' | 'next'
     // self.html = $media;
 
     return $media;
+}
+
+export function prepareVideoMedia(media: IMedia, region: IRegion) {
+    const mediaId = getMediaId(media);
+    // Check if html is ready and is in the DOM
+    if (media.html !== null) {
+
+        // Clean up video.js instance
+        const existingPlayer = videojs.getPlayer(mediaId);
+
+        if (existingPlayer !== undefined) {
+            existingPlayer.dispose();
+            media.player = undefined;
+        }
+
+        const $layout = region.layout.html;
+        const layoutSelector = '#' + region.layout.containerName +
+          '[data-sequence="' + region.layout.index + '"]';
+        const $layoutWithIndex = document.querySelector(layoutSelector);
+        const $region = document.querySelector('#' + region.containerName);
+        const mediaInRegion = $region?.querySelector('.' + mediaId);
+
+        console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
+            layoutSelector,
+            $layoutWithIndex,
+            $region,
+            mediaInRegion,
+            mediaHtml: media.html,
+            existingPlayer,
+            mediaId,
+            layoutInDOM: document.body.contains($layout),
+        })
+        if (!mediaInRegion) {
+            media.html = createMediaElement(media);
+        } else {
+            mediaInRegion.remove();
+            media.html = createMediaElement(media);
+        }
+
+        // Append fresh copy of the media into the region
+        ($region !== null) && $region.appendChild(media.html);
+
+        const isMediaInDOM = document.body.contains(media.html);
+
+        console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
+            isMediaInDOM,
+            mediaHtml: media.html,
+            mediaId,
+        })
+
+        // Initialize video.js
+        media.player = videojs(mediaId, {
+              ...defaultVjsOpts,
+              errorDisplay: region.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+              loop: media.loop,
+          },
+        );
+
+        media.player.on('error', async (err: any) => {
+            if (media.region.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
+                playerReportFault('Video file not supported', media)
+                    .then(() => {
+                        media.emitter.emit('end', media);
+                    });
+            }
+        });
+
+        (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
+        (media.player.el() as HTMLElement).style.setProperty('opacity', '0');
+        (media.player.el() as HTMLElement).style.setProperty('z-index', '-99');
+    }
+}
+
+export function prepareImageMedia(media: IMedia, region: IRegion) {
+    const mediaId = getMediaId(media);
+    (media.html as HTMLElement).style
+      .setProperty('background-image', `url(${media.url}`);
+
+    // Check if media in region
+    // Remove old copy before inserting fresh copy
+    const mediaInRegion = region.html.querySelector('.' + mediaId);
+
+    if (mediaInRegion) {
+        mediaInRegion.remove();
+    }
+
+    // Append media to its region
+    const $region = document.querySelector('#' + region.containerName);
+    ($region !== null) && $region.appendChild(media.html as HTMLElement);
+}
+
+export function prepareAudioMedia(media: IMedia, region: IRegion) {
+    const mediaId = getMediaId(media);
+    if (media.url !== null) {
+        (media.html as HTMLAudioElement).src = media.url;
+    }
+
+    // Check if media in region
+    // Remove old copy before inserting fresh copy of the media
+    const mediaInRegion = region.html.querySelector('.' + mediaId);
+
+    if (mediaInRegion) {
+        mediaInRegion.remove();
+    }
+
+    // Append media to its region
+    const $region = document.querySelector('#' + region.containerName);
+    ($region !== null) && $region.appendChild(media.html as HTMLAudioElement);
+}
+
+export function prepareHtmlMedia(media: IMedia, region: IRegion) {
+    // Set state as false ( for now )
+    media.ready = false;
+
+    if (media.html) {
+        const mediaId = getMediaId(media);
+
+        // Clean up old copy of the media
+        // before inserting fresh copy
+        const mediaInRegion = region.html.querySelector('.' + mediaId);
+
+        // Append iframe
+        media.html.innerHTML = '';
+        media.html.appendChild(media.iframe as Node);
+
+        if (!mediaInRegion) {
+            // Add fresh copy of the media into the region
+            const $region = document.querySelector('#' + region.containerName);
+            ($region !== null) && $region.appendChild(media.html as HTMLElement);
+            media.ready = true;
+        }
+    }
+}
+
+
+export async function playerReportFault(msg: string, media: IMedia) {
+    // Immediately expire media and report a fault
+    const playerSW = PwaSW();
+    const hasSW = await playerSW.getSW();
+
+    if (hasSW) {
+        playerSW.postMsg({
+            type: 'MEDIA_FAULT',
+            code: 5002,
+            reason: msg,
+            mediaId: media.id,
+            regionId: media.region.id,
+            layoutId: media.region.layout.id,
+            date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+            // Temporary setting
+            expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
+        })
+          .then(() => {
+              // We try to prepare next media if we have more than 1 media
+              if (media.region.totalMediaObjects > 1) {
+                  media.region.prepareNextMedia();
+              }
+          })
+          .finally(() => {
+              // Stopping media as we have reported the error as fault
+              console.debug('??? XLR.debug >> VideoMedia - Done reporting media fault', {
+                  mediaId: media.id,
+                  regionItems: media.region.totalMediaObjects,
+              })
+          });
+    }
 }

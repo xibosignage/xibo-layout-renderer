@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://www.xibosignage.com
  *
@@ -21,7 +21,7 @@
 import './splash-screen.css';
 import xiboLogoImg from './img/logo.png';
 import loaderImg from './img/loader.gif';
-import {OptionsType} from '../../Types/Layout';
+import { OptionsType } from '../../Types/Layout';
 
 export interface ISplashScreen {
     init: () => void;
@@ -40,68 +40,68 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
     const $previewLoaderCaption = document.createElement('div');
     const $defaultNoLayout = document.createElement('div');
 
-     const splashScreenObj = {
-         async init() {
-             $previewSplash.classList.add('preview-splash');
+    const splashScreenObj = {
+        async init() {
+            $previewSplash.classList.add('preview-splash');
 
-             // Don't show Xibo logo on CMS Preview
-             if (config && config.platform !== 'CMS') {
-                 let splashScreenImg = xiboLogoImg;
+            // Don't show Xibo logo on CMS Preview
+            if (config && config.platform !== 'CMS') {
+                let splashScreenImg = xiboLogoImg;
 
-                 if (config.icons?.splashScreen && config.icons.splashScreen.length > 0) {
-                     splashScreenImg = config.icons.splashScreen;
-                 }
+                if (config.icons?.splashScreen && config.icons.splashScreen.length > 0) {
+                    splashScreenImg = config.icons.splashScreen;
+                }
 
-                 $previewSplash.style.setProperty(
-                     'background-image',
-                     `url(${splashScreenImg})`,
-                 );
-                 $previewSplash.style.setProperty(
-                     'background-size',
-                     '200px',
-                 );
-                 $previewSplash.style.setProperty(
-                     'background-position',
-                     'calc(100% - 50px) calc(100% - 30px)',
-                 );
-             }
+                $previewSplash.style.setProperty(
+                    'background-image',
+                    `url(${splashScreenImg})`,
+                );
+                $previewSplash.style.setProperty(
+                    'background-size',
+                    '200px',
+                );
+                $previewSplash.style.setProperty(
+                    'background-position',
+                    'calc(100% - 50px) calc(100% - 30px)',
+                );
+            }
 
-             $previewSplash.constructor.prototype.hide = () => {
-                 this.hide();
-             };
-             $previewSplash.constructor.prototype.show = () => {
-                 this.show();
-             };
+            (($previewSplash as unknown) as PreviewSplashElement).hide = () => {
+                this.hide();
+            };
+            (($previewSplash as unknown) as PreviewSplashElement).show = () => {
+                this.show();
+            };
 
-             $previewLoader.classList.add('preview-loader');
-             $previewLoaderCaption.classList.add('preview-loaderCaption');
+            $previewLoader.classList.add('preview-loader');
+            $previewLoaderCaption.classList.add('preview-loaderCaption');
 
-             // Show loader bar and text on CMS Preview
-             if (config && config.platform === 'CMS') {
-                 $previewLoader.style.setProperty(
-                     'background-image',
-                     `url(${loaderImg})`,
-                 );
-                 $previewLoaderCaption.innerHTML = '<p>Loading Layout...</p>';
-             }
+            // Show loader bar and text on CMS Preview
+            if (config && config.platform === 'CMS') {
+                $previewLoader.style.setProperty(
+                    'background-image',
+                    `url(${loaderImg})`,
+                );
+                $previewLoaderCaption.innerHTML = '<p>Loading Layout...</p>';
+            }
 
-             $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
-             $previewSplash.insertBefore($previewLoaderCaption, null);
+            $previewSplash.insertBefore($previewLoader, $previewSplash.lastElementChild);
+            $previewSplash.insertBefore($previewLoaderCaption, null);
 
-             this.hide();
-         },
-         show() {
-             if ($parent) {
-                 $parent.insertBefore($previewSplash, $parent.firstElementChild);
-                 $previewSplash.style.setProperty('display', 'block');
-             }
-         },
-         hide() {
-             $previewSplash.style.setProperty('display', 'none');
-         },
+            this.hide();
+        },
+        show() {
+            if ($parent) {
+                $parent.insertBefore($previewSplash, $parent.firstElementChild);
+                $previewSplash.style.setProperty('display', 'block');
+            }
+        },
+        hide() {
+            $previewSplash.style.setProperty('display', 'none');
+        },
     };
 
-     splashScreenObj.init();
+    splashScreenObj.init();
 
-     return splashScreenObj;
+    return splashScreenObj;
 }

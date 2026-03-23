@@ -1,3 +1,7 @@
+export type {
+    MediaTypes,
+} from './Generators';
+
 export {
     getFileExt,
     nextId,
@@ -6,7 +10,6 @@ export {
     fetchJSON,
     capitalizeStr,
     audioFileType,
-    MediaTypes,
     videoFileType,
     setExpiry,
     composeMediaUrl,
@@ -19,4 +22,5 @@ export {
     composeBgUrlByPlatform,
     hasDefaultOnly,
     isLayoutValid,
+    createMediaElement,
 } from './Generators';

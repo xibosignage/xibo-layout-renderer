@@ -1,6 +1,6 @@
 {
   "name": "@xibosignage/xibo-layout-renderer",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "Xibo layout renderer is a shared library that performs rendering of given layout from sources (e.g. CMS Preview, Linux Player, etc.)",
   "main": "dist/xibo-layout-renderer.cjs.js",
   "module": "dist/xibo-layout-renderer.esm.js",
@@ -9,8 +9,10 @@
   "type": "module",
   "scripts": {
     "prepare": "npm run build",
-    "build": "rimraf dist && rollup --config rollup.config.prod.ts --configPlugin @rollup/plugin-typescript",
-    "dev": "rimraf dist && rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "prebuild": "npm run clean",
+    "build": "rollup --config rollup.config.prod.ts --configPlugin @rollup/plugin-typescript",
+    "dev": "rollup --config rollup.config.dev.ts -w --configPlugin @rollup/plugin-typescript"
   },
   "repository": {
     "type": "git",

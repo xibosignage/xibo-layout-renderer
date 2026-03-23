@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -18,38 +18,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {createNanoEvents, Emitter} from 'nanoevents';
-import videojs from 'video.js';
-import { nanoid } from 'nanoid';
+import { createNanoEvents, Emitter } from 'nanoevents';
 import Player from "video.js/dist/types/player";
+import videojs from "video.js";
 
 import { OptionsType } from '../../Types/Layout';
 import { IRegion } from '../../Types/Region';
-import { IMedia } from '../../Types/Media';
+import { IMedia, MediaState } from '../../Types/Media';
 import {
     capitalizeStr,
-    fetchJSON,
-    getMediaId,
-    nextId,
-    preloadMediaBlob,
+    composeMediaUrl,
     composeResourceUrl,
     composeResourceUrlByPlatform,
-    composeMediaUrl,
-    getDataBlob,
+    getMediaId,
+    nextId,
+    createMediaElement,
 } from '../Generators';
-import { TransitionElementOptions, compassPoints, flyTransitionKeyframes, transitionElement } from '../Transitions';
-import { VideoMedia } from './VideoMedia';
+import { compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions } from '../Transitions';
 import { AudioMedia } from './AudioMedia';
-import {IXlr} from '../../Types/XLR';
-import {MediaState} from "../../Types/Media/Media.types";
+import { IXlr } from '../../Types/XLR';
+import { IMediaEvents } from "../../Types/Events";
+import { BlobLoader } from "../../Lib";
 
 import 'video.js/dist/video-js.min.css';
-import {createMediaElement} from "../Generators/Generators";
-
-export interface IMediaEvents {
-    start: (media: IMedia) => void;
-    end: (media: IMedia) => void;
-}
+import { IVideoMediaHandler, VideoMedia, vjsDefaultOptions } from "./VideoMedia";
+import { ConsumerPlatform } from "../../Types/Platform";
 
 export class Media implements IMedia {
     attachedAudio: boolean = false;
@@ -84,17 +77,19 @@ export class Media implements IMedia {
     singlePlay: boolean = false;
     state: MediaState = MediaState.IDLE;
     tempSrc: string = '';
-    timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {}, 0);
+    timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => { }, 0);
     type: string = '';
     uri: string = '';
     url: string | null = null;
     useDuration: boolean = false;
     xml: Element | null = null;
+    videoHandler?: IVideoMediaHandler;
 
-    private mediaTimer: ReturnType<typeof setInterval> | undefined;
+    mediaTimer: ReturnType<typeof setInterval> | undefined;
     private mediaTimeCount = 0;
     private xlr: IXlr = <IXlr>{};
     private readonly statsBC = new BroadcastChannel('statsBC');
+    private hasCommandExecuted: boolean;
 
     constructor(
         region: IRegion,
@@ -118,13 +113,14 @@ export class Media implements IMedia {
         this.render = this.xml?.getAttribute('render') || '';
         this.duration = parseInt(this.xml?.getAttribute('duration') as string) || 0;
         this.enableStat = Boolean(this.xml?.getAttribute('enableStat') || false);
+        this.hasCommandExecuted = false;
 
         this.on('start', (media: IMedia) => {
             if (media.state === MediaState.PLAYING) return;
 
             media.state = MediaState.PLAYING;
             if (media.mediaType === 'video') {
-                const videoMedia = VideoMedia(media, xlr);
+                const videoMedia = VideoMedia(media, this.xlr);
 
                 videoMedia.init();
 
@@ -133,6 +129,17 @@ export class Media implements IMedia {
                 }
             } else if (media.mediaType === 'audio') {
                 AudioMedia(media).init();
+                if (media.duration > 0) {
+                    this.startMediaTimer(media);
+                }
+            } else if (media.mediaType === 'shellcommand') {
+                if (this.hasCommandExecuted && !this.loop) {
+                    return;
+                }
+
+                this.hasCommandExecuted = true;
+                this.emitCommand(media);
+
                 if (media.duration > 0) {
                     this.startMediaTimer(media);
                 }
@@ -187,17 +194,67 @@ export class Media implements IMedia {
             media.region.playNextMedia();
         });
 
+        this.on('cancelled', (media: IMedia) => {
+            if (media.state === MediaState.CANCELLED) return;
+            media.state = MediaState.CANCELLED;
+
+            if (this.mediaTimer) {
+                clearInterval(this.mediaTimer);
+                this.mediaTimeCount = 0;
+            }
+
+            // Check if stats are enabled for the layout
+            if (media.enableStat) {
+                this.statsBC.postMessage({
+                    action: 'END_STAT',
+                    mediaId: parseInt(media.id),
+                    layoutId: media.region.layout.id,
+                    scheduleId: media.region.layout.scheduleId,
+                    type: 'media',
+                });
+            }
+
+            // Emit media/widget end event
+            console.debug('Media::Emitter > End - Calling widgetEnd event', {
+                mediaId: media.id,
+                regionId: media.region.id,
+                layoutId: media.region.layout.id,
+            });
+            this.xlr.emitter.emit('widgetEnd', parseInt(media.id));
+
+            media.region.playNextMedia();
+        });
+
         // Initialize Media object
         this.init();
     }
 
     private startMediaTimer(media: IMedia) {
+        const preloadTimeMs = 2000;
+        let preloadTimeBufferMs = (media.duration * 1000) - preloadTimeMs;
+        let isPreparingNextMedia = false;
+
+        if (preloadTimeBufferMs < preloadTimeMs) {
+            // Use media duration when preloadTimeBufferMs is less than the preloadTimeMs
+            preloadTimeBufferMs = (media.duration * 1000);
+        }
+
         this.mediaTimer = setInterval(() => {
             this.mediaTimeCount++;
-            if (this.mediaTimeCount > media.duration) {
-                console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
+            const elapsedTimeMs = (this.mediaTimeCount * 1000);
+            // prepare region's next media
+            if (this.region.totalMediaObjects > 1 &&
+              elapsedTimeMs >= preloadTimeBufferMs &&
+              !isPreparingNextMedia
+            ) {
+                isPreparingNextMedia = true;
+                this.region.prepareNextMedia();
+            }
 
-                console.debug('Media::Emitter > End', {
+            if (this.mediaTimeCount > media.duration) {
+                console.debug('??? XLR.debug >> Media::startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
+
+                console.debug('??? XLR.debug >> Media::startMediaTimer - Media::Emitter > End', {
                     currentLayout: this.xlr.currentLayout,
                     media,
                     region: media.region,
@@ -208,8 +265,10 @@ export class Media implements IMedia {
 
                 if (media.mediaType === 'video') {
                     // Dispose the video media
-                    console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    VideoMedia(media, this.xlr).stop(true);
+                    console.debug(`??? XLR.debug >> VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                    if (media.player !== undefined) {
+                        VideoMedia(media, this.xlr).stop(true);
+                    }
                 }
             }
         }, 1000);
@@ -240,7 +299,7 @@ export class Media implements IMedia {
         }
 
         // Show in fullscreen?
-        if(this.options.showfullscreen === "1") {
+        if (this.options.showfullscreen === "1") {
             // Set dimensions as the layout ones
             this.divWidth = this.region.layout.sWidth;
             this.divHeight = this.region.layout.sHeight;
@@ -269,9 +328,9 @@ export class Media implements IMedia {
 
         let tmpUrl = '';
 
-        if (this.xlr.config.platform === 'CMS') {
+        if (this.xlr.config.platform === ConsumerPlatform.CMS) {
             tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
-        } else if (this.xlr.config.platform === 'chromeOS') {
+        } else if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
             tmpUrl = composeResourceUrl(this.xlr.config, resourceUrlParams);
 
             if (this.mediaType === 'image' || this.mediaType === 'video' || this.mediaType === 'audio') {
@@ -290,10 +349,11 @@ export class Media implements IMedia {
         this.loop =
             this.options['loop'] == '1' ||
             (this.region.options['loop'] == '1' && this.region.totalMediaObjects == 1);
+
+        this.html = createMediaElement(this);
     }
 
     run() {
-        const self = this;
         let transInDuration = 1;
         let transInDirection: compassPoints = 'E';
 
@@ -305,9 +365,9 @@ export class Media implements IMedia {
             transInDirection = this.options.transindirection;
         }
 
-        let defaultTransInOptions: TransitionElementOptions = {duration: transInDuration};
-        let transIn = transitionElement('defaultIn', {duration: defaultTransInOptions.duration});
-        
+        let defaultTransInOptions: TransitionElementOptions = { duration: transInDuration };
+        let transIn = transitionElement('defaultIn', { duration: defaultTransInOptions.duration });
+
         if (Boolean(this.options['transin'])) {
             let transInName = this.options['transin'];
 
@@ -324,61 +384,75 @@ export class Media implements IMedia {
             transIn = transitionElement(transInName, defaultTransInOptions);
         }
 
-        const showCurrentMedia = async () => {
-            let $mediaId = getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName});
-            let $media = document.getElementById($mediaId);
-            const isCMS = this.xlr.config.platform === 'CMS';
+        const showCurrentMedia = () => {
+            const mediaId = getMediaId(<IMedia>{ mediaType: this.mediaType, containerName: this.containerName });
+            const $region = document.querySelector('#' + this.region.containerName) as (HTMLElement | null);
+            let $media = $region !== null && $region.querySelector('.' + mediaId) as (HTMLElement | null);
 
             if (!$media) {
                 $media = getNewMedia();
             }
 
+            console.debug('??? XLR.debug >> Media run - show current media:', {
+                inDOM: document.body.contains($media),
+                mediaId,
+                $media,
+                mediaObject: this,
+            });
+
             if ($media) {
-                $media.style.setProperty('display', 'block');
+                if (this.mediaType === 'video') {
+                    console.debug('??? XLR.debug >> Media.run() > showCurrentMedia() - Video media::START', {
+                        mediaPlayer: this.player,
+                        isDisposed: this.player?.isDisposed(),
+                        el: this.player?.el_,
+                    });
+
+                    // Make sure that vjs is available on the media
+                    // Else, re-initialize
+                    if (this.player !== undefined) {
+                        const existingPlayer = videojs(mediaId);
+
+                        if (existingPlayer) {
+                            this.player = existingPlayer;
+                        } else {
+                            if (this.player.isDisposed_) {
+                                this.player = undefined;
+                                this.player = videojs(mediaId, {
+                                    ...vjsDefaultOptions({
+                                        errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+                                        loop: this.loop,
+                                    }),
+                                })
+                            }
+                        }
+                    }
+
+                    console.debug('??? XLR.debug >> Media.run() > showCurrentMedia() - Video media::END', {
+                        mediaPlayer: this.player,
+                        isDisposed: this.player?.isDisposed(),
+                        el: this.player?.el_,
+                    });
+
+                    if (this.player !== undefined && this.player.el_ !== null) {
+                        (this.player.el() as HTMLElement).style.setProperty('visibility', 'visible');
+                        (this.player.el() as HTMLElement).style.setProperty('z-index', '10');
+                        (this.player.el() as HTMLElement).style.setProperty('opacity', '1');
+                    }
+                } else {
+                    console.debug('??? XLR.debug >> Media::run() > showCurrentMedia', {
+                        mediaType: this.mediaType,
+                        render: this.render,
+                        $media,
+                        state: this.state,
+                    })
+                    $media.style.setProperty('visibility', 'visible');
+                    $media.style.setProperty('z-index', '10');
+                    $media.style.setProperty('opacity', '1');
+                }
 
                 if (Boolean(this.options['transin'])) {
                     $media.animate(transIn.keyframes, transIn.timing);
-                }
-
-                if (this.mediaType === 'image' && this.url !== null) {
-                    ($media as HTMLImageElement).style
-                        .setProperty(
-                            'background-image',
-                            `url(${!isCMS
-                                ? this.url
-                                : await getDataBlob(this.url, this.options.previewJwt)}`
-                        );
-                } else if (this.mediaType === 'video' && this.url !== null) {
-                    // Initialize video.js
-                    this.player = videojs($media, {
-                        controls: false,
-                        preload: 'auto',
-                        autoplay: false,
-                        muted: true,
-                        errorDisplay: this.xlr.config.platform !== 'chromeOS',
-                        loop: this.loop,
-                    });
-                } else if (this.mediaType === 'audio' && this.url !== null) {
-                    ($media as HTMLAudioElement).src =
-                        isCMS ? await preloadMediaBlob(this.url, this.mediaType, this.options.previewJwt) : this.url;
-                } else if ((this.render === 'html' || this.mediaType === 'webpage') &&
-                    this.iframe && this.checkIframeStatus
-                ) {
-                    // Set state as false ( for now )
-                    this.ready = false;
-
-                    // Append iframe
-                    $media.innerHTML = '';
-                    $media.appendChild(this.iframe as Node);
-
-                    // On iframe load, set state as ready to play full preview
-                    // (self.iframe) && self.iframe.addEventListener('load', function(){
-                    //     self.ready = true;
-                    //     if (self.iframe) {
-                    //         const iframeStyles = self.iframe.style.cssText;
-                    //         self.iframe.style.cssText = iframeStyles?.concat('visibility: visible;');
-                    //     }
-                    // });
                 }
 
                 if (!this.region.layout.isOverlay ||
@@ -409,12 +483,76 @@ export class Media implements IMedia {
 
     async stop() {
         const $media = document.getElementById(
-            getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName})
+            getMediaId(<IMedia>{ mediaType: this.mediaType, containerName: this.containerName })
         );
 
         if ($media) {
             $media.style.display = 'none';
             $media.remove();
+        }
+
+        // Release blob URLs for image media to prevent memory leaks on long-running signage
+        if (this.mediaType === 'image' && this.url) {
+            BlobLoader.release(this.url);
+        }
+    }
+
+    /**
+     * Emits a command from the shell command widget.
+     *
+     * @param media
+     * @private
+     */
+    private emitCommand(media: IMedia): void {
+        if (media.mediaType !== 'shellcommand') {
+            return;
+        }
+
+        const options = media.options;
+
+        if (options.commandtype === 'storedCommand' && options.commandcode) {
+            console.debug('Media::Emitter > Shell Command - Calling commandCodeReceived event');
+            this.xlr.emitter.emit(
+                'commandCodeReceived',
+                options.commandcode
+            );
+            return;
+        }
+
+        let commandString = '';
+
+        if (options.useglobalcommand === '1') {
+            commandString = options.globalcommand || '';
+        } else {
+            // Use platform-specific command when available
+            if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
+                commandString = options.chromeoscommand || '';
+            } else if (this.xlr.config.platform === ConsumerPlatform.ANDROID) {
+                commandString = options.androidcommand || '';
+            } else if (this.xlr.config.platform === ConsumerPlatform.LINUX) {
+                commandString = options.linuxcommand || '';
+            } else if (this.xlr.config.platform === ConsumerPlatform.TIZEN) {
+                commandString = options.tizencommand || '';
+            } else if (this.xlr.config.platform === ConsumerPlatform.WEBOS) {
+                commandString = options.weboscommand || '';
+            } else if (this.xlr.config.platform === ConsumerPlatform.WINDOWS) {
+                commandString = options.windowscommand || '';
+            }
+
+            // Fall back to the global command if the platform-specific one
+            // is missing, not configured, or not supported yet
+            if (!commandString && options.globalcommand) {
+                commandString = options.globalcommand;
+            }
+        }
+
+        if (commandString) {
+            console.debug('Media::Emitter > Shell Command - Calling commandStringReceived event');
+            this.xlr.emitter.emit(
+                'commandStringReceived',
+                commandString
+            );
+            return;
         }
     }
 }

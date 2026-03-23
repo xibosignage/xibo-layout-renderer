@@ -1,5 +1,7 @@
-export {
+export type {
     IRegion,
-    IRegionEvents,
+} from './Region.types';
+
+export {
     initialRegion,
 } from './Region.types';

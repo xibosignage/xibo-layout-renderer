@@ -44,6 +44,8 @@ export type IXlrEvents = {
     updateOverlays: (overlays: InputLayoutType[]) => void;
     overlayStart: (overlay: ILayout) => void;
     overlayEnd: (overlay: ILayout) => void;
+    commandCodeReceived: (commandCode: string) => void;
+    commandStringReceived: (commandString: string) => void;
 };
 
 export interface IXlrPlayback {
@@ -97,7 +99,7 @@ export interface IXlr {
 
     playLayouts(xlr: IXlr): void;
 
-    playSchedules(xlr: IXlr): void;
+    playSchedules(xlr: IXlr): Promise<void>;
 
     prepareForSsp(nextLayout: ILayout): Promise<ILayout>;
 
@@ -165,7 +167,8 @@ export const initialXlr: IXlr = {
     },
     playLayouts(xlr: IXlr) {
     },
-    playSchedules() {
+    playSchedules(xlr: IXlr): Promise<void> {
+        return Promise.resolve();
     },
     prepareForSsp(nextLayout: ILayout): Promise<ILayout> {
         return Promise.resolve(<ILayout>{});

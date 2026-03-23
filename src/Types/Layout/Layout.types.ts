@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -22,12 +22,8 @@ import {Emitter, Unsubscribe} from 'nanoevents';
 import {IRegion} from '../Region';
 import {IXlr} from '../XLR';
 import InteractiveActions, { Action } from '../../Modules/ActionController';
-
-export interface ILayoutEvents {
-    start: (layout: ILayout) => void;
-    end: (layout: ILayout) => void;
-    cancelled: (layout: ILayout) => void;
-}
+import { ILayoutEvents } from "../Events";
+import {ConsumerPlatform} from "../Platform";
 
 export enum ELayoutState {
     IDLE,
@@ -35,6 +31,12 @@ export enum ELayoutState {
     PLAYED,
     CANCELLED,
     ERROR,
+}
+
+export enum LayoutPlaybackType {
+    CURRENT = 'current',
+    NEXT = 'next',
+    OVERLAY = 'overlay',
 }
 
 export type InputLayoutType = {
@@ -59,7 +61,7 @@ export type OptionsType = {
     idCounter: number;
     inPreview: boolean;
     appHost?: string | null;
-    platform: 'CMS' | 'chromeOS';
+    platform: ConsumerPlatform;
     config?: {
         cmsUrl: string | null;
         schemaVersion: number;
@@ -113,7 +115,7 @@ export interface ILayout {
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
     regionExpired(): void;
     end(): void;
-    regionEnded(): Promise<void>;
+    regionEnded(): void;
     stopAllMedia(): Promise<void>;
     resetLayout(): Promise<void>;
     index: number;
@@ -122,7 +124,7 @@ export interface ILayout {
     xlr: IXlr,
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
-    removeLayout(): void;
+    removeLayout(caller?: LayoutPlaybackType): void;
     xlfString: string;
     getXlf(): string;
     ad: any;
@@ -131,11 +133,12 @@ export interface ILayout {
     isInterrupt(): boolean;
     state: ELayoutState;
     errorCode: number | null;
+    html: HTMLElement | null;
 }
 
 export const initialLayout: ILayout = {
     id: null,
-    layoutId: -1,
+    layoutId: -9,
     sw: 0,
     sh: 0,
     xw: 0,
@@ -187,8 +190,7 @@ export const initialLayout: ILayout = {
     },
     end() {
     },
-    regionEnded(): Promise<void> {
-        return Promise.resolve();
+    regionEnded() {
     },
     stopAllMedia() {
         return Promise.resolve();
@@ -206,6 +208,7 @@ export const initialLayout: ILayout = {
     },
     isInterrupt: () => false,
     state: ELayoutState.IDLE,
+    html: null,
 };
 
 export type GetLayoutParamType = {

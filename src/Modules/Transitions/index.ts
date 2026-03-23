@@ -1,5 +1,13 @@
-export {
+export type {
     compassPoints,
+    flyTransitionParams,
+    TransitionNameType,
+    KeyframeOptionsType,
+    TransitionElementOptions,
+} from './Transitions';
+
+
+export {
     defaultTrans,
     fadeInElem,
     fadeOutElem,
@@ -7,8 +15,4 @@ export {
     flyOutElem,
     transitionElement,
     flyTransitionKeyframes,
-    flyTransitionParams,
-    TransitionNameType,
-    KeyframeOptionsType,
-    TransitionElementOptions,
 } from './Transitions';

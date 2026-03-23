@@ -21,17 +21,15 @@
 import { DefaultEvents, Emitter, Unsubscribe } from 'nanoevents';
 import {ILayout, initialLayout} from '../Layout';
 import {IMedia} from '../Media';
+import {IRegionEvents} from "../Events";
+import {IXlr} from "../XLR";
 
-export interface IRegionEvents {
-    start: (layout: IRegion) => void;
-    end: (layout: IRegion) => void;
-}
 
 export interface IRegion {
     complete: boolean;
     containerName: string;
     currMedia: IMedia | undefined;
-    currEl: HTMLElement | undefined;
+    currEl: HTMLElement | null;
     currentMedia: number;
     currentMediaIndex: number;
     emitter?: Emitter<DefaultEvents>;
@@ -54,7 +52,7 @@ export interface IRegion {
     mediaObjects: IMedia[];
     mediaObjectsActions: IMedia[];
     nxtMedia: IMedia | undefined;
-    nxtEl: HTMLElement | undefined;
+    nxtEl: HTMLElement | null;
     offsetX: number;
     offsetY: number;
     oldMedia: IMedia | undefined;
@@ -90,13 +88,15 @@ export interface IRegion {
     uniqueId: string;
     xml: null | Element;
     zIndex: number;
+    prepareNextMedia(): void;
+    xlr: IXlr;
 }
 
 export const initialRegion: IRegion = {
     complete: false,
     containerName: '',
     currMedia: undefined,
-    currEl: undefined,
+    currEl: null,
     currentMedia: -1,
     currentMediaIndex: 0,
     end() {
@@ -116,7 +116,7 @@ export const initialRegion: IRegion = {
     mediaObjects: [],
     mediaObjectsActions: [],
     nxtMedia: undefined,
-    nxtEl: undefined,
+    nxtEl: null,
     offsetX: 0,
     offsetY: 0,
     oldMedia: undefined,
@@ -147,4 +147,7 @@ export const initialRegion: IRegion = {
     uniqueId: '',
     xml: null,
     zIndex: 0,
+    prepareNextMedia() {
+    },
+    xlr: <IXlr>{},
 };
