@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -18,22 +18,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {createNanoEvents} from 'nanoevents';
+import { createNanoEvents } from 'nanoevents';
 
-import Layout, {getXlf, initRenderingDOM} from './Modules/Layout';
-import {ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType,} from './Types/Layout';
-import {ELayoutType, initialXlr, IXlr, IXlrEvents} from './Types/XLR';
-import SplashScreen, {ISplashScreen, PreviewSplashElement} from './Modules/SplashScreen';
-import {hasDefaultOnly, isLayoutValid} from "./Modules/Generators";
-import {getLayoutIndexByLayoutId, hasSspLayout} from "./Modules/Generators/Generators";
+import Layout, { getXlf, initRenderingDOM } from './Modules/Layout';
+import { ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType, } from './Types/Layout';
+import { ELayoutType, initialXlr, IXlr, IXlrEvents } from './Types/XLR';
+import SplashScreen, { ISplashScreen, PreviewSplashElement } from './Modules/SplashScreen';
+import { hasDefaultOnly, isLayoutValid } from "./Modules/Generators";
+import { getLayoutIndexByLayoutId, hasSspLayout } from "./Modules/Generators/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
-import {OverlayLayoutManager} from "./Modules/Layout/OverlayLayoutManager";
+import { OverlayLayoutManager } from "./Modules/Layout/OverlayLayoutManager";
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
     overlays: InputLayoutType[],
     options?: OptionsType,
 ) {
+    console.debug('??? Xibo Layout Renderer loaded');
+
     // Init ID counter if we have options
     if (options && options.idCounter == null) {
         options.idCounter = 0;
@@ -63,7 +65,7 @@ export default function XiboLayoutRenderer(
 
     xlrObject.emitter = createNanoEvents<IXlrEvents>();
 
-    xlrObject.on = function<E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]) {
+    xlrObject.on = function <E extends keyof IXlrEvents>(event: E, callback: IXlrEvents[E]) {
         return xlrObject.emitter.on(event, callback);
     };
 
@@ -98,6 +100,11 @@ export default function XiboLayoutRenderer(
     /**
      * Asynchronous event emitter. Extended nanoevents event emitter.
      *
+     * NOTE: Known limitation — nanoevents emit() is synchronous.
+     * Any async event handlers registered via .on() are fire-and-forget;
+     * emitSync does NOT await them. The returned Promise resolves
+     * immediately after handlers are invoked, not after they complete.
+     *
      * @param eventName
      * @param args
      */
@@ -108,7 +115,7 @@ export default function XiboLayoutRenderer(
         });
     };
 
-    xlrObject.bootstrap = function() {
+    xlrObject.bootstrap = function () {
         // Place to set configurations and initialize required props
         const self = this;
         self.inputLayouts = !Array.isArray(props.inputLayouts) ?
@@ -130,7 +137,7 @@ export default function XiboLayoutRenderer(
         splashScreen.show();
     };
 
-    xlrObject.init = function() {
+    xlrObject.init = function () {
         return new Promise<IXlr>((resolve) => {
             const self = this;
 
@@ -145,7 +152,7 @@ export default function XiboLayoutRenderer(
         });
     };
 
-    xlrObject.playLayouts = function(xlr: IXlr) {
+    xlrObject.playLayouts = function (xlr: IXlr) {
         const $splashScreen = document.querySelector('.preview-splash') as PreviewSplashElement;
         // Check if there's a current layout
         if (xlr.currentLayout !== undefined) {
@@ -171,7 +178,7 @@ export default function XiboLayoutRenderer(
         }
     }
 
-    xlrObject.playSchedules = async function(xlr: IXlr) {
+    xlrObject.playSchedules = async function (xlr: IXlr) {
         xlrObject.playLayouts(xlr);
 
         if (xlr.currentLayout !== undefined && !xlr.currentLayout.isInterrupt()) {
@@ -180,12 +187,12 @@ export default function XiboLayoutRenderer(
         }
     };
 
-    xlrObject.renderOverlayLayouts = async function() {
+    xlrObject.renderOverlayLayouts = async function () {
         // Parse this.overlays if overlays are available
         const overlayLayouts = this.overlays.reduce((collection: ILayout[], item) => {
             let inputOverlay: InputLayoutType = <InputLayoutType>{};
 
-            inputOverlay = {...inputOverlay, ...item};
+            inputOverlay = { ...inputOverlay, ...item };
             inputOverlay.index = item.index;
 
             const overlayLayout: ILayout = <ILayout>initialLayout;
@@ -196,7 +203,7 @@ export default function XiboLayoutRenderer(
             }]
         }, []);
 
-        console.log('XLR::renderOverlayLayouts', {overlayLayouts});
+        console.log('XLR::renderOverlayLayouts', { overlayLayouts });
         await Promise.all(overlayLayouts.map(async (_overlayLayout) => {
             const _overlay = await this.prepareLayoutXlf(_overlayLayout);
 
@@ -217,34 +224,34 @@ export default function XiboLayoutRenderer(
         }));
     }
 
-    xlrObject.updateScheduleLayouts = async function(scheduleLayouts: InputLayoutType[]) {
+    xlrObject.updateScheduleLayouts = async function (scheduleLayouts: InputLayoutType[]) {
         console.debug('XLR::updateScheduleLayouts > Updating schedule layouts . . .');
         const inputLayoutIds: (number | string)[] = [];
 
-        await Promise.all(scheduleLayouts.map((_layout, layoutIndex) => {
+        for (const [layoutIndex, _layout] of scheduleLayouts.entries()) {
             const uniqueLayout = _layout;
             uniqueLayout.index = layoutIndex;
             uniqueLayout.id = _layout.layoutId;
 
             this.uniqueLayouts[_layout.layoutId] = uniqueLayout;
             inputLayoutIds.push(_layout.layoutId);
-        }));
+        }
 
         // Cross-check if we need to remove non-existing layouts based on inputLayouts
-        await Promise.all(Object.keys(this.uniqueLayouts).map((layoutId) => {
+        for (const layoutId of Object.keys(this.uniqueLayouts)) {
             if (!inputLayoutIds.includes(parseInt(layoutId))) {
                 delete this.uniqueLayouts[layoutId];
             }
-        }))
+        }
     };
 
-    xlrObject.isLayoutInDOM = function(containerName: string, layoutIndex: number) {
+    xlrObject.isLayoutInDOM = function (containerName: string, layoutIndex: number) {
         const $layout = <HTMLDivElement | null>(document.querySelector(`#${containerName}[data-sequence="${layoutIndex}"]`));
 
         return $layout !== null;
     };
 
-    xlrObject.updateLoop = async function(inputLayouts: InputLayoutType[]) {
+    xlrObject.updateLoop = async function (inputLayouts: InputLayoutType[]) {
         console.debug('>>>> XLR.debug XLR::updateLoop > Updating schedule loop . . .');
         this.inputLayouts = inputLayouts;
         const playback = this.parseLayouts(true);
@@ -294,17 +301,17 @@ export default function XiboLayoutRenderer(
                     await this.currentLayout.finishAllRegions();
                     this.currentLayout.removeLayout();
                 }
-    
+
                 if (this.nextLayout &&
                     this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
                 ) {
                     this.nextLayout.removeLayout();
                 }
-    
+
                 if (playback.currentLayout) {
                     await prepareNewCurrentLayout();
                 }
-    
+
                 if (playback.nextLayout) {
                     this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
                 }
@@ -339,7 +346,7 @@ export default function XiboLayoutRenderer(
         await runOverlayLayouts();
     };
 
-    xlrObject.parseLayouts = function(hasChanged?: boolean) {
+    xlrObject.parseLayouts = function (hasChanged?: boolean) {
         let _currentLayout;
         let _nextLayout;
         let _hasDefaultOnly = hasDefaultOnly(this.inputLayouts);
@@ -414,7 +421,7 @@ export default function XiboLayoutRenderer(
                     } else {
                         _currentLayout = this.nextLayout;
                         _currentLayoutIndex = _currentLayout.index;
-                        _nextLayoutIndex = _currentLayoutIndex + 1 > this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
+                        _nextLayoutIndex = (_currentLayoutIndex + 1) % this.inputLayouts.length;
                         _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                     }
                 }
@@ -454,7 +461,7 @@ export default function XiboLayoutRenderer(
         };
     };
 
-    xlrObject.getLayout = function(inputLayout: InputLayoutType) {
+    xlrObject.getLayout = function (inputLayout: InputLayoutType) {
         const isCMS = this.config.platform === 'CMS';
         if (!isCMS && Object.keys(this.uniqueLayouts).length === 0) {
             return;
@@ -472,10 +479,10 @@ export default function XiboLayoutRenderer(
                 if (isCMS) {
                     activeLayout.index = 0;
                 } else {
-                    activeLayout = {...this.uniqueLayouts[inputLayout.layoutId]};
+                    activeLayout = { ...this.uniqueLayouts[inputLayout.layoutId] };
                 }
 
-                _layout = {..._layout, ...activeLayout};
+                _layout = { ..._layout, ...activeLayout };
 
                 // Must set index/sequence from schedule loop
                 _layout.index = activeLayout.index as number;
@@ -484,12 +491,12 @@ export default function XiboLayoutRenderer(
 
         let iLayout: ILayout = <ILayout>initialLayout;
 
-        iLayout = {...iLayout, ..._layout};
+        iLayout = { ...iLayout, ..._layout };
 
-        return  iLayout;
+        return iLayout;
     };
 
-    xlrObject.getLayoutById = function(layoutId: number, layoutIndex) {
+    xlrObject.getLayoutById = function (layoutId: number, layoutIndex) {
         if (!layoutId || Object.keys(this.uniqueLayouts).length === 0) {
             return undefined;
         }
@@ -507,7 +514,7 @@ export default function XiboLayoutRenderer(
         return _layout as ILayout;
     };
 
-    xlrObject.prepareLayouts = async function() {
+    xlrObject.prepareLayouts = async function () {
         const self = xlrObject;
 
         if (this.isUpdatingLoop) {
@@ -550,7 +557,7 @@ export default function XiboLayoutRenderer(
 
         console.debug('>>>>> XLR.debug prepared layout XLF', layouts);
 
-        return new Promise<IXlr>(async function(resolve) {
+        return new Promise<IXlr>(async function (resolve) {
             self.layouts.current = layouts[0];
             self.layouts.next = layouts[1];
 
@@ -568,12 +575,18 @@ export default function XiboLayoutRenderer(
         });
     };
 
-    xlrObject.prepareLayoutXlf = async function(inputLayout: ILayout) {
+    xlrObject.prepareLayoutXlf = async function (inputLayout: ILayout) {
+        if (!inputLayout) {
+            console.warn('XLR::prepareLayoutXlf called with undefined inputLayout');
+            return initialLayout;
+        }
+
         const self = this;
         // Compose layout props first
-        let newOptions = props.options as OptionsType;
+        // Clone options to avoid mutating the shared xlfUrl template
+        let newOptions = { ...props.options } as OptionsType;
 
-        if (self.config.platform ==='CMS' &&
+        if (self.config.platform === 'CMS' &&
             inputLayout && Boolean(inputLayout.layoutId)
         ) {
             newOptions.xlfUrl =
@@ -606,10 +619,12 @@ export default function XiboLayoutRenderer(
         const isOverlayLayout = !!inputLayout?.isOverlay;
 
         return new Promise<ILayout>((resolve) => {
-            const xlrLayoutObj: ILayout = <ILayout>{...initialLayout,
-                ad: inputLayout.ad ?? initialLayout.ad};
+            const xlrLayoutObj: ILayout = <ILayout>{
+                ...initialLayout,
+                ad: inputLayout.ad ?? initialLayout.ad
+            };
 
-            console.log('XLR::prepareLayoutXlf >> Promise', {xlrLayoutObj, inputLayout});
+            console.log('XLR::prepareLayoutXlf >> Promise', { xlrLayoutObj, inputLayout });
 
             xlrLayoutObj.id = Number(inputLayout.layoutId);
             xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
@@ -630,17 +645,17 @@ export default function XiboLayoutRenderer(
 
             if (isOverlayLayout) {
                 resolve(new OverlayLayout(
-                  xlrLayoutObj,
-                  newOptions,
-                  self,
-                  layoutXlfNode,
+                    xlrLayoutObj,
+                    newOptions,
+                    self,
+                    layoutXlfNode,
                 ));
             } else {
                 resolve(new Layout(
-                  xlrLayoutObj,
-                  newOptions,
-                  self,
-                  layoutXlfNode,
+                    xlrLayoutObj,
+                    newOptions,
+                    self,
+                    layoutXlfNode,
                 ));
             }
         });
@@ -656,16 +671,23 @@ export default function XiboLayoutRenderer(
 
             // Get next valid layout
             // We will skip next layout that has no valid xlf
-            const inputLayout = self.inputLayouts[_nextLayout.index + 1];
-            const nextLayout = self.getLayout(inputLayout);
+            const nextIndex = _nextLayout.index + 1;
+            if (nextIndex >= self.inputLayouts.length) {
+                break;
+            }
 
-            _nextLayout = await self.prepareLayoutXlf(nextLayout);
+            const inputLayout = self.inputLayouts[nextIndex];
+            if (!inputLayout) break;
+
+            const nextLayoutObj = self.getLayout(inputLayout);
+
+            _nextLayout = await self.prepareLayoutXlf(nextLayoutObj);
         }
 
         return _nextLayout;
     };
 
-    xlrObject.gotoPrevLayout = async function() {
+    xlrObject.gotoPrevLayout = async function () {
         const _currentLayoutIndex = this.currentLayoutIndex;
         let _assumedPrevIndex = _currentLayoutIndex - 1;
 
@@ -694,7 +716,7 @@ export default function XiboLayoutRenderer(
         }
     };
 
-    xlrObject.gotoNextLayout = async function() {
+    xlrObject.gotoNextLayout = async function () {
         console.debug('XLR::gotoNextLayout', {
             nextLayoutIndex: this.currentLayoutIndex + 1,
             method: 'XLR::gotoNextLayout',
@@ -704,7 +726,7 @@ export default function XiboLayoutRenderer(
         await xlrObject.currentLayout?.finishAllRegions();
     };
 
-    xlrObject.updateInputLayout = function(layoutIndex, layout) {
+    xlrObject.updateInputLayout = function (layoutIndex, layout) {
         const xlrInputLayout = this.inputLayouts[layoutIndex];
 
         if (layout !== null) {

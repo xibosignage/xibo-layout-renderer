@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Xibo Signage Ltd
+ * Copyright (C) 2026 Xibo Signage Ltd
  *
  * Xibo - Digital Signage - https://xibosignage.com
  *
@@ -18,30 +18,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {createNanoEvents, Emitter} from 'nanoevents';
+import { createNanoEvents, Emitter } from 'nanoevents';
 import Player from "video.js/dist/types/player";
 import videojs from "video.js";
 
-import {OptionsType} from '../../Types/Layout';
-import {IRegion} from '../../Types/Region';
-import {IMedia, MediaState} from '../../Types/Media';
+import { OptionsType } from '../../Types/Layout';
+import { IRegion } from '../../Types/Region';
+import { IMedia, MediaState } from '../../Types/Media';
 import {
-  capitalizeStr,
-  composeMediaUrl,
-  composeResourceUrl,
-  composeResourceUrlByPlatform,
-  getMediaId,
-  nextId,
-  createMediaElement,
+    capitalizeStr,
+    composeMediaUrl,
+    composeResourceUrl,
+    composeResourceUrlByPlatform,
+    getMediaId,
+    nextId,
+    createMediaElement,
 } from '../Generators';
-import {compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions} from '../Transitions';
-import {AudioMedia} from './AudioMedia';
-import {IXlr} from '../../Types/XLR';
-import {IMediaEvents} from "../../Types/Events";
+import { compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions } from '../Transitions';
+import { AudioMedia } from './AudioMedia';
+import { IXlr } from '../../Types/XLR';
+import { IMediaEvents } from "../../Types/Events";
+import { BlobLoader } from "../../Lib";
 
 import 'video.js/dist/video-js.min.css';
-import {IVideoMediaHandler, VideoMedia, vjsDefaultOptions} from "./VideoMedia";
-import {ConsumerPlatform} from "../../Types/Platform";
+import { IVideoMediaHandler, VideoMedia, vjsDefaultOptions } from "./VideoMedia";
+import { ConsumerPlatform } from "../../Types/Platform";
 
 export class Media implements IMedia {
     attachedAudio: boolean = false;
@@ -76,7 +77,7 @@ export class Media implements IMedia {
     singlePlay: boolean = false;
     state: MediaState = MediaState.IDLE;
     tempSrc: string = '';
-    timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {}, 0);
+    timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => { }, 0);
     type: string = '';
     uri: string = '';
     url: string | null = null;
@@ -84,7 +85,7 @@ export class Media implements IMedia {
     xml: Element | null = null;
     videoHandler?: IVideoMediaHandler;
 
-    private mediaTimer: ReturnType<typeof setInterval> | undefined;
+    mediaTimer: ReturnType<typeof setInterval> | undefined;
     private mediaTimeCount = 0;
     private xlr: IXlr = <IXlr>{};
     private readonly statsBC = new BroadcastChannel('statsBC');
@@ -122,7 +123,6 @@ export class Media implements IMedia {
                 const videoMedia = VideoMedia(media, this.xlr);
 
                 videoMedia.init();
-                videoMedia.play();
 
                 if (media.duration > 0) {
                     this.startMediaTimer(media);
@@ -194,6 +194,37 @@ export class Media implements IMedia {
             media.region.playNextMedia();
         });
 
+        this.on('cancelled', (media: IMedia) => {
+            if (media.state === MediaState.CANCELLED) return;
+            media.state = MediaState.CANCELLED;
+
+            if (this.mediaTimer) {
+                clearInterval(this.mediaTimer);
+                this.mediaTimeCount = 0;
+            }
+
+            // Check if stats are enabled for the layout
+            if (media.enableStat) {
+                this.statsBC.postMessage({
+                    action: 'END_STAT',
+                    mediaId: parseInt(media.id),
+                    layoutId: media.region.layout.id,
+                    scheduleId: media.region.layout.scheduleId,
+                    type: 'media',
+                });
+            }
+
+            // Emit media/widget end event
+            console.debug('Media::Emitter > End - Calling widgetEnd event', {
+                mediaId: media.id,
+                regionId: media.region.id,
+                layoutId: media.region.layout.id,
+            });
+            this.xlr.emitter.emit('widgetEnd', parseInt(media.id));
+
+            media.region.playNextMedia();
+        });
+
         // Initialize Media object
         this.init();
     }
@@ -221,9 +252,9 @@ export class Media implements IMedia {
             }
 
             if (this.mediaTimeCount > media.duration) {
-                console.debug('startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
+                console.debug('??? XLR.debug >> Media::startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
 
-                console.debug('Media::Emitter > End', {
+                console.debug('??? XLR.debug >> Media::startMediaTimer - Media::Emitter > End', {
                     currentLayout: this.xlr.currentLayout,
                     media,
                     region: media.region,
@@ -234,8 +265,10 @@ export class Media implements IMedia {
 
                 if (media.mediaType === 'video') {
                     // Dispose the video media
-                    console.debug(`VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    (media.videoHandler) && media.videoHandler.stop(true);
+                    console.debug(`??? XLR.debug >> VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
+                    if (media.player !== undefined) {
+                        VideoMedia(media, this.xlr).stop(true);
+                    }
                 }
             }
         }, 1000);
@@ -266,7 +299,7 @@ export class Media implements IMedia {
         }
 
         // Show in fullscreen?
-        if(this.options.showfullscreen === "1") {
+        if (this.options.showfullscreen === "1") {
             // Set dimensions as the layout ones
             this.divWidth = this.region.layout.sWidth;
             this.divHeight = this.region.layout.sHeight;
@@ -332,9 +365,9 @@ export class Media implements IMedia {
             transInDirection = this.options.transindirection;
         }
 
-        let defaultTransInOptions: TransitionElementOptions = {duration: transInDuration};
-        let transIn = transitionElement('defaultIn', {duration: defaultTransInOptions.duration});
-        
+        let defaultTransInOptions: TransitionElementOptions = { duration: transInDuration };
+        let transIn = transitionElement('defaultIn', { duration: defaultTransInOptions.duration });
+
         if (Boolean(this.options['transin'])) {
             let transInName = this.options['transin'];
 
@@ -352,42 +385,40 @@ export class Media implements IMedia {
         }
 
         const showCurrentMedia = () => {
-            let $mediaId = getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName});
-            let $media = this.html;
+            const mediaId = getMediaId(<IMedia>{ mediaType: this.mediaType, containerName: this.containerName });
+            const $region = document.querySelector('#' + this.region.containerName) as (HTMLElement | null);
+            let $media = $region !== null && $region.querySelector('.' + mediaId) as (HTMLElement | null);
 
             if (!$media) {
                 $media = getNewMedia();
             }
 
             console.debug('??? XLR.debug >> Media run - show current media:', {
-                $mediaId,
+                inDOM: document.body.contains($media),
+                mediaId,
                 $media,
                 mediaObject: this,
             });
 
             if ($media) {
-                if (this.mediaType === 'video' && this.player !== undefined && !this.player.isDisposed()) {
-                    (this.player.el() as HTMLElement).style.setProperty('visibility', 'visible');
-                    (this.player.el() as HTMLElement).style.setProperty('z-index', '10');
-                    (this.player.el() as HTMLElement).style.setProperty('opacity', '1');
-                } else {
-                    $media.style.setProperty('visibility', 'visible');
-                    $media.style.setProperty('z-index', '10');
-                    $media.style.setProperty('opacity', '1');
-                }
-
                 if (this.mediaType === 'video') {
+                    console.debug('??? XLR.debug >> Media.run() > showCurrentMedia() - Video media::START', {
+                        mediaPlayer: this.player,
+                        isDisposed: this.player?.isDisposed(),
+                        el: this.player?.el_,
+                    });
+
                     // Make sure that vjs is available on the media
                     // Else, re-initialize
                     if (this.player !== undefined) {
-                        const existingPlayer = videojs($mediaId);
+                        const existingPlayer = videojs(mediaId);
 
                         if (existingPlayer) {
                             this.player = existingPlayer;
                         } else {
                             if (this.player.isDisposed_) {
                                 this.player = undefined;
-                                this.player = videojs($mediaId, {
+                                this.player = videojs(mediaId, {
                                     ...vjsDefaultOptions({
                                         errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
                                         loop: this.loop,
@@ -397,6 +428,27 @@ export class Media implements IMedia {
                         }
                     }
 
+                    console.debug('??? XLR.debug >> Media.run() > showCurrentMedia() - Video media::END', {
+                        mediaPlayer: this.player,
+                        isDisposed: this.player?.isDisposed(),
+                        el: this.player?.el_,
+                    });
+
+                    if (this.player !== undefined && this.player.el_ !== null) {
+                        (this.player.el() as HTMLElement).style.setProperty('visibility', 'visible');
+                        (this.player.el() as HTMLElement).style.setProperty('z-index', '10');
+                        (this.player.el() as HTMLElement).style.setProperty('opacity', '1');
+                    }
+                } else {
+                    console.debug('??? XLR.debug >> Media::run() > showCurrentMedia', {
+                        mediaType: this.mediaType,
+                        render: this.render,
+                        $media,
+                        state: this.state,
+                    })
+                    $media.style.setProperty('visibility', 'visible');
+                    $media.style.setProperty('z-index', '10');
+                    $media.style.setProperty('opacity', '1');
                 }
 
                 if (Boolean(this.options['transin'])) {
@@ -431,12 +483,17 @@ export class Media implements IMedia {
 
     async stop() {
         const $media = document.getElementById(
-            getMediaId(<IMedia>{mediaType: this.mediaType, containerName: this.containerName})
+            getMediaId(<IMedia>{ mediaType: this.mediaType, containerName: this.containerName })
         );
 
         if ($media) {
             $media.style.display = 'none';
             $media.remove();
+        }
+
+        // Release blob URLs for image media to prevent memory leaks on long-running signage
+        if (this.mediaType === 'image' && this.url) {
+            BlobLoader.release(this.url);
         }
     }
 

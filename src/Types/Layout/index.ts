@@ -19,12 +19,15 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-export {
+export type {
     GetLayoutParamType,
     GetLayoutType,
     ILayout,
     InputLayoutType,
     OptionsType,
+} from './Layout.types';
+
+export {
     initialLayout,
     ELayoutState,
     LayoutPlaybackType,

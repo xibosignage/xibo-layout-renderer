@@ -308,13 +308,13 @@ export default class Layout implements ILayout {
                 $layout.style.setProperty('z-index', '-99');
                 console.debug('??? XLR.debug >> Layout.on("end") - Hiding currentLayout...');
 
-                setTimeout(() => {
+                // setTimeout(() => {
                     console.debug('??? XLR.debug >> Layout.on("end") > setTimeout - Removing currentLayout', {
                         layoutId: layout.layoutId,
                     });
 
                     $layout.parentElement?.removeChild($layout);
-                }, 500);
+                // }, 250);
             }
 
             // Check if stats are enabled for the layout
