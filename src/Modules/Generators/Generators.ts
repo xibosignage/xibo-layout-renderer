@@ -23,7 +23,7 @@ import videojs from "video.js";
 
 import {IMedia} from '../../Types/Media';
 import {InputLayoutType, OptionsType} from '../../Types/Layout';
-import {composeVideoSource, defaultVjsOpts} from "../Media";
+import {composeVideoSource, defaultVjsOpts} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
 import {IRegion} from "../../Types/Region";
 import {ConsumerPlatform} from "../../Types/Platform";
@@ -169,20 +169,34 @@ export function videoFileType(str: string) {
 }
 
 export function composeResourceUrlByPlatform(options: OptionsType, params: any) {
-    let resourceUrl = params.regionOptions.getResourceUrl
-        .replace(":regionId", params.regionId)
-        .replace(":id", params.mediaId) +
-        '?preview=1&layoutPreview=1';
+    let resourceUrl = '';
+    
+    if (params.regionOptions && Boolean(params.regionOptions.getResourceUrl)) {
+        resourceUrl = params.regionOptions.getResourceUrl
+            .replace(":regionId", params.regionId)
+            .replace(":id", params.mediaId) +
+            '?preview=1&layoutPreview=1';
+    }
 
-    if (options.platform === 'CMS') {
+    if (options.platform === ConsumerPlatform.CMS && Boolean(params.regionOptions.previewJwt)) {
         resourceUrl += '&jwt=' + params.regionOptions.previewJwt;
     }
 
-    if (options.platform === 'chromeOS') {
+    if (options.platform === ConsumerPlatform.CHROMEOS) {
         const resourceEndpoint = '/required-files/resource/';
 
         if (!params.isGlobalContent && params.isImageOrVideo) {
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+        }
+    } else if (options.platform === ConsumerPlatform.ELECTRON) {
+        if (params.render === 'html' || params.mediaType === 'ticker' || params.mediaType === 'webpage') {
+            resourceUrl = options.appHost +
+                'layout_' + params.layoutId +
+                '_region_' + params.regionId +
+                '_media_' + params.mediaId +
+                '.html';
+        } else if (params.render === 'native' && params.isImageOrVideo) {
+            resourceUrl = options.appHost + params.uri;
         }
     } else if (!Boolean(params['mediaType'])) {
         resourceUrl += '&scale_override=' + params.scaleFactor;

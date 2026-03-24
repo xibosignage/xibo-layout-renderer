@@ -320,6 +320,7 @@ export class Media implements IMedia {
             uri: this.uri,
             isGlobalContent: this.mediaType === 'global',
             isImageOrVideo: this.mediaType === 'image' || this.mediaType === 'video',
+            render: this.render,
         };
 
         if (this.mediaType === 'image' || this.mediaType === 'video') {
@@ -341,6 +342,8 @@ export class Media implements IMedia {
                     tmpUrl = this.uri;
                 }
             }
+        } else if (this.xlr.config.platform === ConsumerPlatform.ELECTRON) {
+            tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
         }
 
         this.url = tmpUrl;

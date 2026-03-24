@@ -1,7 +1,3 @@
-export type {
-    MediaTypes,
-} from './Generators';
-
 export {
     getFileExt,
     nextId,
@@ -23,4 +19,13 @@ export {
     hasDefaultOnly,
     isLayoutValid,
     createMediaElement,
+    playerReportFault,
+    getAllAttributes,
+    prepareAudioMedia,
+    prepareHtmlMedia,
+    prepareImageMedia,
+    prepareVideoMedia,
+    getLayoutIndexByLayoutId,
+    hasSspLayout,
+    type MediaTypes,
 } from './Generators';

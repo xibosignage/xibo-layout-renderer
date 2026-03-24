@@ -22,6 +22,7 @@ import './splash-screen.css';
 import xiboLogoImg from './img/logo.png';
 import loaderImg from './img/loader.gif';
 import { OptionsType } from '../../Types/Layout';
+import { ConsumerPlatform } from '../../types';
 
 export interface ISplashScreen {
     init: () => void;
@@ -45,7 +46,7 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
             $previewSplash.classList.add('preview-splash');
 
             // Don't show Xibo logo on CMS Preview
-            if (config && config.platform !== 'CMS') {
+            if (config && config.platform !== ConsumerPlatform.CMS) {
                 let splashScreenImg = xiboLogoImg;
 
                 if (config.icons?.splashScreen && config.icons.splashScreen.length > 0) {
@@ -77,7 +78,7 @@ export default function SplashScreen($parent: Element | null, config?: OptionsTy
             $previewLoaderCaption.classList.add('preview-loaderCaption');
 
             // Show loader bar and text on CMS Preview
-            if (config && config.platform === 'CMS') {
+            if (config && config.platform === ConsumerPlatform.CMS) {
                 $previewLoader.style.setProperty(
                     'background-image',
                     `url(${loaderImg})`,
