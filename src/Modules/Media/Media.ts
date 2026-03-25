@@ -231,13 +231,20 @@ export class Media implements IMedia {
 
     private startMediaTimer(media: IMedia) {
         const preloadTimeMs = 2000;
-        let preloadTimeBufferMs = (media.duration * 1000) - preloadTimeMs;
+        let preloadTimeBufferMs = ((media.duration * 1000) / 2) - preloadTimeMs;
         let isPreparingNextMedia = false;
 
         if (preloadTimeBufferMs < preloadTimeMs) {
             // Use media duration when preloadTimeBufferMs is less than the preloadTimeMs
-            preloadTimeBufferMs = (media.duration * 1000);
+            preloadTimeBufferMs = ((media.duration / 2) * 1000);
         }
+
+        console.debug('<><> XLR.debug >> [Media::startMediaTimer]', {
+            preloadTimeMs,
+            preloadTimeBufferMs,
+            isPreparingNextMedia,
+            mediaDuration: media.duration,
+        });
 
         this.mediaTimer = setInterval(() => {
             this.mediaTimeCount++;

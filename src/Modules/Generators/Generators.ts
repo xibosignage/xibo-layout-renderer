@@ -671,7 +671,14 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
 
         // Clean up old copy of the media
         // before inserting fresh copy
-        const mediaInRegion = region.html.querySelector('.' + mediaId);
+        const $layout = document.querySelector(`#${region.layout.containerName}[data-sequence="${region.layout.index}"]`) as HTMLDivElement;
+        const $region = $layout.querySelector('#' + region.containerName) as HTMLElement;
+        const mediaInRegion = $region.querySelector('.' + mediaId);
+
+        console.debug('<><> XLR.debug >> [Media] - [Generators::prepareHtmlMedia]', {
+            mediaId,
+            mediaInRegion,
+        })
 
         // Append iframe
         media.html.innerHTML = '';

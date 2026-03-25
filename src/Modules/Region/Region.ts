@@ -257,6 +257,11 @@ export default class Region implements IRegion {
         const nextMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
         const nextMedia = this.mediaObjects[nextMediaIndex];
 
+        console.debug('<><> XLR.debug >> [Media] - [Region::prepareNextMedia()] - Preparing next media', {
+            currentMediaIndex: this.currentMediaIndex,
+            nextMediaIndex,
+            nextMediaId: nextMedia.mediaId,
+        })
         this.prepareMedia(nextMedia);
     }
 
@@ -320,7 +325,7 @@ export default class Region implements IRegion {
             let defaultTransOutOptions: TransitionElementOptions = { duration: transOutDuration };
             let transOut = transitionElement('defaultOut', { duration: defaultTransOutOptions.duration });
 
-            let transOutName: TransitionNameType | string;
+            let transOutName: TransitionNameType | string = '';
             if (oldMedia && Boolean(oldMedia.options['transout'])) {
                 transOutName = oldMedia.options['transout'];
 
@@ -337,10 +342,19 @@ export default class Region implements IRegion {
                 transOut = transitionElement(transOutName as TransitionNameType, defaultTransOutOptions);
             }
 
+            console.debug('??? XLR.debug >> Region > transitionNodes - transOut options', {
+                transOutName,
+                transOut,
+                transOutDuration,
+                transOutDirection,
+                totalMediaObjects: this.totalMediaObjects,
+            });
+
             const hideOldMedia = () => {
                 // Hide oldMedia
                 if (oldMedia) {
-                    const $region = this.layout.html?.querySelector('#' + this.containerName);
+                    const $layout = document.querySelector(`#${this.layout.containerName}[data-sequence="${this.layout.index}"]`) as HTMLDivElement;
+                    const $region = $layout.querySelector('#' + this.containerName);
                     const $oldMedia = ($region)
                       ? $region.querySelector('.' + getMediaId(oldMedia)) as HTMLElement
                       : null;
@@ -412,9 +426,6 @@ export default class Region implements IRegion {
                             console.debug('??? XLR.debug >> Region transitionNode - hideOldMedia' +
                                 'no transout and only 1 media');
                             removeOldMedia();
-                            // Resolve this right away
-                            // As a result, the transition between two media object
-                            // seems like a cross-over
                         }
                     }
                 }
