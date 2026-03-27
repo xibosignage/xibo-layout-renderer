@@ -459,11 +459,10 @@ export default class Layout implements ILayout {
 
             const bgImageUrl = composeBgUrlByPlatform(
               this.xlr.config.platform,
-              {
-                  ...this.options,
-                  layout: this,
-              },
+              this,
             );
+
+            console.debug('>>> XLR.debug Layout::parseXlf - Composed background image URL > ', { bgImageUrl });
 
             if ($layout) {
                 if (!this.isOverlay) {

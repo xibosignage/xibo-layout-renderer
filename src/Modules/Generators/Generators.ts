@@ -22,7 +22,7 @@ import {format} from "date-fns";
 import videojs from "video.js";
 
 import {IMedia} from '../../Types/Media';
-import {InputLayoutType, OptionsType} from '../../Types/Layout';
+import {ILayout, InputLayoutType, OptionsType} from '../../Types/Layout';
 import {composeVideoSource, defaultVjsOpts} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
 import {IRegion} from "../../Types/Region";
@@ -225,20 +225,21 @@ export function composeMediaUrl(params: any) {
 
 export function composeBgUrlByPlatform(
     platform: OptionsType['platform'],
-    params: any
+    params: ILayout,
 ) {
     let bgImageUrl = '';
 
-    if (platform === 'CMS') {
-        bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", (params.layout.id as unknown) as string) +
-            '&preview=1&width=' + params.layout.sWidth +
-            '&height=' + params.layout.sHeight +
+    if (platform === ConsumerPlatform.CMS) {
+        bgImageUrl = params.options.layoutBackgroundDownloadUrl.replace(":id", (params.id as unknown) as string) +
+            '&preview=1&width=' + params.sWidth +
+            '&height=' + params.sHeight +
             '&dynamic&proportional=0';
 
-    } else if (platform === 'chromeOS') {
-        bgImageUrl = composeMediaUrl({uri: params.layout.bgImage});
+    } else if (platform === ConsumerPlatform.CHROMEOS) {
+        bgImageUrl = composeMediaUrl({uri: params.bgImage});
+    } else if (platform === ConsumerPlatform.ELECTRON) {
+        bgImageUrl = params.options.appHost + params.bgImage;
     }
-    // @TODO: Add condition to handle electron platform
 
     return bgImageUrl;
 }
