@@ -24,10 +24,10 @@ import Layout, { getXlf, initRenderingDOM } from './Modules/Layout';
 import { ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType, } from './Types/Layout';
 import { ELayoutType, initialXlr, IXlr, IXlrEvents } from './Types/XLR';
 import SplashScreen, { ISplashScreen, PreviewSplashElement } from './Modules/SplashScreen';
-import { hasDefaultOnly, isLayoutValid } from "./Modules/Generators";
-import { getLayoutIndexByLayoutId, hasSspLayout } from "./Modules/Generators/Generators";
+import { hasDefaultOnly, isLayoutValid, getLayoutIndexByLayoutId, hasSspLayout } from "./Modules/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
 import { OverlayLayoutManager } from "./Modules/Layout/OverlayLayoutManager";
+import { ConsumerPlatform } from './types';
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -462,7 +462,7 @@ export default function XiboLayoutRenderer(
     };
 
     xlrObject.getLayout = function (inputLayout: InputLayoutType) {
-        const isCMS = this.config.platform === 'CMS';
+        const isCMS = this.config.platform === ConsumerPlatform.CMS;
         if (!isCMS && Object.keys(this.uniqueLayouts).length === 0) {
             return;
         }
@@ -586,12 +586,15 @@ export default function XiboLayoutRenderer(
         // Clone options to avoid mutating the shared xlfUrl template
         let newOptions = { ...props.options } as OptionsType;
 
-        if (self.config.platform === 'CMS' &&
+        if (self.config.platform === ConsumerPlatform.CMS &&
             inputLayout && Boolean(inputLayout.layoutId)
         ) {
             newOptions.xlfUrl =
                 newOptions.xlfUrl.replace(':layoutId', String(inputLayout.layoutId));
-        } else if (self.config.platform === 'chromeOS' && inputLayout !== undefined) {
+        } else if ((
+            self.config.platform === ConsumerPlatform.CHROMEOS ||
+            self.config.platform === ConsumerPlatform.ELECTRON
+         ) && inputLayout !== undefined) {
             newOptions.xlfUrl = inputLayout.path as string;
         }
 

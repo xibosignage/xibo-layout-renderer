@@ -22,8 +22,8 @@ import {format} from "date-fns";
 import videojs from "video.js";
 
 import {IMedia} from '../../Types/Media';
-import {InputLayoutType, OptionsType} from '../../Types/Layout';
-import {composeVideoSource, defaultVjsOpts} from "../Media";
+import {ILayout, InputLayoutType, OptionsType} from '../../Types/Layout';
+import {composeVideoSource, defaultVjsOpts} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
 import {IRegion} from "../../Types/Region";
 import {ConsumerPlatform} from "../../Types/Platform";
@@ -169,20 +169,34 @@ export function videoFileType(str: string) {
 }
 
 export function composeResourceUrlByPlatform(options: OptionsType, params: any) {
-    let resourceUrl = params.regionOptions.getResourceUrl
-        .replace(":regionId", params.regionId)
-        .replace(":id", params.mediaId) +
-        '?preview=1&layoutPreview=1';
+    let resourceUrl = '';
+    
+    if (params.regionOptions && Boolean(params.regionOptions.getResourceUrl)) {
+        resourceUrl = params.regionOptions.getResourceUrl
+            .replace(":regionId", params.regionId)
+            .replace(":id", params.mediaId) +
+            '?preview=1&layoutPreview=1';
+    }
 
-    if (options.platform === 'CMS') {
+    if (options.platform === ConsumerPlatform.CMS && Boolean(params.regionOptions.previewJwt)) {
         resourceUrl += '&jwt=' + params.regionOptions.previewJwt;
     }
 
-    if (options.platform === 'chromeOS') {
+    if (options.platform === ConsumerPlatform.CHROMEOS) {
         const resourceEndpoint = '/required-files/resource/';
 
         if (!params.isGlobalContent && params.isImageOrVideo) {
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+        }
+    } else if (options.platform === ConsumerPlatform.ELECTRON) {
+        if (params.render === 'html' || params.mediaType === 'ticker' || params.mediaType === 'webpage') {
+            resourceUrl = options.appHost +
+                'layout_' + params.layoutId +
+                '_region_' + params.regionId +
+                '_media_' + params.mediaId +
+                '.html';
+        } else if (params.render === 'native' && params.isImageOrVideo) {
+            resourceUrl = options.appHost + params.uri;
         }
     } else if (!Boolean(params['mediaType'])) {
         resourceUrl += '&scale_override=' + params.scaleFactor;
@@ -211,20 +225,21 @@ export function composeMediaUrl(params: any) {
 
 export function composeBgUrlByPlatform(
     platform: OptionsType['platform'],
-    params: any
+    params: ILayout,
 ) {
     let bgImageUrl = '';
 
-    if (platform === 'CMS') {
-        bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", (params.layout.id as unknown) as string) +
-            '&preview=1&width=' + params.layout.sWidth +
-            '&height=' + params.layout.sHeight +
+    if (platform === ConsumerPlatform.CMS) {
+        bgImageUrl = params.options.layoutBackgroundDownloadUrl.replace(":id", (params.id as unknown) as string) +
+            '&preview=1&width=' + params.sWidth +
+            '&height=' + params.sHeight +
             '&dynamic&proportional=0';
 
-    } else if (platform === 'chromeOS') {
-        bgImageUrl = composeMediaUrl({uri: params.layout.bgImage});
+    } else if (platform === ConsumerPlatform.CHROMEOS) {
+        bgImageUrl = composeMediaUrl({uri: params.bgImage});
+    } else if (platform === ConsumerPlatform.ELECTRON) {
+        bgImageUrl = params.options.appHost + params.bgImage;
     }
-    // @TODO: Add condition to handle electron platform
 
     return bgImageUrl;
 }
@@ -657,7 +672,14 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
 
         // Clean up old copy of the media
         // before inserting fresh copy
-        const mediaInRegion = region.html.querySelector('.' + mediaId);
+        const $layout = document.querySelector(`#${region.layout.containerName}[data-sequence="${region.layout.index}"]`) as HTMLDivElement;
+        const $region = $layout.querySelector('#' + region.containerName) as HTMLElement;
+        const mediaInRegion = $region.querySelector('.' + mediaId);
+
+        console.debug('<><> XLR.debug >> [Media] - [Generators::prepareHtmlMedia]', {
+            mediaId,
+            mediaInRegion,
+        })
 
         // Append iframe
         media.html.innerHTML = '';
