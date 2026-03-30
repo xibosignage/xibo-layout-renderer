@@ -20,14 +20,21 @@
  */
 import { createNanoEvents } from 'nanoevents';
 import { nanoid } from "nanoid";
-import videojs from "video.js";
 
 import { ILayout, OptionsType } from '../../Types/Layout';
 import { IRegion } from '../../Types/Region';
 import { IMedia } from '../../Types/Media';
 import { IRegionEvents } from "../../Types/Events";
-import {getFileExt, getMediaId, nextId, videoFileType} from '../Generators';
-import { defaultVjsOpts, Media, videoMediaHandler } from '../Media';
+import {
+    getMediaId,
+    nextId,
+    getAllAttributes,
+    prepareAudioMedia,
+    prepareHtmlMedia,
+    prepareImageMedia,
+    prepareVideoMedia
+} from '../Generators';
+import { Media } from '../Media';
 import {
     TransitionElementOptions,
     TransitionNameType,
@@ -36,15 +43,6 @@ import {
     transitionElement,
 } from '../Transitions';
 import { IXlr } from '../../Types/XLR';
-import {
-    getAllAttributes,
-    prepareAudioMedia,
-    prepareHtmlMedia,
-    prepareImageMedia,
-    prepareVideoMedia
-} from '../Generators/Generators';
-import { BlobLoader } from "../../Lib";
-import { ConsumerPlatform } from "../../Types/Platform";
 
 export default class Region implements IRegion {
     // ===== Properties =====
@@ -226,11 +224,6 @@ export default class Region implements IRegion {
 
         // Prepare first media
         if (this.mediaObjects.length > 0) {
-            // Clean up region first
-            // if (this.html?.children.length > 0) {
-            //     this.html.innerHTML = '';
-            // }
-
             this.prepareFirstMedia();
         }
     };
@@ -264,6 +257,11 @@ export default class Region implements IRegion {
         const nextMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
         const nextMedia = this.mediaObjects[nextMediaIndex];
 
+        console.debug('<><> XLR.debug >> [Media] - [Region::prepareNextMedia()] - Preparing next media', {
+            currentMediaIndex: this.currentMediaIndex,
+            nextMediaIndex,
+            nextMediaId: nextMedia.mediaId,
+        })
         this.prepareMedia(nextMedia);
     }
 
@@ -286,39 +284,6 @@ export default class Region implements IRegion {
                 regionId: this.id,
                 oldMedia: this.oldMedia?.containerName,
             });
-
-            // const $region = document.getElementById(`${this.containerName}`);
-
-            // Preload first item
-            // if (this.currentMediaIndex > 0 && this.nxtMedia) {
-            //     // Prepare next items
-            //     this.prepareMedia(this.nxtMedia);
-            // } else {
-            //     this.prepareMedia(this.currMedia);
-            // }
-            // Append available media to region DOM
-            // if (this.currMedia) {
-            //
-            //     this.currEl = createMediaElement(this.currMedia);
-            //     this.currMedia.html = this.currEl;
-            //
-            //     console.debug('<> XLR.debug prepareMediaObjects::currMedia', {
-            //         currentMedia: this.currMedia.containerName,
-            //         regionId: this.id,
-            //     });
-            //     ($region) && $region.insertBefore(this.currEl as Node, $region.lastElementChild);
-            // }
-
-            // if (this.totalMediaObjects > 1 && this.nxtMedia) {
-            //     this.nxtEl = createMediaElement(this.nxtMedia);
-            //     this.nxtMedia.html = this.nxtEl;
-            //
-            //     console.debug('<> XLR.debug prepareMediaObjects::nxtMedia', {
-            //         nextMedia: this.nxtMedia.containerName,
-            //         regionId: this.id,
-            //     });
-            //     ($region) && $region.insertBefore(this.nxtEl as Node, $region.lastElementChild);
-            // }
         }
     }
 
@@ -331,85 +296,6 @@ export default class Region implements IRegion {
         this.complete = true;
         this.layout.regions[this.index] = this;
         this.layout.regionExpired();
-    }
-
-    private async prepareVideo(media: IMedia, container: HTMLElement | null) {
-        const video = media.html as HTMLVideoElement;
-
-        if (media.url !== null) {
-            video.src = media.url;
-        }
-
-        (container !== null) && container.appendChild(media.html as HTMLVideoElement);
-
-        return new Promise<void>((resolve) => {
-            const vidType = videoFileType(getFileExt(media.uri)) as string;
-            // Initialize Video.js
-            media.player = videojs(video, {
-                ...defaultVjsOpts,
-                errorDisplay: this.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
-                loop: media.loop,
-                sources: [{ src: media.url as string, type: vidType }] // Adjust MIME type if dynamic
-            });
-
-            (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
-            (media.player.el() as HTMLElement).style.setProperty('z-index', '0');
-            (media.player.el() as HTMLElement).style.setProperty('opacity', '0');
-
-            // Register video handler
-            media.videoHandler = videoMediaHandler(media, this.xlr.config.platform);
-
-            media.videoHandler.player?.one('canplaythrough', () => {
-                resolve();
-            });
-        });
-    }
-
-    private async prepareImage(media: IMedia, container: HTMLElement | null) {
-        const blobUrl = await BlobLoader.load(media.url as string);
-
-        const img = new Image();
-
-        // Wait for decoding to finish so there is no visual glitch
-        return new Promise<void>((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = (e) => reject(e);
-            img.src = blobUrl;
-
-            if (media.html) {
-                media.html.style.setProperty(
-                    'background-image',
-                    `url(${blobUrl})`
-                );
-            }
-
-            (container !== null) && container.appendChild(media.html as HTMLElement);
-        });
-    }
-
-    private prepareIframe(media: IMedia, container: HTMLElement | null): Promise<void> {
-        console.debug('??? XLR.debug >> Region prepareIframe - start');
-        return new Promise((resolve, reject) => {
-            const iframe = media.iframe;
-            console.debug('??? XLR.debug >> Region prepareIframe - promise', {
-                iframe,
-                mediaType: media.mediaType,
-                container,
-            })
-
-            if (iframe !== null) {
-                iframe.onload = () => resolve();
-                iframe.onerror = (e) => reject(e);
-
-                // Append iframe to html
-                if (media.html) {
-                    media.html.innerHTML = '';
-                    media.html.appendChild(iframe);
-                }
-
-                (container !== null) && container.appendChild(media.html as HTMLElement);
-            }
-        });
     }
 
     run() {
@@ -439,7 +325,7 @@ export default class Region implements IRegion {
             let defaultTransOutOptions: TransitionElementOptions = { duration: transOutDuration };
             let transOut = transitionElement('defaultOut', { duration: defaultTransOutOptions.duration });
 
-            let transOutName: TransitionNameType | string;
+            let transOutName: TransitionNameType | string = '';
             if (oldMedia && Boolean(oldMedia.options['transout'])) {
                 transOutName = oldMedia.options['transout'];
 
@@ -456,10 +342,19 @@ export default class Region implements IRegion {
                 transOut = transitionElement(transOutName as TransitionNameType, defaultTransOutOptions);
             }
 
+            console.debug('??? XLR.debug >> Region > transitionNodes - transOut options', {
+                transOutName,
+                transOut,
+                transOutDuration,
+                transOutDirection,
+                totalMediaObjects: this.totalMediaObjects,
+            });
+
             const hideOldMedia = () => {
                 // Hide oldMedia
                 if (oldMedia) {
-                    const $region = this.layout.html?.querySelector('#' + this.containerName);
+                    const $layout = document.querySelector(`#${this.layout.containerName}[data-sequence="${this.layout.index}"]`) as HTMLDivElement;
+                    const $region = $layout.querySelector('#' + this.containerName);
                     const $oldMedia = ($region)
                       ? $region.querySelector('.' + getMediaId(oldMedia)) as HTMLElement
                       : null;
@@ -531,9 +426,6 @@ export default class Region implements IRegion {
                             console.debug('??? XLR.debug >> Region transitionNode - hideOldMedia' +
                                 'no transout and only 1 media');
                             removeOldMedia();
-                            // Resolve this right away
-                            // As a result, the transition between two media object
-                            // seems like a cross-over
                         }
                     }
                 }

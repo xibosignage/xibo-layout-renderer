@@ -105,6 +105,12 @@ export async function getXlf(layoutOptions: OptionsType) {
         fetchOptions.headers = {
             'Content-Type': 'text/xml',
         };
+    } else if (layoutOptions.platform === ConsumerPlatform.ELECTRON) {
+        xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
+        fetchOptions.mode = 'no-cors';
+        fetchOptions.headers = {
+            'Content-Type': 'text/xml',
+        };
     } else if (layoutOptions.appHost !== null) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
@@ -453,11 +459,10 @@ export default class Layout implements ILayout {
 
             const bgImageUrl = composeBgUrlByPlatform(
               this.xlr.config.platform,
-              {
-                  ...this.options,
-                  layout: this,
-              },
+              this,
             );
+
+            console.debug('>>> XLR.debug Layout::parseXlf - Composed background image URL > ', { bgImageUrl });
 
             if ($layout) {
                 if (!this.isOverlay) {
