@@ -26,12 +26,13 @@ import {OptionsType} from '../Layout';
 import {IVideoMediaHandler} from "../../Modules/Media";
 import { IMediaEvents } from "../Events";
 
-export type MediaState = 'idle' | 'playing' | 'ended';
+export type MediaState = 'idle' | 'playing' | 'ended' | 'cancelled';
 
 export const MediaState = {
     IDLE: 'idle',
     PLAYING: 'playing',
     ENDED: 'ended',
+    CANCELLED: 'cancelled',
 } as const;
 
 export interface IMedia {
@@ -82,6 +83,7 @@ export interface IMedia {
     useDuration: boolean;
     xml: Element | null;
     videoHandler?: IVideoMediaHandler;
+    mediaTimer: ReturnType<typeof setInterval> | undefined;
 }
 
 export const initialMedia: IMedia = {
@@ -127,4 +129,5 @@ export const initialMedia: IMedia = {
     url: null,
     useDuration: Boolean(0),
     xml: null,
+    mediaTimer: undefined,
 }

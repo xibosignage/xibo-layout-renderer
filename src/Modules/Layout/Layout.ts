@@ -105,6 +105,12 @@ export async function getXlf(layoutOptions: OptionsType) {
         fetchOptions.headers = {
             'Content-Type': 'text/xml',
         };
+    } else if (layoutOptions.platform === ConsumerPlatform.ELECTRON) {
+        xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
+        fetchOptions.mode = 'no-cors';
+        fetchOptions.headers = {
+            'Content-Type': 'text/xml',
+        };
     } else if (layoutOptions.appHost !== null) {
         xlfUrl = layoutOptions.appHost + layoutOptions.xlfUrl;
     }
@@ -308,13 +314,13 @@ export default class Layout implements ILayout {
                 $layout.style.setProperty('z-index', '-99');
                 console.debug('??? XLR.debug >> Layout.on("end") - Hiding currentLayout...');
 
-                setTimeout(() => {
+                // setTimeout(() => {
                     console.debug('??? XLR.debug >> Layout.on("end") > setTimeout - Removing currentLayout', {
                         layoutId: layout.layoutId,
                     });
 
                     $layout.parentElement?.removeChild($layout);
-                }, 500);
+                // }, 250);
             }
 
             // Check if stats are enabled for the layout
@@ -453,11 +459,10 @@ export default class Layout implements ILayout {
 
             const bgImageUrl = composeBgUrlByPlatform(
               this.xlr.config.platform,
-              {
-                  ...this.options,
-                  layout: this,
-              },
+              this,
             );
+
+            console.debug('>>> XLR.debug Layout::parseXlf - Composed background image URL > ', { bgImageUrl });
 
             if ($layout) {
                 if (!this.isOverlay) {

@@ -32,6 +32,7 @@ export interface IRegionEvents {
 export interface IMediaEvents {
   start: (media: IMedia) => void;
   end: (media: IMedia) => void;
+  cancelled: (media: IMedia) => void;
 }
 
 

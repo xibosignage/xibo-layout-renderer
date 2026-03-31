@@ -18,15 +18,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { IMedia } from '../../Types/Media';
-import {InputLayoutType, OptionsType} from '../../Types/Layout';
-import {IXlr} from "../../Types/XLR";
-import {nanoid} from "nanoid";
+import {format} from "date-fns";
+import videojs from "video.js";
+
+import {IMedia} from '../../Types/Media';
+import {ILayout, InputLayoutType, OptionsType} from '../../Types/Layout';
 import {composeVideoSource, defaultVjsOpts} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
 import {IRegion} from "../../Types/Region";
-import videojs from "video.js";
 import {ConsumerPlatform} from "../../Types/Platform";
+import {PwaSW} from "../../Lib";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -168,20 +169,34 @@ export function videoFileType(str: string) {
 }
 
 export function composeResourceUrlByPlatform(options: OptionsType, params: any) {
-    let resourceUrl = params.regionOptions.getResourceUrl
-        .replace(":regionId", params.regionId)
-        .replace(":id", params.mediaId) +
-        '?preview=1&layoutPreview=1';
+    let resourceUrl = '';
+    
+    if (params.regionOptions && Boolean(params.regionOptions.getResourceUrl)) {
+        resourceUrl = params.regionOptions.getResourceUrl
+            .replace(":regionId", params.regionId)
+            .replace(":id", params.mediaId) +
+            '?preview=1&layoutPreview=1';
+    }
 
-    if (options.platform === 'CMS') {
+    if (options.platform === ConsumerPlatform.CMS && Boolean(params.regionOptions.previewJwt)) {
         resourceUrl += '&jwt=' + params.regionOptions.previewJwt;
     }
 
-    if (options.platform === 'chromeOS') {
+    if (options.platform === ConsumerPlatform.CHROMEOS) {
         const resourceEndpoint = '/required-files/resource/';
 
         if (!params.isGlobalContent && params.isImageOrVideo) {
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
+        }
+    } else if (options.platform === ConsumerPlatform.ELECTRON) {
+        if (params.render === 'html' || params.mediaType === 'ticker' || params.mediaType === 'webpage') {
+            resourceUrl = options.appHost +
+                'layout_' + params.layoutId +
+                '_region_' + params.regionId +
+                '_media_' + params.mediaId +
+                '.html';
+        } else if (params.render === 'native' && params.isImageOrVideo) {
+            resourceUrl = options.appHost + params.uri;
         }
     } else if (!Boolean(params['mediaType'])) {
         resourceUrl += '&scale_override=' + params.scaleFactor;
@@ -210,20 +225,21 @@ export function composeMediaUrl(params: any) {
 
 export function composeBgUrlByPlatform(
     platform: OptionsType['platform'],
-    params: any
+    params: ILayout,
 ) {
     let bgImageUrl = '';
 
-    if (platform === 'CMS') {
-        bgImageUrl = params.layoutBackgroundDownloadUrl.replace(":id", (params.layout.id as unknown) as string) +
-            '&preview=1&width=' + params.layout.sWidth +
-            '&height=' + params.layout.sHeight +
+    if (platform === ConsumerPlatform.CMS) {
+        bgImageUrl = params.options.layoutBackgroundDownloadUrl.replace(":id", (params.id as unknown) as string) +
+            '&preview=1&width=' + params.sWidth +
+            '&height=' + params.sHeight +
             '&dynamic&proportional=0';
 
-    } else if (platform === 'chromeOS') {
-        bgImageUrl = composeMediaUrl({uri: params.layout.bgImage});
+    } else if (platform === ConsumerPlatform.CHROMEOS) {
+        bgImageUrl = composeMediaUrl({uri: params.bgImage});
+    } else if (platform === ConsumerPlatform.ELECTRON) {
+        bgImageUrl = params.options.appHost + params.bgImage;
     }
-    // @TODO: Add condition to handle electron platform
 
     return bgImageUrl;
 }
@@ -552,28 +568,63 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
             media.player = undefined;
         }
 
-        const $region = document.getElementById(region.containerName);
+        const $layout = region.layout.html;
+        const layoutSelector = '#' + region.layout.containerName +
+          '[data-sequence="' + region.layout.index + '"]';
+        const $layoutWithIndex = document.querySelector(layoutSelector);
+        const $region = document.querySelector('#' + region.containerName);
         const mediaInRegion = $region?.querySelector('.' + mediaId);
 
+        console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
+            layoutSelector,
+            $layoutWithIndex,
+            $region,
+            mediaInRegion,
+            mediaHtml: media.html,
+            existingPlayer,
+            mediaId,
+            layoutInDOM: document.body.contains($layout),
+        })
         if (!mediaInRegion) {
+            media.html = createMediaElement(media);
+        } else {
+            mediaInRegion.remove();
             media.html = createMediaElement(media);
         }
 
         // Append fresh copy of the media into the region
-        region.html.appendChild(media.html);
+        ($region !== null) && $region.appendChild(media.html);
+
+        const isMediaInDOM = document.body.contains(media.html);
+
+        console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
+            isMediaInDOM,
+            mediaHtml: media.html,
+            mediaId,
+        })
 
         // Initialize video.js
-        media.player = videojs(getMediaId(media), {
-            ...defaultVjsOpts,
-                errorDisplay: region.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
-                loop: media.loop,
-            },
+        media.player = videojs(mediaId, {
+              ...defaultVjsOpts,
+              errorDisplay: region.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
+              loop: media.loop,
+          },
         );
+
+        media.player.on('error', async (err: any) => {
+            if (media.region.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
+                playerReportFault('Video file not supported', media)
+                    .then(() => {
+                        media.emitter.emit('end', media);
+                    });
+            }
+        });
+
         (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
         (media.player.el() as HTMLElement).style.setProperty('opacity', '0');
         (media.player.el() as HTMLElement).style.setProperty('z-index', '-99');
     }
-};
+}
 
 export function prepareImageMedia(media: IMedia, region: IRegion) {
     const mediaId = getMediaId(media);
@@ -589,7 +640,8 @@ export function prepareImageMedia(media: IMedia, region: IRegion) {
     }
 
     // Append media to its region
-    region.html.appendChild(media.html as HTMLElement);
+    const $region = document.querySelector('#' + region.containerName);
+    ($region !== null) && $region.appendChild(media.html as HTMLElement);
 }
 
 export function prepareAudioMedia(media: IMedia, region: IRegion) {
@@ -607,7 +659,8 @@ export function prepareAudioMedia(media: IMedia, region: IRegion) {
     }
 
     // Append media to its region
-    region.html.appendChild(media.html as HTMLAudioElement);
+    const $region = document.querySelector('#' + region.containerName);
+    ($region !== null) && $region.appendChild(media.html as HTMLAudioElement);
 }
 
 export function prepareHtmlMedia(media: IMedia, region: IRegion) {
@@ -619,7 +672,14 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
 
         // Clean up old copy of the media
         // before inserting fresh copy
-        const mediaInRegion = region.html.querySelector('.' + mediaId);
+        const $layout = document.querySelector(`#${region.layout.containerName}[data-sequence="${region.layout.index}"]`) as HTMLDivElement;
+        const $region = $layout.querySelector('#' + region.containerName) as HTMLElement;
+        const mediaInRegion = $region.querySelector('.' + mediaId);
+
+        console.debug('<><> XLR.debug >> [Media] - [Generators::prepareHtmlMedia]', {
+            mediaId,
+            mediaInRegion,
+        })
 
         // Append iframe
         media.html.innerHTML = '';
@@ -627,9 +687,43 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
 
         if (!mediaInRegion) {
             // Add fresh copy of the media into the region
-            region.html.appendChild(media.html as HTMLElement);
+            const $region = document.querySelector('#' + region.containerName);
+            ($region !== null) && $region.appendChild(media.html as HTMLElement);
             media.ready = true;
         }
     }
 }
 
+
+export async function playerReportFault(msg: string, media: IMedia) {
+    // Immediately expire media and report a fault
+    const playerSW = PwaSW();
+    const hasSW = await playerSW.getSW();
+
+    if (hasSW) {
+        playerSW.postMsg({
+            type: 'MEDIA_FAULT',
+            code: 5002,
+            reason: msg,
+            mediaId: media.id,
+            regionId: media.region.id,
+            layoutId: media.region.layout.id,
+            date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+            // Temporary setting
+            expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
+        })
+          .then(() => {
+              // We try to prepare next media if we have more than 1 media
+              if (media.region.totalMediaObjects > 1) {
+                  media.region.prepareNextMedia();
+              }
+          })
+          .finally(() => {
+              // Stopping media as we have reported the error as fault
+              console.debug('??? XLR.debug >> VideoMedia - Done reporting media fault', {
+                  mediaId: media.id,
+                  regionItems: media.region.totalMediaObjects,
+              })
+          });
+    }
+}
