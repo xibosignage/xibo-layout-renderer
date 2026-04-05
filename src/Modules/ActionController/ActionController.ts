@@ -214,10 +214,12 @@ export default class ActionController {
     }
 
     openLayoutInNewTab(layoutCode: string, options: InactOptions) {
-        if(confirm(this.translations.navigateToLayout.replace('[layoutTag]', layoutCode))) {
-            var url = options.layoutPreviewUrl.replace('[layoutCode]', layoutCode) + '?findByCode=1';
-            window.open(url, '_blank');
-        }
+        const url = options.layoutPreviewUrl.replace('[layoutCode]', layoutCode) + '?findByCode=1';
+        // Send a postMessage to the parent frame so the CMS can handle the confirmation
+        // and navigation (confirm() is blocked in sandboxed iframes without allow-modals).
+        window.parent.postMessage({ type: 'xlr:navLayout', layoutCode, url }, '*');
+        // Also emit via the XLR event system for non-iframe consumers.
+        this.parent.xlr.emitter.emit('navLayout', layoutCode, url);
     }
 
     openLayoutInPlayer(layoutCode: string, options: InactOptions) {
