@@ -49,6 +49,7 @@ export type InputLayoutType = {
     getXlf?(): string;
     duration?: number;
     isOverlay?: boolean;
+    shareOfVoice?: number;
 };
 
 export type OptionsType = {

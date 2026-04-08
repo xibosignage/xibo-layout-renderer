@@ -161,13 +161,13 @@ export default function XiboLayoutRenderer(
             }
 
             if (!xlr.currentLayout.done) {
-                console.log('>>>> XLR.debug XLR::playSchedules > Running currentLayout', xlr.currentLayout);
-                xlr.currentLayout.run();
-
                 // Hide overlays when current layout is interrupt
                 if (xlr.currentLayout.isInterrupt()) {
                     xlrObject.overlayLayoutManager.stopOverlays();
                 }
+
+                console.log('>>>> XLR.debug XLR::playSchedules > Running currentLayout', xlr.currentLayout);
+                xlr.currentLayout.run();
             }
 
         } else {

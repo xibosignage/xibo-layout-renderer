@@ -306,7 +306,12 @@ export default class Layout implements ILayout {
             }
 
             layout.done = true;
-            console.debug({$layout});
+            console.debug('>>> XLR.debug Layout end emitted > Layout ID > ', {
+                $layout,
+                layoutId: layout.id,
+                isOverlay: layout.isOverlay,
+                isInterrupt: layout.isInterrupt(),
+            });
 
             if ($layout !== null) {
                 $layout.style.setProperty('visibility', 'hidden');

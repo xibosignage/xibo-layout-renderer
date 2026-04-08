@@ -35,19 +35,25 @@ export class OverlayLayoutManager {
     }
 
     async parseOverlays(list: any[]): Promise<Awaited<OverlayLayout[]>> {
-        return await Promise.all(list.map(async (item: any) => {
+        return await Promise.all(list.map(async (item: any, index: number) => {
             let inputOverlay: InputLayoutType = <InputLayoutType>{};
 
             inputOverlay = {...inputOverlay, ...item};
-            inputOverlay.index = item.index;
+            inputOverlay.index = item.index ?? index;
 
             const overlayLayout = await this.parent.prepareLayoutXlf(<ILayout>{...initialLayout, ...inputOverlay});
+
+            console.debug('<> XLR.debug OverlayLayoutManager::parseOverlays prepared overlay layout', {
+                overlayLayout,
+                inputOverlay,
+            });
 
             // Hide all overlays first
             const $overlay = <HTMLDivElement | null>(document.querySelector(`#${overlayLayout.containerName}[data-sequence="${overlayLayout.index}"]`));
 
             if ($overlay !== null) {
-                $overlay.style.setProperty('display', 'none');
+                $overlay.style.setProperty('visibility', 'hidden');
+                $overlay.style.setProperty('z-index', `${overlayLayout.zIndex ?? -999}`);
             }
 
             return overlayLayout as OverlayLayout;
@@ -109,7 +115,8 @@ export class OverlayLayoutManager {
         if (this.overlays.length === 0) return;
 
         if (this.parent && this.parent.currentLayout?.isInterrupt()) {
-            this.container.style.setProperty('display', 'none');
+            this.container.style.setProperty('visibility', 'hidden');
+            this.container.style.setProperty('z-index', '-999');
             return;
         }
 
@@ -123,6 +130,11 @@ export class OverlayLayoutManager {
 
         this.overlays.forEach(async (overlay) => {
             const overlayHtml = <HTMLDivElement | null>(document.querySelector(`#${overlay.containerName}[data-sequence="${overlay.index}"]`));
+
+            console.debug('<> XLR.debug OverlayLayoutManager::stopOverlays', {
+                overlay,
+                overlayHtml,
+            });
 
             if (overlayHtml !== null) {
                 await overlay.finishAllRegions();
