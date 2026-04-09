@@ -28,6 +28,7 @@ import { hasDefaultOnly, isLayoutValid, getLayoutIndexByLayoutId, hasSspLayout }
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
 import { OverlayLayoutManager } from "./Modules/Layout/OverlayLayoutManager";
 import { ConsumerPlatform } from './types';
+import { setLayoutIndex } from './Modules/Generators/Generators';
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -380,8 +381,10 @@ export default function XiboLayoutRenderer(
                             this.inputLayouts, this.nextLayout.layoutId);
                         _currentLayoutIndex = tempNextLayoutIndex ?? 0;
                         _currentLayout = this.getLayout(this.inputLayouts[tempNextLayoutIndex ?? 0]);
+                        _currentLayout = setLayoutIndex(_currentLayout, _currentLayoutIndex);
                     } else {
                         _currentLayout = this.getLayout(this.inputLayouts[0]);
+                        _currentLayout = setLayoutIndex(_currentLayout, 0);
                     }
 
                     if (this.inputLayouts.length > 1) {
@@ -392,6 +395,7 @@ export default function XiboLayoutRenderer(
                         }
 
                         _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
+                        _nextLayout = setLayoutIndex(_nextLayout, _nextLayoutIndex);
                     } else {
                         _nextLayout = _currentLayout;
                     }
@@ -408,21 +412,27 @@ export default function XiboLayoutRenderer(
                                     _currentLayoutIndex = _currentLayout.index;
                                 }
 
+                                _currentLayout = setLayoutIndex(_currentLayout, _currentLayoutIndex);
+
                                 _nextLayoutIndex = 0;
                                 _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
+                                _nextLayout = setLayoutIndex(_nextLayout, _nextLayoutIndex);
                             }
                         } else {
                             _currentLayoutIndex = this.nextLayout.index > this.inputLayouts.length - 1 ? 0 : this.nextLayout.index;
                             _currentLayout = this.getLayout(this.inputLayouts[_currentLayoutIndex]);
+                            _currentLayout = setLayoutIndex(_currentLayout, _currentLayoutIndex);
 
                             _nextLayoutIndex = _currentLayoutIndex + 1 > this.inputLayouts.length - 1 ? 0 : _currentLayoutIndex + 1;
                             _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
+                            _nextLayout = setLayoutIndex(_nextLayout, _nextLayoutIndex);
                         }
                     } else {
                         _currentLayout = this.nextLayout;
                         _currentLayoutIndex = _currentLayout.index;
                         _nextLayoutIndex = (_currentLayoutIndex + 1) % this.inputLayouts.length;
                         _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
+                        _nextLayout = setLayoutIndex(_nextLayout, _nextLayoutIndex);
                     }
                 }
             }
@@ -430,11 +440,14 @@ export default function XiboLayoutRenderer(
             // Initial run: set both currentLayout and nextLayout
             if (hasLayout) {
                 _currentLayout = this.getLayout(this.inputLayouts[_currentLayoutIndex]);
+                _currentLayout = setLayoutIndex(_currentLayout, _currentLayoutIndex);
 
                 if (this.inputLayouts.length > 1) {
                     _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
+                    _nextLayout = setLayoutIndex(_nextLayout, _nextLayoutIndex);
                 } else {
                     _nextLayout = this.getLayout(this.inputLayouts[0]);
+                    _nextLayout = setLayoutIndex(_nextLayout, 0);
                 }
             }
         }
@@ -442,7 +455,9 @@ export default function XiboLayoutRenderer(
         if (_currentLayout === undefined && _nextLayout === undefined) {
             if (_hasDefaultOnly) {
                 _currentLayout = this.getLayout(this.inputLayouts[0]);
+                _currentLayout = setLayoutIndex(_currentLayout, 0);
                 _nextLayout = this.getLayout(this.inputLayouts[0]);
+                _nextLayout = setLayoutIndex(_nextLayout, 0);
             }
         }
 
@@ -483,6 +498,12 @@ export default function XiboLayoutRenderer(
                 }
 
                 _layout = { ..._layout, ...activeLayout };
+
+                console.debug('XLR::getLayout > activeLayout from uniqueLayouts', {
+                    activeLayout,
+                    inputLayout,
+                    uniqueLayouts: this.uniqueLayouts,
+                });
 
                 // Must set index/sequence from schedule loop
                 _layout.index = activeLayout.index as number;
@@ -682,7 +703,8 @@ export default function XiboLayoutRenderer(
             const inputLayout = self.inputLayouts[nextIndex];
             if (!inputLayout) break;
 
-            const nextLayoutObj = self.getLayout(inputLayout);
+            let nextLayoutObj = self.getLayout(inputLayout);
+            nextLayoutObj = setLayoutIndex(nextLayoutObj, nextIndex);
 
             _nextLayout = await self.prepareLayoutXlf(nextLayoutObj);
         }
