@@ -727,3 +727,12 @@ export async function playerReportFault(msg: string, media: IMedia) {
           });
     }
 }
+
+export function setLayoutIndex(layout: ILayout | undefined, layoutIndex: number) {
+    if (!layout || layout.id === null) {
+        return;
+    }
+
+    layout.index = layoutIndex;
+    return layout;
+}
