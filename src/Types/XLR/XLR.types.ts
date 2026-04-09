@@ -46,6 +46,7 @@ export type IXlrEvents = {
     overlayEnd: (overlay: ILayout) => void;
     commandCodeReceived: (commandCode: string) => void;
     commandStringReceived: (commandString: string) => void;
+    navLayout: (layoutCode: string, url: string) => void;
 };
 
 export interface IXlrPlayback {
