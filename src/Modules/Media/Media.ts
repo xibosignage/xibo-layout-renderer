@@ -120,9 +120,9 @@ export class Media implements IMedia {
 
             media.state = MediaState.PLAYING;
             if (media.mediaType === 'video') {
-                const videoMedia = VideoMedia(media, this.xlr);
+                media.videoHandler = VideoMedia(media, this.xlr);
 
-                videoMedia.init();
+                media.videoHandler.init();
 
                 if (media.duration > 0) {
                     this.startMediaTimer(media);
@@ -273,8 +273,8 @@ export class Media implements IMedia {
                 if (media.mediaType === 'video') {
                     // Dispose the video media
                     console.debug(`??? XLR.debug >> VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    if (media.player !== undefined) {
-                        VideoMedia(media, this.xlr).stop(true);
+                    if (media.videoHandler !== undefined) {
+                        media.videoHandler.stop(true);
                     }
                 }
             }

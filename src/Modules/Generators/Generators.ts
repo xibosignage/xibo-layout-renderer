@@ -23,7 +23,7 @@ import videojs from "video.js";
 
 import {IMedia} from '../../Types/Media';
 import {ILayout, InputLayoutType, OptionsType} from '../../Types/Layout';
-import {composeVideoSource, defaultVjsOpts} from "../Media/VideoMedia";
+import {composeVideoSource, defaultVjsOpts, reportToPlayerPlatform} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
 import {IRegion} from "../../Types/Region";
 import {ConsumerPlatform} from "../../Types/Platform";
@@ -605,19 +605,9 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
 
         // Initialize video.js
         media.player = videojs(mediaId, {
-              ...defaultVjsOpts,
-              errorDisplay: region.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
-              loop: media.loop,
-          },
-        );
-
-        media.player.on('error', async (err: any) => {
-            if (media.region.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
-                playerReportFault('Video file not supported', media)
-                    .then(() => {
-                        media.emitter.emit('end', media);
-                    });
-            }
+            ...defaultVjsOpts,
+            errorDisplay: !reportToPlayerPlatform.includes(region.xlr.config.platform),
+            loop: media.loop,
         });
 
         (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
@@ -697,21 +687,29 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
 
 export async function playerReportFault(msg: string, media: IMedia) {
     // Immediately expire media and report a fault
+    const platform = media.region.xlr.config.platform;
     const playerSW = PwaSW();
     const hasSW = await playerSW.getSW();
+    const mediaFault = {
+        type: 'MEDIA_FAULT',
+        code: 5002,
+        reason: msg,
+        mediaId: media.id,
+        regionId: media.region.id,
+        layoutId: media.region.layout.id,
+        date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        // Temporary setting
+        expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
+    };
 
-    if (hasSW) {
-        playerSW.postMsg({
-            type: 'MEDIA_FAULT',
-            code: 5002,
-            reason: msg,
-            mediaId: media.id,
-            regionId: media.region.id,
-            layoutId: media.region.layout.id,
-            date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-            // Temporary setting
-            expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
-        })
+    console.debug('playerReportFault >> Reporting media fault', {
+        mediaFault,
+        platform,
+        hasSW,
+    });
+
+    if (platform === ConsumerPlatform.CHROMEOS && hasSW) {
+        return playerSW.postMsg(mediaFault)
           .then(() => {
               // We try to prepare next media if we have more than 1 media
               if (media.region.totalMediaObjects > 1) {
@@ -725,7 +723,19 @@ export async function playerReportFault(msg: string, media: IMedia) {
                   regionItems: media.region.totalMediaObjects,
               })
           });
+    } else if (platform === ConsumerPlatform.ELECTRON) {
+        // Create a broadcast channel to report media fault to the main process
+        const channel = new BroadcastChannel('player-faults-bc');
+        channel.postMessage(mediaFault);
+
+        console.debug('playerReportFault >> Electron platform - posted media fault to channel', {
+            mediaFault,
+        });
+        // channel.close();
+        return Promise.resolve();
     }
+
+    return Promise.resolve();
 }
 
 export function setLayoutIndex(layout: ILayout | undefined, layoutIndex: number) {
