@@ -46,6 +46,7 @@ export interface IMedia {
     enableStat: boolean;
     fileId: string;
     finished: boolean;
+    fromDt: string;
     html: HTMLElement | null;
     id: string;
     idCounter: number;
@@ -77,6 +78,7 @@ export interface IMedia {
 
     tempSrc: string;
     timeoutId: ReturnType<typeof setTimeout>;
+    toDt: string;
     type: string;
     uri: string;
     url: string | null;
@@ -84,50 +86,4 @@ export interface IMedia {
     xml: Element | null;
     videoHandler?: IVideoMediaHandler;
     mediaTimer: ReturnType<typeof setInterval> | undefined;
-}
-
-export const initialMedia: IMedia = {
-    attachedAudio: false,
-    checkIframeStatus: false,
-    containerName: '',
-    divHeight: 0,
-    divWidth: 0,
-    duration: 0,
-    emitter: <Emitter<IMediaEvents>>{},
-    enableStat: false,
-    fileId: '',
-    finished: false,
-    html: null,
-    id: '',
-    idCounter: 0,
-    iframe: null,
-    iframeName: '',
-    index: 0,
-    loadIframeOnRun: false,
-    loop: false,
-    mediaId: '',
-    mediaType: '',
-    muted: false,
-    options: <OptionsType>{},
-    player: undefined,
-    ready: true,
-    region: initialRegion,
-    render: 'html',
-    run() {
-    },
-    schemaVersion: '1',
-    singlePlay: false,
-    state: MediaState.IDLE,
-    stop() {
-        return Promise.resolve();
-    },
-    tempSrc: '',
-    timeoutId: setTimeout(() => {
-    }, 0),
-    type: '',
-    uri: '',
-    url: null,
-    useDuration: Boolean(0),
-    xml: null,
-    mediaTimer: undefined,
 }

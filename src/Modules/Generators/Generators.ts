@@ -321,6 +321,36 @@ export function setExpiry(numDays: number) {
 }
 
 /**
+ * Check whether a media item is currently within its valid date window.
+ * Returns true when the media should be shown, false when it should be skipped.
+ *
+ * Rules:
+ *  - Empty / invalid fromDt  → treat as "no start restriction"
+ *  - Empty / invalid toDt    → treat as "no expiry"
+ *  - now < fromDt            → not yet active   → skip
+ *  - now > toDt              → expired          → skip
+ */
+export function isMediaActive(fromDt: string, toDt: string): boolean {
+    const now = Date.now();
+
+    if (fromDt) {
+        const from = new Date(fromDt).getTime();
+        if (!isNaN(from) && now < from) {
+            return false;
+        }
+    }
+
+    if (toDt) {
+        const to = new Date(toDt).getTime();
+        if (!isNaN(to) && now > to) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
  * Check if given layout exists in the loop using layoutId
  * @param layouts Schedule loop unique layouts (uniqueLayouts)
  * @param layoutId Layout ID of the layout to look for
