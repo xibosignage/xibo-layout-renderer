@@ -493,6 +493,10 @@ export default function XiboLayoutRenderer(
 
                 if (isCMS) {
                     activeLayout.index = 0;
+                    // id stays null without this — setLayoutIndex returns undefined for CMS layouts
+                    if (activeLayout.id == null) {
+                        activeLayout.id = activeLayout.layoutId;
+                    }
                 } else {
                     activeLayout = { ...this.uniqueLayouts[inputLayout.layoutId] };
                 }
@@ -705,6 +709,7 @@ export default function XiboLayoutRenderer(
 
             let nextLayoutObj = self.getLayout(inputLayout);
             nextLayoutObj = setLayoutIndex(nextLayoutObj, nextIndex);
+            if (!nextLayoutObj) break;
 
             _nextLayout = await self.prepareLayoutXlf(nextLayoutObj);
         }
