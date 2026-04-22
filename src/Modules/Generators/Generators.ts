@@ -684,15 +684,19 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
     }
 }
 
+export enum FaultCodes {
+    FaultVideoSource = 2001,
+    FaultVideoUnexpected = 2099,
+}
 
-export async function playerReportFault(msg: string, media: IMedia) {
+export async function playerReportFault(msg: string, media: IMedia, code: number = FaultCodes.FaultVideoUnexpected) {
     // Immediately expire media and report a fault
     const platform = media.region.xlr.config.platform;
     const playerSW = PwaSW();
     const hasSW = await playerSW.getSW();
     const mediaFault = {
         type: 'MEDIA_FAULT',
-        code: 5002,
+        code: code,
         reason: msg,
         mediaId: media.id,
         regionId: media.region.id,
