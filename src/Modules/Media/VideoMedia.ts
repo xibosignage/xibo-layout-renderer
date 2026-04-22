@@ -22,7 +22,7 @@ import videojs from 'video.js';
 import Player from "video.js/dist/types/player";
 
 import { IMedia } from '../../Types/Media';
-import {capitalizeStr, videoFileType, getFileExt, getMediaId, playerReportFault} from '../Generators';
+import {capitalizeStr, videoFileType, getFileExt, getMediaId, playerReportFault, FaultCodes} from '../Generators';
 import {ConsumerPlatform, IXlr} from '../../types';
 
 import './media.css';
@@ -100,10 +100,10 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
     // Used by both the 'error' event and the play Promise catch.
     // playerReportFault only fires for platforms that report faults (Electron,
     // ChromeOS). All other platforms just advance to the next media via stop().
-    const reportAndStop = (reason: string) => {
+    const reportAndStop = (reason: string, code: number) => {
         if (stopped) return;
         if (reportToPlayerPlatform.includes(xlr.config.platform)) {
-            playerReportFault(reason, media).then(() => videoPlayer.stop());
+            playerReportFault(reason, media, code).then(() => videoPlayer.stop());
         } else {
             videoPlayer.stop();
         }
@@ -131,12 +131,12 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                 const vidType = videoFileType(getFileExt(media.uri));
                 if (!vidType) {
                     console.warn(`XLR >> VideoMedia: unrecognised file extension for media ${media.id} (uri: ${media.uri})`);
-                    reportAndStop(`Unsupported video file extension for media ${media.id}`);
+                    reportAndStop(`Unsupported video file extension for media ${media.id}`, FaultCodes.FaultVideoSource);
                     return;
                 }
                 if (document.createElement('video').canPlayType(vidType) === '') {
                     console.warn(`XLR >> VideoMedia: browser cannot play type "${vidType}" for media ${media.id}`);
-                    reportAndStop(`Browser cannot play video type "${vidType}" for media ${media.id}`);
+                    reportAndStop(`Browser cannot play video type "${vidType}" for media ${media.id}`, FaultCodes.FaultVideoSource);
                     return;
                 }
                 // ─────────────────────────────────────────────────────────────────────
@@ -146,7 +146,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                     stallWatchdog = setTimeout(() => {
                         if (stopped) return;
                         console.warn(`XLR >> VideoMedia: stall timeout on media ${media.id}`);
-                        reportAndStop('Video stall timeout');
+                        reportAndStop('Video stall timeout', FaultCodes.FaultVideoUnexpected);
                     }, STALL_TIMEOUT_MS);
                 };
 
@@ -228,7 +228,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                                     videoPlayer.stop();
                                 } else {
                                     console.debug(`??? XLR.debug >> VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
-                                    reportAndStop('Media autoplay error');
+                                    reportAndStop('Media autoplay error', FaultCodes.FaultVideoUnexpected);
                                 }
                           });
 
@@ -280,7 +280,7 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                         : 'Unknown video error';
 
                     console.warn(`XLR >> VideoMedia: error on media ${media.id}`, vjsError);
-                    reportAndStop(reason);
+                    reportAndStop(reason, FaultCodes.FaultVideoUnexpected);
                 });
 
                 if (media.duration === 0) {
@@ -298,12 +298,12 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
 
             console.debug('??? XLR.debug >> VideoMedia::stop', {
                 vjsPlayer,
-                isDisposed: vjsPlayer?.isDisposed_,
-                el: vjsPlayer?.el_,
+                isDisposed: vjsPlayer?.isDisposed(),
+                el: vjsPlayer?.el(),
             });
 
             // Expire the media and dispose the video
-            if (vjsPlayer !== undefined && !vjsPlayer.isDisposed_) {
+            if (vjsPlayer !== undefined && !vjsPlayer.isDisposed()) {
                 if (!disposeOnly) {
                     media.emitter.emit('end', media);
                 }
