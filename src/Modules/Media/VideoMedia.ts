@@ -294,7 +294,10 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
         stop: function(disposeOnly = false) {
             clearStallWatchdog();
 
-            const vjsPlayer = media.player;
+            // videoPlayer.player is where init() stores the vjs instance;
+            // media.player is a legacy path kept for backward compat but is
+            // no longer set by init(), so always prefer videoPlayer.player.
+            const vjsPlayer = videoPlayer.player ?? media.player;
 
             console.debug('??? XLR.debug >> VideoMedia::stop', {
                 vjsPlayer,
@@ -311,9 +314,11 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                 vjsPlayer.dispose();
 
                 // Clear up media player
+                videoPlayer.player = undefined;
                 media.player = undefined;
                 media.html = null;
             } else {
+                videoPlayer.player = undefined;
                 media.player = undefined;
                 media.html = null;
 
