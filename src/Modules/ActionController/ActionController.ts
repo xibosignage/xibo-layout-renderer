@@ -328,7 +328,7 @@ export default class ActionController {
                     if (dataset.source === 'region') {
                         // Try to find the region
                         if (regionObj.id === dataset.sourceid) {
-                            $sourceObj = document.getElementById(regionObj.containerName);
+                            $sourceObj = regionObj.html as HTMLElement;
                             break;
                         }
                     } else if (dataset.source === 'widget') {
@@ -337,7 +337,7 @@ export default class ActionController {
 
                         for (const mediaObject of mediaObjects) {
                             if (mediaObject.id === dataset.sourceid) {
-                                $sourceObj = document.getElementById(mediaObject.containerName);
+                                $sourceObj = mediaObject.html as HTMLElement;
                                 break;
                             }
                         }

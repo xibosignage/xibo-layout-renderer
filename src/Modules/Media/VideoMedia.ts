@@ -22,7 +22,7 @@ import videojs from 'video.js';
 import Player from "video.js/dist/types/player";
 
 import { IMedia } from '../../Types/Media';
-import {capitalizeStr, videoFileType, getFileExt, getMediaId, playerReportFault} from '../Generators';
+import {capitalizeStr, videoFileType, getFileExt, getMediaId, playerReportFault, FaultCodes} from '../Generators';
 import {ConsumerPlatform, IXlr} from '../../types';
 
 import './media.css';
@@ -30,6 +30,11 @@ import './media.css';
 export function composeVideoSource($media: HTMLVideoElement, media: IMedia) {
     // const videoSrc = await preloadMediaBlob(media.url as string, media.mediaType as MediaTypes);
     const vidType = videoFileType(getFileExt(media.uri)) as string;
+
+    if (!vidType) {
+        console.warn(`XLR >> VideoMedia: Unsupported video type for media ${media.id} with uri ${media.uri}`);
+        return $media;
+    }
 
     // Only add one source per type
     if ($media.querySelectorAll(`source[type="${vidType}"]`).length === 0) {
@@ -62,17 +67,51 @@ export const vjsDefaultOptions = (opts?: any) => ({
 export interface IVideoMediaHandler {
     player: Player | undefined;
     duration: number;
+    init(): void;
+    play(): void;
     stop(disposeOnly?: boolean): void;
 }
 
-const reportToPlayerPlatform = [
+export const reportToPlayerPlatform = [
     ConsumerPlatform.CHROMEOS,
     ConsumerPlatform.ELECTRON,
 ];
 
 export function VideoMedia(media: IMedia, xlr: IXlr) {
+    let stopped = false;
     const mediaId = getMediaId(media);
+
+    // ── Stall watchdog (closure-level so stop() can cancel it) ───────────────
+    // 'waiting' and 'stalled' fire when the browser stops receiving data.
+    // Unlike codec or source errors they do NOT fire the 'error' event, so
+    // without a watchdog the video silently freezes for its entire duration.
+    let stallWatchdog: ReturnType<typeof setTimeout> | undefined;
+    const STALL_TIMEOUT_MS = 10_000;
+
+    const clearStallWatchdog = () => {
+        if (stallWatchdog !== undefined) {
+            clearTimeout(stallWatchdog);
+            stallWatchdog = undefined;
+        }
+    };
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ── Unified error → report → stop helper (closure-level) ─────────────────
+    // Used by both the 'error' event and the play Promise catch.
+    // playerReportFault only fires for platforms that report faults (Electron,
+    // ChromeOS). All other platforms just advance to the next media via stop().
+    const reportAndStop = (reason: string, code: number) => {
+        if (stopped) return;
+        if (reportToPlayerPlatform.includes(xlr.config.platform)) {
+            playerReportFault(reason, media, code).then(() => videoPlayer.stop());
+        } else {
+            videoPlayer.stop();
+        }
+    };
+    // ─────────────────────────────────────────────────────────────────────────
+
     const videoPlayer = {
+        player: undefined as Player | undefined,
         duration: 0,
         init: function () {
             let triggerTimeUpdate = false; // Used for media.duration === 0
@@ -81,9 +120,40 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
 
             const vjsPlayer = videojs(mediaId);
             if (vjsPlayer) {
-                vjsPlayer.on('loadstart', () => {
-                    console.debug(`??? XLR.debug >> VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
-                });
+                videoPlayer.player = vjsPlayer;
+
+                // ── Early source check ────────────────────────────────────────────────
+                // Two-step check before video.js tries to load anything:
+                // 1. Is the file extension one we map to a MIME type?
+                // 2. Can the browser actually play that MIME type?
+                // Failing either step skips the media immediately so video.js
+                // never renders its "No compatible source" error overlay.
+                const vidType = videoFileType(getFileExt(media.uri));
+                if (!vidType) {
+                    console.warn(`XLR >> VideoMedia: unrecognised file extension for media ${media.id} (uri: ${media.uri})`);
+                    reportAndStop(`Unsupported video file extension for media ${media.id}`, FaultCodes.FaultVideoSource);
+                    return;
+                }
+                if (document.createElement('video').canPlayType(vidType) === '') {
+                    console.warn(`XLR >> VideoMedia: browser cannot play type "${vidType}" for media ${media.id}`);
+                    reportAndStop(`Browser cannot play video type "${vidType}" for media ${media.id}`, FaultCodes.FaultVideoSource);
+                    return;
+                }
+                // ─────────────────────────────────────────────────────────────────────
+
+                const armStallWatchdog = () => {
+                    clearStallWatchdog();
+                    stallWatchdog = setTimeout(() => {
+                        if (stopped) return;
+                        console.warn(`XLR >> VideoMedia: stall timeout on media ${media.id}`);
+                        reportAndStop('Video stall timeout', FaultCodes.FaultVideoUnexpected);
+                    }, STALL_TIMEOUT_MS);
+                };
+
+                vjsPlayer.on('waiting', armStallWatchdog);
+                vjsPlayer.on('stalled', armStallWatchdog);
+                vjsPlayer.on('playing', clearStallWatchdog);
+                vjsPlayer.on('ended', clearStallWatchdog);
 
                 vjsPlayer.on('loadedmetadata', () => {
                     if (media.duration === 0) {
@@ -149,23 +219,22 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                           .then(() => {
                               console.debug(`??? XLR.debug >> VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay started`);
                           })
-                          .catch(async (error) => {
-                              if (error === 'Timeout') {
-                                  console.debug(`??? XLR.debug >> VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Promise not resolved within 5 seconds. Move to next media`);
-                                  this.stop();
-                              } else {
-                                  console.debug(`??? XLR.debug >> VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
-                                  if (reportToPlayerPlatform.includes(xlr.config.platform)) {
-                                      playerReportFault('Media autoplay error', media)
-                                        .then(() => {
-                                            this.stop();
-                                        });
-                                  }
-                              }
+                          .catch((error) => {
+                                if (stopped) return;
+
+                                if (error === 'Timeout') {
+                                    console.debug(`??? XLR.debug >> VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Promise not resolved within 5 seconds. Move to next media`);
+                                    // Timeout is a scheduling issue, not a media fault — just advance
+                                    videoPlayer.stop();
+                                } else {
+                                    console.debug(`??? XLR.debug >> VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} : Autoplay error: ${error}`);
+                                    reportAndStop('Media autoplay error', FaultCodes.FaultVideoUnexpected);
+                                }
                           });
 
                         // Optional: Reset the flag automatically when a new video loads or the source changes
                         vjsPlayer.on('loadstart', function() {
+                            console.debug(`??? XLR.debug >> VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} has started loading data . . .`);
                             triggerTimeUpdate = false;
                         });
 
@@ -180,15 +249,14 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                                 if (mediaDuration !== undefined && currentTime !== undefined) {
                                     remainingTimeMs = (mediaDuration - currentTime) * 1000;
                                 }
-
-                                if (regionHasMultipleMedia && remainingTimeMs === 0 && !triggerTimeUpdate) {
-                                    // We don't have data yet and we must immediately prepare next media
-                                    media.region.prepareNextMedia();
-                                } else if (regionHasMultipleMedia && remainingTimeMs <= preloadBufferTimeMs && !triggerTimeUpdate) {
+                                
+                                if (regionHasMultipleMedia && !triggerTimeUpdate &&
+                                    (remainingTimeMs === 0 || remainingTimeMs <= preloadBufferTimeMs)
+                                ) {
                                     // Check if remaining time is less than preloadBufferTimeMs and the action hasn't been triggered yet
                                     console.log('Less than preloadBufferTimeMs remaining! Do something now.');
-                                    // Prepare next media in region
                                     media.region.prepareNextMedia();
+
                                     triggerTimeUpdate = true; // Set the flag to prevent re-triggering
                                 }
 
@@ -200,20 +268,19 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                         }
                     }
                 });
-                vjsPlayer.on('error', async (err: any) => {
-                    console.debug(`??? XLR.debug >> VideoMedia: Media Error: ${capitalizeStr(media.mediaType)} for media > ${media.id}`);
-                    if (reportToPlayerPlatform.includes(xlr.config.platform)) {
-                        playerReportFault('Video file source not supported', media)
-                            .then(() => {
-                                this.stop();
-                            });
-                    } else {
-                        // End media after 5 seconds
-                        setTimeout(() => {
-                            console.debug(`??? XLR.debug >> VideoMedia: ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended . . .`);
-                            this.stop();
-                        }, 5000);
-                    }
+                vjsPlayer.on('error', () => {
+                    if (stopped) return;
+                    clearStallWatchdog();
+
+                    // Extract the actual MediaError so the fault message is
+                    // meaningful: code 2 = network, 3 = decode, 4 = not supported.
+                    const vjsError = vjsPlayer.error();
+                    const reason = vjsError
+                        ? `Video error (code ${vjsError.code}): ${vjsError.message}`
+                        : 'Unknown video error';
+
+                    console.warn(`XLR >> VideoMedia: error on media ${media.id}`, vjsError);
+                    reportAndStop(reason, FaultCodes.FaultVideoUnexpected);
                 });
 
                 if (media.duration === 0) {
@@ -225,16 +292,21 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
             }
         },
         stop: function(disposeOnly = false) {
-            const vjsPlayer = media.player;
+            clearStallWatchdog();
+
+            // videoPlayer.player is where init() stores the vjs instance;
+            // media.player is a legacy path kept for backward compat but is
+            // no longer set by init(), so always prefer videoPlayer.player.
+            const vjsPlayer = videoPlayer.player ?? media.player;
 
             console.debug('??? XLR.debug >> VideoMedia::stop', {
                 vjsPlayer,
-                isDisposed: vjsPlayer?.isDisposed_,
-                el: vjsPlayer?.el_,
+                isDisposed: vjsPlayer?.isDisposed(),
+                el: vjsPlayer?.el(),
             });
 
             // Expire the media and dispose the video
-            if (vjsPlayer !== undefined && !vjsPlayer.isDisposed_) {
+            if (vjsPlayer !== undefined && !vjsPlayer.isDisposed()) {
                 if (!disposeOnly) {
                     media.emitter.emit('end', media);
                 }
@@ -242,12 +314,19 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                 vjsPlayer.dispose();
 
                 // Clear up media player
-                media.player = undefined;
-            } else {
+                videoPlayer.player = undefined;
                 media.player = undefined;
                 media.html = null;
-                media.emitter.emit('end', media);
+            } else {
+                videoPlayer.player = undefined;
+                media.player = undefined;
+                media.html = null;
+
+                if (!disposeOnly) {
+                    media.emitter.emit('end', media);
+                }
             }
+            stopped = true;
         },
         play: function() {
             const vjsPlayer = videojs(mediaId);

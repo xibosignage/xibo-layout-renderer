@@ -23,7 +23,7 @@ import videojs from "video.js";
 
 import {IMedia} from '../../Types/Media';
 import {ILayout, InputLayoutType, OptionsType} from '../../Types/Layout';
-import {composeVideoSource, defaultVjsOpts} from "../Media/VideoMedia";
+import {composeVideoSource, defaultVjsOpts, reportToPlayerPlatform} from "../Media/VideoMedia";
 import {transitionElement} from "../Transitions";
 import {IRegion} from "../../Types/Region";
 import {ConsumerPlatform} from "../../Types/Platform";
@@ -572,7 +572,7 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
         const layoutSelector = '#' + region.layout.containerName +
           '[data-sequence="' + region.layout.index + '"]';
         const $layoutWithIndex = document.querySelector(layoutSelector);
-        const $region = document.querySelector('#' + region.containerName);
+        const $region = region.html;
         const mediaInRegion = $region?.querySelector('.' + mediaId);
 
         console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
@@ -593,7 +593,7 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
         }
 
         // Append fresh copy of the media into the region
-        ($region !== null) && $region.appendChild(media.html);
+        region.html.appendChild(media.html);
 
         const isMediaInDOM = document.body.contains(media.html);
 
@@ -605,19 +605,9 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
 
         // Initialize video.js
         media.player = videojs(mediaId, {
-              ...defaultVjsOpts,
-              errorDisplay: region.xlr.config.platform !== ConsumerPlatform.CHROMEOS,
-              loop: media.loop,
-          },
-        );
-
-        media.player.on('error', async (err: any) => {
-            if (media.region.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
-                playerReportFault('Video file not supported', media)
-                    .then(() => {
-                        media.emitter.emit('end', media);
-                    });
-            }
+            ...defaultVjsOpts,
+            errorDisplay: !reportToPlayerPlatform.includes(region.xlr.config.platform),
+            loop: media.loop,
         });
 
         (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
@@ -639,9 +629,9 @@ export function prepareImageMedia(media: IMedia, region: IRegion) {
         mediaInRegion.remove();
     }
 
-    // Append media to its region
-    const $region = document.querySelector('#' + region.containerName);
-    ($region !== null) && $region.appendChild(media.html as HTMLElement);
+    // Append media to its region using the direct reference to avoid
+    // global querySelector finding a same-named region in another layout
+    region.html.appendChild(media.html as HTMLElement);
 }
 
 export function prepareAudioMedia(media: IMedia, region: IRegion) {
@@ -658,9 +648,8 @@ export function prepareAudioMedia(media: IMedia, region: IRegion) {
         mediaInRegion.remove();
     }
 
-    // Append media to its region
-    const $region = document.querySelector('#' + region.containerName);
-    ($region !== null) && $region.appendChild(media.html as HTMLAudioElement);
+    // Append media to its region using the direct reference
+    region.html.appendChild(media.html as HTMLAudioElement);
 }
 
 export function prepareHtmlMedia(media: IMedia, region: IRegion) {
@@ -686,32 +675,43 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
         media.html.appendChild(media.iframe as Node);
 
         if (!mediaInRegion) {
-            // Add fresh copy of the media into the region
-            const $region = document.querySelector('#' + region.containerName);
-            ($region !== null) && $region.appendChild(media.html as HTMLElement);
+            // Add fresh copy of the media into the region using the direct reference
+            region.html.appendChild(media.html as HTMLElement);
             media.ready = true;
         }
     }
 }
 
+export enum FaultCodes {
+    FaultVideoSource = 2001,
+    FaultVideoUnexpected = 2099,
+}
 
-export async function playerReportFault(msg: string, media: IMedia) {
+export async function playerReportFault(msg: string, media: IMedia, code: number = FaultCodes.FaultVideoUnexpected) {
     // Immediately expire media and report a fault
+    const platform = media.region.xlr.config.platform;
     const playerSW = PwaSW();
     const hasSW = await playerSW.getSW();
+    const mediaFault = {
+        type: 'MEDIA_FAULT',
+        code: code,
+        reason: msg,
+        mediaId: media.id,
+        regionId: media.region.id,
+        layoutId: media.region.layout.id,
+        date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        // Temporary setting
+        expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
+    };
 
-    if (hasSW) {
-        playerSW.postMsg({
-            type: 'MEDIA_FAULT',
-            code: 5002,
-            reason: msg,
-            mediaId: media.id,
-            regionId: media.region.id,
-            layoutId: media.region.layout.id,
-            date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-            // Temporary setting
-            expires: format(new Date(setExpiry(1)), 'yyyy-MM-dd HH:mm:ss'),
-        })
+    console.debug('playerReportFault >> Reporting media fault', {
+        mediaFault,
+        platform,
+        hasSW,
+    });
+
+    if (platform === ConsumerPlatform.CHROMEOS && hasSW) {
+        return playerSW.postMsg(mediaFault)
           .then(() => {
               // We try to prepare next media if we have more than 1 media
               if (media.region.totalMediaObjects > 1) {
@@ -725,7 +725,19 @@ export async function playerReportFault(msg: string, media: IMedia) {
                   regionItems: media.region.totalMediaObjects,
               })
           });
+    } else if (platform === ConsumerPlatform.ELECTRON) {
+        // Create a broadcast channel to report media fault to the main process
+        const channel = new BroadcastChannel('player-faults-bc');
+        channel.postMessage(mediaFault);
+
+        console.debug('playerReportFault >> Electron platform - posted media fault to channel', {
+            mediaFault,
+        });
+        // channel.close();
+        return Promise.resolve();
     }
+
+    return Promise.resolve();
 }
 
 export function setLayoutIndex(layout: ILayout | undefined, layoutIndex: number) {

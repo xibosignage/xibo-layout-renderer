@@ -304,6 +304,12 @@ export default class Region implements IRegion {
         // Reset region states
         this.reset();
 
+        console.debug('??? XLR.debug >> Region Called Region::run - after reset > ', {
+            regionId: this.id,
+            currMedia: this.currMedia?.containerName,
+            oldMedia: this.oldMedia?.containerName,
+        });
+
         if (this.currMedia) {
             this.transitionNodes(this.oldMedia, this.currMedia);
         }
@@ -353,7 +359,8 @@ export default class Region implements IRegion {
             const hideOldMedia = () => {
                 // Hide oldMedia
                 if (oldMedia) {
-                    const $layout = document.querySelector(`#${this.layout.containerName}[data-sequence="${this.layout.index}"]`) as HTMLDivElement;
+                    const $layout = document.querySelector(`#${this.layout.containerName}[data-sequence="${this.layout.index}"]`) as HTMLDivElement | null;
+                    if (!$layout) return;
                     const $region = $layout.querySelector('#' + this.containerName);
                     const $oldMedia = ($region)
                       ? $region.querySelector('.' + getMediaId(oldMedia)) as HTMLElement
@@ -379,7 +386,7 @@ export default class Region implements IRegion {
                                         $videoWrapper.style.setProperty('z-index', '-999');
                                         $videoWrapper.style.setProperty('opacity', '0');
 
-                                        if (oldMedia.player && oldMedia.videoHandler) {
+                                        if (oldMedia.videoHandler) {
                                             oldMedia.videoHandler.stop(true);
                                         }
                                     }
@@ -489,13 +496,14 @@ export default class Region implements IRegion {
         }
 
         // When the region has completed and mediaObjects.length = 1
-        // and curMedia.loop = false, then put the media on
-        // its current state
+        // and render is not html, preserve the current media state without
+        // calling transitionNodes (which would remove the media from DOM for 1s).
+        // Do NOT restart the media timer here — the layout will end naturally when
+        // regionExpired() detects all regions complete on the next cycle.
         if (this.complete && this.mediaObjects.length === 1 &&
             this.currMedia?.render !== 'html' &&
             (this.currMedia?.mediaType === 'image' ||
-                this.currMedia?.mediaType === 'video') &&
-            !this.currMedia?.loop
+                this.currMedia?.mediaType === 'video')
         ) {
             return;
         }
@@ -549,13 +557,7 @@ export default class Region implements IRegion {
     };
 
     exitTransition() {
-        /* TODO: Actually implement region exit transitions */
-        const $region = document.getElementById(`${this.containerName}`);
-
-        if ($region) {
-            // $region.style.display = 'none';
-        }
-
+        /* TODO: Actually implement region exit transitions using this.html */
         console.debug('Called Region::exitTransition ', this.id);
 
         this.exitTransitionComplete();
