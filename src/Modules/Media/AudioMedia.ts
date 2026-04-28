@@ -19,14 +19,14 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { IMedia } from '../../Types/Media';
-import { capitalizeStr, getMediaId } from '../Generators';
+import { capitalizeStr } from '../Generators';
 
 import './media.css';
 
 export function AudioMedia(media: IMedia) {
     const audioMediaObject = {
         init() {
-            const $audioMedia = document.getElementById(getMediaId(media)) as HTMLAudioElement;
+            const $audioMedia = media.html as HTMLAudioElement;
             let $playBtn: HTMLButtonElement | null = null;
 
             if ($audioMedia) {
