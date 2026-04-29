@@ -32,7 +32,8 @@ import {
     prepareAudioMedia,
     prepareHtmlMedia,
     prepareImageMedia,
-    prepareVideoMedia
+    prepareVideoMedia,
+    isMediaActive,
 } from '../Generators';
 import { Media } from '../Media';
 import {
@@ -171,11 +172,22 @@ export default class Region implements IRegion {
 
         /* Parse region media objects */
         const regionMediaItems = Array.from(this.xml!.getElementsByTagName('media'));
-        this.totalMediaObjects = regionMediaItems.length;
 
         ($layout) && $layout.appendChild(this.html);
 
         Array.from(regionMediaItems).forEach(async (mediaXml, indx) => {
+            const fromDt = mediaXml.getAttribute('fromDt') || '';
+            const toDt = mediaXml.getAttribute('toDt') || '';
+
+            if (!isMediaActive(fromDt, toDt)) {
+                console.debug('??? XLR.debug >> Region::prepareRegion - skipping expired/inactive media', {
+                    mediaId: mediaXml.getAttribute('id'),
+                    fromDt,
+                    toDt,
+                });
+                return;
+            }
+
             const mediaObj = new Media(
                 this,
                 mediaXml?.getAttribute('id') || '',
@@ -187,6 +199,8 @@ export default class Region implements IRegion {
             mediaObj.index = indx;
             this.mediaObjects.push(mediaObj);
         });
+
+        this.totalMediaObjects = this.mediaObjects.length;
 
         console.debug('??? XLR.debug >> Region - done looping through media', {
             mediaObjects: this.mediaObjects,
@@ -254,7 +268,27 @@ export default class Region implements IRegion {
     }
 
     prepareNextMedia() {
-        const nextMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
+        let nextMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
+
+        // Skip over any media items that are no longer within their active date window
+        let skippedCount = 0;
+        while (skippedCount < this.totalMediaObjects) {
+            const candidate = this.mediaObjects[nextMediaIndex];
+            if (isMediaActive(candidate.fromDt, candidate.toDt)) {
+                break;
+            }
+            skippedCount++;
+            nextMediaIndex = (nextMediaIndex + 1) % this.totalMediaObjects;
+        }
+
+        // Nothing to pre-load when:
+        // - every item is expired, OR
+        // - the only active item is the one currently playing (skip loop wrapped back to it)
+        if (skippedCount >= this.totalMediaObjects || nextMediaIndex === this.currentMediaIndex) {
+            console.debug('<><> XLR.debug >> [Region::prepareNextMedia()] - no active next media to preload');
+            return;
+        }
+
         const nextMedia = this.mediaObjects[nextMediaIndex];
 
         console.debug('<><> XLR.debug >> [Media] - [Region::prepareNextMedia()] - Preparing next media', {
@@ -303,6 +337,13 @@ export default class Region implements IRegion {
 
         // Reset region states
         this.reset();
+
+        // All media were filtered out (all expired/inactive before this run started)
+        if (this.mediaObjects.length === 0) {
+            console.debug('??? XLR.debug >> Region::run - no active media, finishing region', this.id);
+            this.finished();
+            return;
+        }
 
         console.debug('??? XLR.debug >> Region Called Region::run - after reset > ', {
             regionId: this.id,
@@ -465,27 +506,9 @@ export default class Region implements IRegion {
             return;
         }
 
-        // Are we in a playlist, and has the playlist completed a full cycle?
-        const isLastMediaInPlaylist = this.currentMediaIndex === this.mediaObjects.length - 1 && this.mediaObjects.length > 1;
-
-        // If yes, enable shell command widgets again (if any), so they execute on the next playlist cycle
-        if (isLastMediaInPlaylist) {
-            this.mediaObjects.forEach((media: IMedia): void => {
-                if (media.mediaType === 'shellcommand') {
-                    // reset per-playlist-cycle execution state
-                    (media as any).hasCommandExecuted = false;
-                }
-            });
-        }
-
-        if (!this.layout.isOverlay && this.currentMediaIndex === this.mediaObjects.length - 1) {
-            this.finished();
-
-            if (this.layout.allEnded) {
-                console.debug('??? XLR.debug >> Region - playNextMedia - layout all ended');
-                return;
-            }
-        }
+        // Snapshot the index of the media that just ended so we can detect
+        // cycle completion after the skip loop runs.
+        const origIndex = this.currentMediaIndex;
 
         // When the region has completed and when currentMedia is html
         // Then, preserve the currentMedia state
@@ -514,11 +537,42 @@ export default class Region implements IRegion {
             this.oldMedia = undefined;
         }
 
-        this.currentMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
+        this.currentMediaIndex = (origIndex + 1) % this.totalMediaObjects;
         this.currMedia = this.mediaObjects[this.currentMediaIndex];
+
+        // Skip media items that are no longer within their active date window
+        let skippedCount = 0;
+        while (this.currMedia && !isMediaActive(this.currMedia.fromDt, this.currMedia.toDt)) {
+            skippedCount++;
+            if (skippedCount >= this.totalMediaObjects) {
+                // Every item in the playlist has expired; finish this region
+                console.debug('??? XLR.debug >> Region::playNextMedia - all media expired, finishing region', this.id);
+                this.finished();
+                return;
+            }
+            this.currentMediaIndex = (this.currentMediaIndex + 1) % this.totalMediaObjects;
+            this.currMedia = this.mediaObjects[this.currentMediaIndex];
+        }
+
         this.nxtMedia = this.mediaObjects[
             (this.currentMediaIndex + 1) % this.totalMediaObjects
         ];
+
+        // A full playlist cycle has been traversed when the total advancement
+        // (the initial +1 step plus any skips over expired items) reaches or
+        // crosses the end of the array.
+        const crossedEnd = (origIndex + 1 + skippedCount) >= this.totalMediaObjects;
+
+        // Re-enable shell command widgets at the end of each full cycle so they
+        // execute again on the next pass.
+        if (crossedEnd && this.mediaObjects.length > 1) {
+            this.mediaObjects.forEach((media: IMedia): void => {
+                if (media.mediaType === 'shellcommand') {
+                    // reset per-playlist-cycle execution state
+                    (media as any).hasCommandExecuted = false;
+                }
+            });
+        }
 
         console.debug('??? XLR.debug >> End Region::playNextMedia > execute transitionNodes', {
             regionId: this.id,
@@ -528,6 +582,15 @@ export default class Region implements IRegion {
             currMedia: this.currMedia?.containerName,
             nxtMedia: this.nxtMedia?.containerName,
         })
+
+        if (!this.layout.isOverlay && crossedEnd) {
+            this.finished();
+
+            if (this.layout.allEnded) {
+                console.debug('??? XLR.debug >> Region - playNextMedia - layout all ended');
+                return;
+            }
+        }
 
         this.transitionNodes(this.oldMedia, this.currMedia);
     };
