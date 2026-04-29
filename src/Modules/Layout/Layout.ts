@@ -713,6 +713,22 @@ export default class Layout implements ILayout {
         }
     }
 
+    discardLayout(caller: LayoutPlaybackType = LayoutPlaybackType.NEXT): void {
+        // Dispose any video.js players that were initialized during prepareVideoMedia
+        // but never played. The isDisposed() guard makes this safe to call on
+        // layouts that were fully played as well.
+        for (const region of this.regions) {
+            for (const media of region.mediaObjects) {
+                if (media.player && !media.player.isDisposed()) {
+                    media.player.dispose();
+                    media.player = undefined;
+                    media.html = null;
+                }
+            }
+        }
+        this.removeLayout(caller);
+    }
+
     getXlf(): string {
         return this.xlfString;
     }

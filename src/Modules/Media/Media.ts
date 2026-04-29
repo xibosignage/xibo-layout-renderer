@@ -55,6 +55,7 @@ export class Media implements IMedia {
     enableStat: boolean = false;
     fileId: string = '';
     finished: boolean = false;
+    fromDt: string = '';
     html: HTMLElement | null = null;
     id: string = '';
     idCounter: number = 0;
@@ -78,6 +79,7 @@ export class Media implements IMedia {
     state: MediaState = MediaState.IDLE;
     tempSrc: string = '';
     timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => { }, 0);
+    toDt: string = '';
     type: string = '';
     uri: string = '';
     url: string | null = null;
@@ -114,6 +116,9 @@ export class Media implements IMedia {
         this.duration = parseInt(this.xml?.getAttribute('duration') as string) || 0;
         this.enableStat = Boolean(this.xml?.getAttribute('enableStat') || false);
         this.hasCommandExecuted = false;
+        this.fromDt = this.xml?.getAttribute('fromDt') || '';
+        this.toDt = this.xml?.getAttribute('toDt') || '';
+
 
         this.on('start', (media: IMedia) => {
             if (media.state === MediaState.PLAYING) return;

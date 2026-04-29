@@ -3,6 +3,5 @@ export type {
 } from './Media.types';
 
 export {
-    initialMedia,
     MediaState,
 } from './Media.types';

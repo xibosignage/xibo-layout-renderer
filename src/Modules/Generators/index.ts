@@ -27,6 +27,7 @@ export {
     prepareVideoMedia,
     getLayoutIndexByLayoutId,
     hasSspLayout,
+    isMediaActive,
     type MediaTypes,
     FaultCodes,
 } from './Generators';
