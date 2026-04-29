@@ -356,6 +356,11 @@ export class Media implements IMedia {
             }
         } else if (this.xlr.config.platform === ConsumerPlatform.ELECTRON) {
             tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
+            
+            // this is an SSP Layout
+            if (this.region.layout.layoutId === -1) {
+                tmpUrl = this.uri;
+            }
         }
 
         this.url = tmpUrl;
@@ -401,8 +406,8 @@ export class Media implements IMedia {
 
         const showCurrentMedia = () => {
             const mediaId = getMediaId(<IMedia>{ mediaType: this.mediaType, containerName: this.containerName });
-            const $region = document.querySelector('#' + this.region.containerName) as (HTMLElement | null);
-            let $media = $region !== null && $region.querySelector('.' + mediaId) as (HTMLElement | null);
+            const $region = this.region.html;
+            let $media = $region.querySelector('.' + mediaId) as (HTMLElement | null);
 
             if (!$media) {
                 $media = getNewMedia();
@@ -478,14 +483,14 @@ export class Media implements IMedia {
             }
         };
         const getNewMedia = (): HTMLElement | null => {
-            const $region = document.getElementById(`${this.region.containerName}`);
+            const $region = this.region.html;
             // This function is for checking whether
             // the region still has to show a media item
             // when another region is not finished yet
             if (this.region.complete && !this.region.layout.allEnded) {
                 // Add currentMedia to the region
 
-                ($region) && $region.insertBefore(this.html as Node, $region.lastElementChild);
+                $region.insertBefore(this.html as Node, $region.lastElementChild);
 
                 return this.html as HTMLElement;
             }
@@ -497,13 +502,9 @@ export class Media implements IMedia {
     }
 
     async stop() {
-        const $media = document.getElementById(
-            getMediaId(<IMedia>{ mediaType: this.mediaType, containerName: this.containerName })
-        );
-
-        if ($media) {
-            $media.style.display = 'none';
-            $media.remove();
+        if (this.html) {
+            this.html.style.display = 'none';
+            this.html.remove();
         }
 
         // Release blob URLs for image media to prevent memory leaks on long-running signage

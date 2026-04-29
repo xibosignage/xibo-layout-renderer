@@ -27,7 +27,7 @@ import SplashScreen, { ISplashScreen, PreviewSplashElement } from './Modules/Spl
 import { hasDefaultOnly, isLayoutValid, getLayoutIndexByLayoutId, hasSspLayout } from "./Modules/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
 import { OverlayLayoutManager } from "./Modules/Layout/OverlayLayoutManager";
-import { ConsumerPlatform } from './types';
+import { ConsumerPlatform, LayoutPlaybackType } from './types';
 import { setLayoutIndex } from './Modules/Generators/Generators';
 
 export default function XiboLayoutRenderer(
@@ -88,8 +88,16 @@ export default function XiboLayoutRenderer(
     xlrObject.on('updateLoop', async (inputLayouts: InputLayoutType[]) => {
         xlrObject.isUpdatingLoop = true;
         await xlrObject.updateLoop(inputLayouts);
-
         xlrObject.isUpdatingLoop = false;
+
+        // If the running layout finished while isUpdatingLoop was true, the
+        // layout end-handler bailed out of prepareLayouts() early and the
+        // subsequent playLayouts() call saw currentLayout.done === true and
+        // skipped run() — leaving a black screen.  Catch up now that the flag
+        // is clear.
+        if (xlrObject.currentLayout?.done) {
+            xlrObject.prepareLayouts().then(xlr => xlrObject.playLayouts(xlr));
+        }
     });
 
     xlrObject.on('updateOverlays', async (overlays: InputLayoutType[]) => {
@@ -98,22 +106,9 @@ export default function XiboLayoutRenderer(
         xlrObject.isUpdatingOverlays = false;
     })
 
-    /**
-     * Asynchronous event emitter. Extended nanoevents event emitter.
-     *
-     * NOTE: Known limitation — nanoevents emit() is synchronous.
-     * Any async event handlers registered via .on() are fire-and-forget;
-     * emitSync does NOT await them. The returned Promise resolves
-     * immediately after handlers are invoked, not after they complete.
-     *
-     * @param eventName
-     * @param args
-     */
-    xlrObject.emitSync = <E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>) => {
-        return new Promise(async resolve => {
-            xlrObject.emitter.emit(eventName, ...args);
-            resolve();
-        });
+    xlrObject.emitSync = async <E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>) => {
+        const handlers = (xlrObject.emitter.events[eventName] ?? []) as ((...a: any[]) => any)[];
+        await Promise.all(handlers.map(handler => handler(...args)));
     };
 
     xlrObject.bootstrap = function () {
@@ -161,13 +156,23 @@ export default function XiboLayoutRenderer(
                 $splashScreen?.hide();
             }
 
+            console.debug('>>>> XLR.debug XLR::playLayouts > currentLayout', {
+                layoutId: xlr.currentLayout.layoutId,
+                layoutIndex: xlr.currentLayout.index,
+                layoutState: xlr.currentLayout.state,
+            });
+
             if (!xlr.currentLayout.done) {
                 // Hide overlays when current layout is interrupt
                 if (xlr.currentLayout.isInterrupt()) {
                     xlrObject.overlayLayoutManager.stopOverlays();
                 }
 
-                console.log('>>>> XLR.debug XLR::playSchedules > Running currentLayout', xlr.currentLayout);
+                console.debug('>>>> XLR.debug XLR::playLayouts > Running currentLayout', {
+                    layoutId: xlr.currentLayout.layoutId,
+                    layoutIndex: xlr.currentLayout.index,
+                    layoutState: xlr.currentLayout.state,
+                });
                 xlr.currentLayout.run();
             }
 
@@ -216,7 +221,7 @@ export default function XiboLayoutRenderer(
                 if (this.currentLayout && this.currentLayout.isInterrupt()) {
                     if (this.isLayoutInDOM(_overlay.containerName, _overlay.index)) {
                         await _overlay.finishAllRegions();
-                        _overlay.removeLayout();
+                        _overlay.removeLayout(LayoutPlaybackType.OVERLAY);
                     }
                 } else {
                     _overlay.run();
@@ -250,6 +255,37 @@ export default function XiboLayoutRenderer(
         const $layout = <HTMLDivElement | null>(document.querySelector(`#${containerName}[data-sequence="${layoutIndex}"]`));
 
         return $layout !== null;
+    };
+
+    // Scans screen_container for non-overlay layout divs and removes any that
+    // are not the current or next active layout. Prevents DOM accumulation when
+    // prepareLayouts() races with updateLoop and multiple same-layoutId elements
+    // end up in screen_container (e.g. transitioning from a 1-layout loop where
+    // two elements exist for the same layout to a multi-layout schedule).
+    // keepCurrent / keepNext:
+    //   undefined  → fall back to this.currentLayout / this.nextLayout
+    //   null       → keep nothing for that slot (explicit "no layout to preserve")
+    //   ILayout    → keep exactly that instance
+    xlrObject.cleanupOrphanedLayouts = function (
+        keepCurrent?: ILayout | null,
+        keepNext?: ILayout | null,
+    ) {
+        const $screen = document.getElementById('screen_container');
+        if (!$screen) return;
+
+        const current = keepCurrent !== undefined ? keepCurrent : this.currentLayout;
+        const next    = keepNext    !== undefined ? keepNext    : this.nextLayout;
+
+        Array.from($screen.querySelectorAll(':scope > div:not(.is-overlay)')).forEach((el) => {
+            const div = el as HTMLDivElement;
+            const isCurrentLayout = current && div.id === current.containerName && div.dataset.sequence === String(current.index);
+            const isNextLayout    = next    && div.id === next.containerName    && div.dataset.sequence === String(next.index);
+
+            if (!isCurrentLayout && !isNextLayout) {
+                console.debug('XLR::cleanupOrphanedLayouts - removing orphaned layout element', div.id);
+                div.parentElement?.removeChild(div);
+            }
+        });
     };
 
     xlrObject.updateLoop = async function (inputLayouts: InputLayoutType[]) {
@@ -291,6 +327,15 @@ export default function XiboLayoutRenderer(
                     this.currentLayout.removeLayout();
                 }
 
+                // Discard old nextLayout before replacing it — same as the
+                // other two branches do, otherwise the prepared DOM element
+                // and any video.js players are orphaned.
+                if (this.nextLayout &&
+                    this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
+                ) {
+                    this.nextLayout.discardLayout(LayoutPlaybackType.NEXT);
+                }
+
                 this.currentLayout = await this.prepareLayoutXlf(playback.currentLayout);
                 this.currentLayoutId = this.currentLayout.layoutId;
                 this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
@@ -306,7 +351,7 @@ export default function XiboLayoutRenderer(
                 if (this.nextLayout &&
                     this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
                 ) {
-                    this.nextLayout.removeLayout();
+                    this.nextLayout.discardLayout(LayoutPlaybackType.NEXT);
                 }
 
                 if (playback.currentLayout) {
@@ -324,16 +369,34 @@ export default function XiboLayoutRenderer(
             if (this.nextLayout &&
                 this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
             ) {
-                this.nextLayout.removeLayout();
+                this.nextLayout.discardLayout(LayoutPlaybackType.NEXT);
             }
 
-            // Prepare new current layout
+            // Purge any other orphaned layouts from screen_container that belong
+            // to the old single-layout loop. When there was only one layout in the
+            // loop, prepareLayouts() kept two DOM elements alive (current + next,
+            // both the same layoutId but different containerNames). On a schedule
+            // change the this.nextLayout check above only discards the element
+            // currently referenced by this.nextLayout, but concurrent
+            // prepareLayouts() calls can leave earlier same-layoutId elements
+            // behind.
+            // Pass null (not undefined) for keepNext: undefined would fall back to
+            // this.nextLayout which may still reference the just-discarded layout
+            // or — if isLayoutInDOM returned false and discardLayout was skipped —
+            // the orphan itself, causing cleanupOrphanedLayouts to preserve it.
+            // null means "no next to keep"; we are about to prepare a fresh one.
+            this.cleanupOrphanedLayouts(this.currentLayout, null);
+
+            // The current layout is still valid and running — do NOT replace the
+            // live currentLayout object.  Only refresh the queued nextLayout so
+            // that when the running layout finishes it transitions to the correct
+            // position in the updated loop.  Using playback.currentLayout (the
+            // slot that follows the running layout in the new queue) as the new
+            // nextLayout keeps the cycle in order; the slot after that will be
+            // prepared by the normal prepareLayouts() call at transition time.
             if (playback.currentLayout) {
-                await prepareNewCurrentLayout();
-            }
-            // Prepare new next layout
-            if (playback.nextLayout) {
-                this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
+                this.currentLayoutIndex = playback.currentLayoutIndex;
+                this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.currentLayout));
             }
 
             console.debug('>>>> XLR.debug XLR::updateLoop > updated nextLayout', this.nextLayout);
@@ -430,6 +493,24 @@ export default function XiboLayoutRenderer(
                     } else {
                         _currentLayout = this.nextLayout;
                         _currentLayoutIndex = _currentLayout.index;
+
+                        // updateLoop can re-queue the same index that is currently
+                        // playing (e.g. it fires while nextLayout.index === currentLayout.index).
+                        // When that layout then ends, the catch-up prepareLayouts() would
+                        // replay the same slot instead of advancing.  Detect this by checking
+                        // whether the queued next-to-current is at the same index as the
+                        // layout that just finished, and advance past it so the following
+                        // slot (e.g. an SSP that now has an ad) becomes current instead.
+                        if (
+                            this.inputLayouts.length > 1 &&
+                            this.currentLayout?.done &&
+                            _currentLayoutIndex === this.currentLayout?.index
+                        ) {
+                            _currentLayoutIndex = (_currentLayoutIndex + 1) % this.inputLayouts.length;
+                            _currentLayout = this.getLayout(this.inputLayouts[_currentLayoutIndex]);
+                            _currentLayout = setLayoutIndex(_currentLayout, _currentLayoutIndex);
+                        }
+
                         _nextLayoutIndex = (_currentLayoutIndex + 1) % this.inputLayouts.length;
                         _nextLayout = this.getLayout(this.inputLayouts[_nextLayoutIndex]);
                         _nextLayout = setLayoutIndex(_nextLayout, _nextLayoutIndex);
@@ -493,6 +574,10 @@ export default function XiboLayoutRenderer(
 
                 if (isCMS) {
                     activeLayout.index = 0;
+                    // id stays null without this — setLayoutIndex returns undefined for CMS layouts
+                    if (activeLayout.id == null) {
+                        activeLayout.id = activeLayout.layoutId;
+                    }
                 } else {
                     activeLayout = { ...this.uniqueLayouts[inputLayout.layoutId] };
                 }
@@ -556,9 +641,22 @@ export default function XiboLayoutRenderer(
 
         self.currentLayoutId = layoutPlayback.currentLayout?.layoutId as ILayout['layoutId'];
 
-        const currentLayoutXlf = (layoutPlayback.currentLayout?.layoutNode)
+        // Only reuse the existing Layout instance if it is fully healthy —
+        // a done=true instance was removed from the DOM (e.g. an SSP slot that
+        // had no ad), and an empty-XLF instance has no regions so it can never
+        // advance the cycle.  In either case re-prepare from scratch so we get
+        // a fresh request (which may now have a valid ad / XLF).
+        const currentLayoutXlf = (
+            layoutPlayback.currentLayout?.layoutNode &&
+            !layoutPlayback.currentLayout.done &&
+            layoutPlayback.currentLayout.xlfString !== ''
+        )
             ? layoutPlayback.currentLayout
             : await self.prepareLayoutXlf(layoutPlayback.currentLayout);
+
+        // True when the same object was returned (reused); false when a fresh
+        // Layout was constructed by prepareLayoutXlf above.
+        const wasCurrentReused = currentLayoutXlf === layoutPlayback.currentLayout;
         const nextLayoutXlf = await self.prepareLayoutXlf(layoutPlayback.nextLayout);
 
         let layouts: ILayout[] = await Promise.all([
@@ -566,14 +664,26 @@ export default function XiboLayoutRenderer(
             await self.prepareForSsp(nextLayoutXlf),
         ]);
 
-        // Return early when layout loop is updating
-        if (self.isUpdatingLoop) {
+        // Return early if a concurrent updateLoop killed the current candidate.
+        // isUpdatingLoop may already be false if updateLoop finished quickly,
+        // so also check layouts[0].done (set by removeLayout inside updateLoop).
+        if (self.isUpdatingLoop || layouts[0].done) {
+            // If currentLayout was freshly prepared (not reused from nextLayout),
+            // its DOM element was just appended — discard it now so it does not
+            // accumulate in screen_container. Also disposes any video.js players
+            // that were initialized during prepareVideoMedia but never played.
+            if (!wasCurrentReused &&
+                this.isLayoutInDOM(currentLayoutXlf.containerName, currentLayoutXlf.index)
+            ) {
+                currentLayoutXlf.discardLayout(LayoutPlaybackType.NEXT);
+            }
             if (layoutPlayback.nextLayout &&
                 nextLayoutXlf &&
                 this.isLayoutInDOM(nextLayoutXlf.containerName, nextLayoutXlf.index)
             ) {
-                nextLayoutXlf.removeLayout();
+                nextLayoutXlf.discardLayout(LayoutPlaybackType.NEXT);
             }
+            return Promise.resolve(self);
         }
 
         console.debug('>>>>> XLR.debug prepared layout XLF', layouts);
@@ -591,6 +701,14 @@ export default function XiboLayoutRenderer(
             self.currentLayout = self.layouts.current;
             self.currentLayoutId = self.currentLayout.layoutId;
             self.nextLayout = self.layouts.next;
+
+            // Evict any orphaned layout DOM elements that aren't the current
+            // or next layout. Concurrent prepareLayouts() calls can each append
+            // a freshly-prepared nextLayout to screen_container and then
+            // overwrite this.nextLayout, leaving earlier elements behind.
+            // Calling this here — with explicit references — ensures every
+            // completed prepare cycle leaves the DOM in a clean state.
+            self.cleanupOrphanedLayouts(self.currentLayout, self.nextLayout);
 
             resolve(xlrObject);
         });
@@ -628,8 +746,13 @@ export default function XiboLayoutRenderer(
                 await self.emitSync('adRequest', inputLayout.index);
                 sspInputLayout = self.inputLayouts[inputLayout.index];
 
+                console.debug('XLR::prepareLayoutXlf > SSP input layout', {
+                    sspInputLayout,
+                    inputLayout,
+                });
+
                 // @ts-ignore
-                layoutXlf = sspInputLayout?.getXlf() || '';
+                layoutXlf = typeof sspInputLayout?.getXlf === 'function' ? sspInputLayout.getXlf() : '';
             } else {
                 layoutXlf = await getXlf(newOptions);
             }
@@ -667,44 +790,56 @@ export default function XiboLayoutRenderer(
                 xlrLayoutObj.ad = sspInputLayout.ad;
             }
 
+            let xlrLayout: ILayout;
             if (isOverlayLayout) {
-                resolve(new OverlayLayout(
+                xlrLayout = new OverlayLayout(
                     xlrLayoutObj,
                     newOptions,
                     self,
                     layoutXlfNode,
-                ));
+                );
             } else {
-                resolve(new Layout(
+                xlrLayout = new Layout(
                     xlrLayoutObj,
                     newOptions,
                     self,
                     layoutXlfNode,
-                ));
+                );
             }
+
+            // Advance the shared counter so the next prepareLayoutXlf() call
+            // starts from where this layout left off — prevents every layout
+            // instance from reusing idCounter=1 and colliding on the same
+            // containerName / DOM element.
+            if (props.options) {
+                props.options.idCounter = newOptions.idCounter;
+            }
+
+            resolve(xlrLayout);
         });
     };
 
     xlrObject.prepareForSsp = async function (nextLayout: ILayout) {
         const self = this;
         let _nextLayout = nextLayout;
+        let iterations = 0;
+        const maxIterations = self.inputLayouts.length;
 
-        while (_nextLayout && _nextLayout.xlfString === '') {
-            // Remove skipped layout
-            _nextLayout.removeLayout();
+        while (_nextLayout && _nextLayout.xlfString === '' && iterations < maxIterations) {
+            // Remove the empty slot's DOM element before skipping past it
+            _nextLayout.removeLayout(LayoutPlaybackType.NEXT);
+            iterations++;
 
-            // Get next valid layout
-            // We will skip next layout that has no valid xlf
-            const nextIndex = _nextLayout.index + 1;
-            if (nextIndex >= self.inputLayouts.length) {
-                break;
-            }
+            // Advance to the next slot, wrapping around so a trailing SSP slot
+            // with no ad does not strand the queue at the end of the array.
+            const nextIndex = (_nextLayout.index + 1) % self.inputLayouts.length;
 
             const inputLayout = self.inputLayouts[nextIndex];
             if (!inputLayout) break;
 
             let nextLayoutObj = self.getLayout(inputLayout);
             nextLayoutObj = setLayoutIndex(nextLayoutObj, nextIndex);
+            if (!nextLayoutObj) break;
 
             _nextLayout = await self.prepareLayoutXlf(nextLayoutObj);
         }
@@ -757,6 +892,12 @@ export default function XiboLayoutRenderer(
         if (layout !== null) {
             layout.index = xlrInputLayout.index;
         }
+
+        console.debug('XLR::updateInputLayout', {
+            layoutIndex,
+            layout,
+            xlrInputLayout,
+        });
 
         this.inputLayouts[layoutIndex] = layout || xlrInputLayout;
     };

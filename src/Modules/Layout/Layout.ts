@@ -269,7 +269,11 @@ export default class Layout implements ILayout {
         this.on('start', (layout: ILayout) => {
             layout.done = false;
             layout.state = ELayoutState.RUNNING;
-            console.debug('>>>> XLR.debug Layout start emitted > Layout ID > ', layout.id);
+            console.debug('>>>> XLR.debug Layout start emitted > Layout > ', {
+                layoutId: layout.id,
+                layoutIndex: layout.index,
+                layoutState: layout.state,
+            });
 
             // Check if stats are enabled for the layout
             if (layout.enableStat) {
@@ -289,10 +293,19 @@ export default class Layout implements ILayout {
         this.on('end', async (layout: ILayout) => {
             // Only proceed when last layout state is RUNNING
             if (layout.state === ELayoutState.CANCELLED) {
+                console.debug('>>>> XLR.debug Layout end emitted but layout is already cancelled > Layout ID > ', {
+                    layoutId: layout.id,
+                    layoutIndex: layout.index,
+                    layoutState: layout.state,
+                });
                 return;
             }
 
-            console.debug('>>>> XLR.debug Ending layout with ID of > ', layout.layoutId);
+            console.debug('>>>> XLR.debug Ending layout', {
+                layoutId: layout.id,
+                layoutIndex: layout.index,
+                layoutState: layout.state,
+            });
 
             /* Remove layout that has ended */
             const $layout = <HTMLDivElement | null>(
@@ -309,6 +322,8 @@ export default class Layout implements ILayout {
             console.debug('>>> XLR.debug Layout end emitted > Layout ID > ', {
                 $layout,
                 layoutId: layout.id,
+                layoutIndex: layout.index,
+                layoutState: layout.state,
                 isOverlay: layout.isOverlay,
                 isInterrupt: layout.isInterrupt(),
             });
@@ -361,6 +376,16 @@ export default class Layout implements ILayout {
         this.on('cancelled', (layout: ILayout) => {
             console.debug('>>>>> XLR.debug / Layout cancelled > Layout ID > ', layout.id);
             layout.state = ELayoutState.CANCELLED;
+            layout.inLoop = false;
+            // Dispose video handlers immediately so their stall watchdogs and error
+            // callbacks can't fire against a layout whose DOM is about to be removed.
+            for (const region of layout.regions) {
+                for (const media of region.mediaObjects) {
+                    if (media.videoHandler) {
+                        media.videoHandler.stop(true);
+                    }
+                }
+            }
         });
     }
 
@@ -546,6 +571,15 @@ export default class Layout implements ILayout {
             $splashScreen.style.display = 'none';
         }
 
+        // Check if $layoutContainer is still in the DOM before trying to play regions, as the layout may have been removed while waiting for a long-running region to finish.
+        console.debug('??? XLR.debug >> Layout::run() - Checking if layout container is still in the DOM before playing regions...', {
+            layoutId: this.id,
+            layoutContainerExists: !!$layoutContainer,
+            $layoutContainer,
+            layoutIndex: this.index,
+            shouldParse: false,
+        });
+
         if ($layoutContainer) {
             $layoutContainer.style.setProperty('visibility', 'visible');
             $layoutContainer.style.setProperty('opacity', '1');
@@ -610,7 +644,11 @@ export default class Layout implements ILayout {
         }
 
         if (this.allEnded) {
-            console.debug('starting to end layout . . .');
+            console.debug('starting to end layout . . .', {
+                layoutId: this.layoutId,
+                layoutIndex: this.index,
+                layoutState: this.state,
+            });
             if (this.xlr.config.platform === ConsumerPlatform.CMS) {
                 const $end = document.getElementById('play_ended');
                 const $preview = document.getElementById('screen_container');
@@ -673,6 +711,22 @@ export default class Layout implements ILayout {
         if ($layout !== null) {
             $layout.parentElement?.removeChild($layout);
         }
+    }
+
+    discardLayout(caller: LayoutPlaybackType = LayoutPlaybackType.NEXT): void {
+        // Dispose any video.js players that were initialized during prepareVideoMedia
+        // but never played. The isDisposed() guard makes this safe to call on
+        // layouts that were fully played as well.
+        for (const region of this.regions) {
+            for (const media of region.mediaObjects) {
+                if (media.player && !media.player.isDisposed()) {
+                    media.player.dispose();
+                    media.player = undefined;
+                    media.html = null;
+                }
+            }
+        }
+        this.removeLayout(caller);
     }
 
     getXlf(): string {

@@ -85,6 +85,8 @@ export interface IXlr {
 
     isLayoutInDOM(containerName: string, layoutId: number): boolean;
 
+    cleanupOrphanedLayouts(keepCurrent?: ILayout | null, keepNext?: ILayout | null): void;
+
     isSspEnabled: boolean;
     isUpdatingLoop: boolean;
     isUpdatingOverlays: boolean;
@@ -152,6 +154,8 @@ export const initialXlr: IXlr = {
     isInterrupted: false,
     isLayoutInDOM(containerName: string, layoutId: number): boolean {
         return false;
+    },
+    cleanupOrphanedLayouts(_keepCurrent?: ILayout, _keepNext?: ILayout) {
     },
     isSspEnabled: false,
     isUpdatingLoop: false,

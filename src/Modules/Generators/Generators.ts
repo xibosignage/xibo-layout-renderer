@@ -602,7 +602,7 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
         const layoutSelector = '#' + region.layout.containerName +
           '[data-sequence="' + region.layout.index + '"]';
         const $layoutWithIndex = document.querySelector(layoutSelector);
-        const $region = document.querySelector('#' + region.containerName);
+        const $region = region.html;
         const mediaInRegion = $region?.querySelector('.' + mediaId);
 
         console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
@@ -623,7 +623,7 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
         }
 
         // Append fresh copy of the media into the region
-        ($region !== null) && $region.appendChild(media.html);
+        region.html.appendChild(media.html);
 
         const isMediaInDOM = document.body.contains(media.html);
 
@@ -659,9 +659,9 @@ export function prepareImageMedia(media: IMedia, region: IRegion) {
         mediaInRegion.remove();
     }
 
-    // Append media to its region
-    const $region = document.querySelector('#' + region.containerName);
-    ($region !== null) && $region.appendChild(media.html as HTMLElement);
+    // Append media to its region using the direct reference to avoid
+    // global querySelector finding a same-named region in another layout
+    region.html.appendChild(media.html as HTMLElement);
 }
 
 export function prepareAudioMedia(media: IMedia, region: IRegion) {
@@ -678,9 +678,8 @@ export function prepareAudioMedia(media: IMedia, region: IRegion) {
         mediaInRegion.remove();
     }
 
-    // Append media to its region
-    const $region = document.querySelector('#' + region.containerName);
-    ($region !== null) && $region.appendChild(media.html as HTMLAudioElement);
+    // Append media to its region using the direct reference
+    region.html.appendChild(media.html as HTMLAudioElement);
 }
 
 export function prepareHtmlMedia(media: IMedia, region: IRegion) {
@@ -706,23 +705,26 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
         media.html.appendChild(media.iframe as Node);
 
         if (!mediaInRegion) {
-            // Add fresh copy of the media into the region
-            const $region = document.querySelector('#' + region.containerName);
-            ($region !== null) && $region.appendChild(media.html as HTMLElement);
+            // Add fresh copy of the media into the region using the direct reference
+            region.html.appendChild(media.html as HTMLElement);
             media.ready = true;
         }
     }
 }
 
+export enum FaultCodes {
+    FaultVideoSource = 2001,
+    FaultVideoUnexpected = 2099,
+}
 
-export async function playerReportFault(msg: string, media: IMedia) {
+export async function playerReportFault(msg: string, media: IMedia, code: number = FaultCodes.FaultVideoUnexpected) {
     // Immediately expire media and report a fault
     const platform = media.region.xlr.config.platform;
     const playerSW = PwaSW();
     const hasSW = await playerSW.getSW();
     const mediaFault = {
         type: 'MEDIA_FAULT',
-        code: 5002,
+        code: code,
         reason: msg,
         mediaId: media.id,
         regionId: media.region.id,
