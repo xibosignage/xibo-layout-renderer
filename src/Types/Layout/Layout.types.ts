@@ -126,6 +126,7 @@ export interface ILayout {
     finishAllRegions(): Promise<void[]>;
     inLoop: boolean;
     removeLayout(caller?: LayoutPlaybackType): void;
+    discardLayout(caller?: LayoutPlaybackType): void;
     xlfString: string;
     getXlf(): string;
     ad: any;
@@ -203,6 +204,8 @@ export const initialLayout: ILayout = {
         return Promise.resolve([]);
     },
     removeLayout() {
+    },
+    discardLayout() {
     },
     getXlf(): string {
         return '';
