@@ -488,7 +488,12 @@ export default class Region implements IRegion {
             };
 
             if (oldMedia) {
-                hideOldMedia();
+                // Skip hiding old media when it is the same object as new media
+                // (single-media loop): removing it would also remove the element
+                // that is about to be shown, leaving the region blank.
+                if (oldMedia !== newMedia) {
+                    hideOldMedia();
+                }
                 newMedia.run();
             } else {
                 newMedia.run();
