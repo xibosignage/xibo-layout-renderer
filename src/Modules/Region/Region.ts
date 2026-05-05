@@ -243,6 +243,14 @@ export default class Region implements IRegion {
     };
 
     prepareMedia(media: IMedia) {
+        // SSP widget: signal the consumer to fetch an ad before this media's turn to play.
+        // The consumer calls media.setSspAdUrl() to resolve it; if it never arrives,
+        // Media.run() skips the widget and advances normally.
+        if (media.mediaType === 'ssp') {
+            this.xlr.emitter.emit('sspWidgetRequest', media);
+            return;
+        }
+
         if (media.mediaType === 'video') {
             prepareVideoMedia(media, this);
         } else if (media.mediaType === 'image' && media.url !== null) {
