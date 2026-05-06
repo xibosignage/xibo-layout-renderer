@@ -88,6 +88,9 @@ export class Media implements IMedia {
     videoHandler?: IVideoMediaHandler;
 
     mediaTimer: ReturnType<typeof setInterval> | undefined;
+    sspImpressionUrls: string[] | undefined = undefined;
+    sspErrorUrls: string[] | undefined = undefined;
+    private isSspWidget: boolean = false;
     private mediaTimeCount = 0;
     private xlr: IXlr = <IXlr>{};
     private readonly statsBC = new BroadcastChannel('statsBC');
@@ -196,6 +199,15 @@ export class Media implements IMedia {
             });
             this.xlr.emitter.emit('widgetEnd', parseInt(media.id));
 
+            if (this.isSspWidget) {
+                this.xlr.emitter.emit(
+                    'sspWidgetEnd',
+                    this.sspImpressionUrls ?? [],
+                    this.sspErrorUrls ?? [],
+                    this.sspImpressionUrls ? this.duration : 0,
+                );
+            }
+
             media.region.playNextMedia();
         });
 
@@ -226,6 +238,15 @@ export class Media implements IMedia {
                 layoutId: media.region.layout.id,
             });
             this.xlr.emitter.emit('widgetEnd', parseInt(media.id));
+
+            if (this.isSspWidget) {
+                this.xlr.emitter.emit(
+                    'sspWidgetEnd',
+                    this.sspImpressionUrls ?? [],
+                    this.sspErrorUrls ?? [],
+                    this.sspImpressionUrls ? this.duration : 0,
+                );
+            }
 
             media.region.playNextMedia();
         });
@@ -343,6 +364,7 @@ export class Media implements IMedia {
         // Skip all URL composition and leave url as null.
         if (this.mediaType === 'ssp') {
             this.url = null;
+            this.isSspWidget = true;
         } else {
             let tmpUrl = '';
 
@@ -515,7 +537,7 @@ export class Media implements IMedia {
         showCurrentMedia();
     }
 
-    setSspAdUrl(url: string, adMediaType: 'image' | 'video') {
+    setSspAdUrl(url: string, adMediaType: 'image' | 'video', impressionUrls?: string[], errorUrls?: string[]) {
         // Ignore if the media has already been skipped or cancelled before the ad arrived.
         if (this.state !== MediaState.IDLE) {
             console.debug('??? XLR.debug >> Media::setSspAdUrl - ignoring, media is no longer idle', {
@@ -532,6 +554,8 @@ export class Media implements IMedia {
 
         this.url = url;
         this.mediaType = adMediaType;
+        this.sspImpressionUrls = impressionUrls;
+        this.sspErrorUrls = errorUrls;
 
         // Re-create the element now that mediaType is known, then prepare and append to region DOM.
         // Visibility and playback are handled by run() when this media's turn comes.
