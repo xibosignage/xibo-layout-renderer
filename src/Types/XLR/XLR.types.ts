@@ -20,6 +20,7 @@
  */
 import {Emitter, Unsubscribe} from 'nanoevents';
 import {ILayout, InputLayoutType, OptionsType} from '../Layout';
+import {IMedia} from '../Media';
 import {OverlayLayoutManager} from "../../Modules/Layout/OverlayLayoutManager";
 
 export type PrepareLayoutsType = {
@@ -40,6 +41,8 @@ export type IXlrEvents = {
     widgetEnd: (widgetId: number) => void;
     widgetError: (widgetId: number) => void;
     adRequest: (sspLayoutIndex: number) => void;
+    sspWidgetRequest: (media: IMedia) => void;
+    sspWidgetEnd: (impressionUrls: string[], errorUrls: string[], duration: number) => void;
     updateLoop: (inputLayouts: InputLayoutType[]) => void;
     updateOverlays: (overlays: InputLayoutType[]) => void;
     overlayStart: (overlay: ILayout) => void;

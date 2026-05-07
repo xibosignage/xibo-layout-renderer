@@ -88,6 +88,9 @@ export class Media implements IMedia {
     videoHandler?: IVideoMediaHandler;
 
     mediaTimer: ReturnType<typeof setInterval> | undefined;
+    sspImpressionUrls: string[] | undefined = undefined;
+    sspErrorUrls: string[] | undefined = undefined;
+    private isSspWidget: boolean = false;
     private mediaTimeCount = 0;
     private xlr: IXlr = <IXlr>{};
     private readonly statsBC = new BroadcastChannel('statsBC');
@@ -196,6 +199,15 @@ export class Media implements IMedia {
             });
             this.xlr.emitter.emit('widgetEnd', parseInt(media.id));
 
+            if (this.isSspWidget) {
+                this.xlr.emitter.emit(
+                    'sspWidgetEnd',
+                    this.sspImpressionUrls ?? [],
+                    this.sspErrorUrls ?? [],
+                    this.sspImpressionUrls ? this.duration : 0,
+                );
+            }
+
             media.region.playNextMedia();
         });
 
@@ -226,6 +238,15 @@ export class Media implements IMedia {
                 layoutId: media.region.layout.id,
             });
             this.xlr.emitter.emit('widgetEnd', parseInt(media.id));
+
+            if (this.isSspWidget) {
+                this.xlr.emitter.emit(
+                    'sspWidgetEnd',
+                    this.sspImpressionUrls ?? [],
+                    this.sspErrorUrls ?? [],
+                    this.sspImpressionUrls ? this.duration : 0,
+                );
+            }
 
             media.region.playNextMedia();
         });
@@ -339,31 +360,38 @@ export class Media implements IMedia {
             resourceUrlParams.mediaType = this.mediaType;
         }
 
-        let tmpUrl = '';
+        // SSP widget: URL is not known until the consumer resolves an ad at play-time.
+        // Skip all URL composition and leave url as null.
+        if (this.mediaType === 'ssp') {
+            this.url = null;
+            this.isSspWidget = true;
+        } else {
+            let tmpUrl = '';
 
-        if (this.xlr.config.platform === ConsumerPlatform.CMS) {
-            tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
-        } else if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
-            tmpUrl = composeResourceUrl(this.xlr.config, resourceUrlParams);
+            if (this.xlr.config.platform === ConsumerPlatform.CMS) {
+                tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
+            } else if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
+                tmpUrl = composeResourceUrl(this.xlr.config, resourceUrlParams);
 
-            if (this.mediaType === 'image' || this.mediaType === 'video' || this.mediaType === 'audio') {
-                tmpUrl = composeMediaUrl(resourceUrlParams);
+                if (this.mediaType === 'image' || this.mediaType === 'video' || this.mediaType === 'audio') {
+                    tmpUrl = composeMediaUrl(resourceUrlParams);
+
+                    // this is an SSP Layout
+                    if (this.region.layout.layoutId === -1) {
+                        tmpUrl = this.uri;
+                    }
+                }
+            } else if (this.xlr.config.platform === ConsumerPlatform.ELECTRON) {
+                tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
 
                 // this is an SSP Layout
                 if (this.region.layout.layoutId === -1) {
                     tmpUrl = this.uri;
                 }
             }
-        } else if (this.xlr.config.platform === ConsumerPlatform.ELECTRON) {
-            tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
-            
-            // this is an SSP Layout
-            if (this.region.layout.layoutId === -1) {
-                tmpUrl = this.uri;
-            }
-        }
 
-        this.url = tmpUrl;
+            this.url = tmpUrl;
+        }
 
         // Loop if media has loop, or if region has loop and a single media
         this.loop =
@@ -498,7 +526,41 @@ export class Media implements IMedia {
             return null;
         };
 
+        // SSP widget: if the consumer did not resolve an ad during the preload window
+        // (i.e. setSspAdUrl was never called), skip this widget and advance normally.
+        if (this.mediaType === 'ssp') {
+            console.debug('??? XLR.debug >> Media.run() > SSP widget: no ad resolved during preload, skipping');
+            this.emitter.emit('end', <IMedia>this);
+            return;
+        }
+
         showCurrentMedia();
+    }
+
+    setSspAdUrl(url: string, adMediaType: 'image' | 'video', impressionUrls?: string[], errorUrls?: string[]) {
+        // Ignore if the media has already been skipped or cancelled before the ad arrived.
+        if (this.state !== MediaState.IDLE) {
+            console.debug('??? XLR.debug >> Media::setSspAdUrl - ignoring, media is no longer idle', {
+                state: this.state,
+            });
+            return;
+        }
+
+        // Remove the placeholder <div> so the correct element type can take its place.
+        if (this.html) {
+            this.html.remove();
+            this.html = null;
+        }
+
+        this.url = url;
+        this.mediaType = adMediaType;
+        this.sspImpressionUrls = impressionUrls;
+        this.sspErrorUrls = errorUrls;
+
+        // Re-create the element now that mediaType is known, then prepare and append to region DOM.
+        // Visibility and playback are handled by run() when this media's turn comes.
+        this.html = createMediaElement(this);
+        this.region.prepareMedia(this);
     }
 
     async stop() {

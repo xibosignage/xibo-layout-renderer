@@ -68,6 +68,8 @@ export interface IRegion {
 
     playPreviousMedia(): void;
 
+    prepareMedia(media: IMedia): void;
+
     prepareMediaObjects(): void;
 
     prepareRegion(): void;
@@ -128,6 +130,8 @@ export const initialRegion: IRegion = {
     playNextMedia() {
     },
     playPreviousMedia() {
+    },
+    prepareMedia(_media: IMedia) {
     },
     prepareMediaObjects() {
     },

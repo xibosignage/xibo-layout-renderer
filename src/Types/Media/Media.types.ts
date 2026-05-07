@@ -70,6 +70,11 @@ export interface IMedia {
 
     run(): void;
 
+    setSspAdUrl(url: string, adMediaType: 'image' | 'video', impressionUrls?: string[], errorUrls?: string[]): void;
+
+    sspImpressionUrls: string[] | undefined;
+    sspErrorUrls: string[] | undefined;
+
     schemaVersion: string;
     singlePlay: boolean;
     state: MediaState;
