@@ -243,6 +243,14 @@ export default class Region implements IRegion {
     };
 
     prepareMedia(media: IMedia) {
+        // SSP widget: signal the consumer to fetch an ad before this media's turn to play.
+        // The consumer calls media.setSspAdUrl() to resolve it; if it never arrives,
+        // Media.run() skips the widget and advances normally.
+        if (media.mediaType === 'ssp') {
+            this.xlr.emitter.emit('sspWidgetRequest', media);
+            return;
+        }
+
         if (media.mediaType === 'video') {
             prepareVideoMedia(media, this);
         } else if (media.mediaType === 'image' && media.url !== null) {
@@ -480,7 +488,12 @@ export default class Region implements IRegion {
             };
 
             if (oldMedia) {
-                hideOldMedia();
+                // Skip hiding old media when it is the same object as new media
+                // (single-media loop): removing it would also remove the element
+                // that is about to be shown, leaving the region blank.
+                if (oldMedia !== newMedia) {
+                    hideOldMedia();
+                }
                 newMedia.run();
             } else {
                 newMedia.run();
