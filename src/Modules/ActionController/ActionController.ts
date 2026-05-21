@@ -222,8 +222,8 @@ export default class ActionController {
         this.parent.xlr.emitter.emit('navLayout', layoutCode, url);
     }
 
-    openLayoutInPlayer(layoutCode: string, options: InactOptions) {
-        // this.parent.xlr.updateLoop([]);
+    openLayoutInPlayer(layoutCode: string, _options: InactOptions) {
+        this.parent.xlr.emitter.emit('navLayout', layoutCode, '');
     }
 
     prevOrNextLayout(targetId: string, actionType: string) {
@@ -291,10 +291,10 @@ export default class ActionController {
     runAction(actionData: {[k: string]: any}, options: InactOptions) {
         if(actionData.actiontype == 'navLayout') {
             if (this.parent.xlr.config.platform === ConsumerPlatform.CMS) {
-                // Open layout preview in a new tab
+                // Open layout preview in a new tab (CMS preview only)
                 this.openLayoutInNewTab(actionData.layoutcode, options);
-            } else if (this.parent.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
-                // Set target layout as active layout
+            } else {
+                // All player platforms (Electron, ChromeOS, Android, etc.)
                 this.openLayoutInPlayer(actionData.layoutcode, options);
             }
         } else if((actionData.actiontype == 'previous' || actionData.actiontype == 'next') && actionData.target == 'region') {
@@ -360,6 +360,18 @@ export default class ActionController {
                 $sourceObj.classList.add('clickable');
             }
         });
+    }
+
+    /** Dispatch an incoming webhook trigger to any matching actions on this layout. */
+    handleWebhookTrigger(triggerCode: string, widgetId?: string) {
+        this.$actionController
+            .querySelectorAll<HTMLElement>('.action[triggertype="webhook"]')
+            .forEach(($el) => {
+                const ds = $el.dataset;
+                if (ds.triggercode !== triggerCode) return;
+                if (widgetId && ds.sourceid !== widgetId) return;
+                this.runAction(ds, this.options);
+            });
     }
 
     initKeyboardActions() {

@@ -896,6 +896,81 @@ export default function XiboLayoutRenderer(
         await xlrObject.currentLayout?.finishAllRegions();
     };
 
+    xlrObject.gotoLayoutByCode = async function (layoutCode: string) {
+        let targetIndex = -1;
+
+        // 1. Check the two already-parsed layouts first (zero fetch cost)
+        const parsedLayouts: Array<ILayout | undefined> = [
+            this.layouts['current'] as ILayout | undefined,
+            this.layouts['next'] as ILayout | undefined,
+        ];
+        for (const layout of parsedLayouts) {
+            if (!layout) continue;
+            const code = layout.layoutNode?.documentElement?.getAttribute('code');
+            if (code === layoutCode) {
+                targetIndex = this.inputLayouts.findIndex(
+                    (i: InputLayoutType) => i.layoutId === layout.layoutId,
+                );
+                break;
+            }
+        }
+
+        // 2. Fall back: iterate unparsed inputLayouts
+        if (targetIndex === -1) {
+            const parser = new DOMParser();
+            for (let i = 0; i < this.inputLayouts.length; i++) {
+                const inputLayout = this.inputLayouts[i];
+                let xlfString: string | undefined;
+
+                // Prefer getXlf() when available (e.g. CMS platform)
+                xlfString = inputLayout.getXlf?.();
+
+                // Otherwise fetch from the local file server (Electron / ChromeOS)
+                if (!xlfString && this.config.appHost && inputLayout.path) {
+                    try {
+                        const res = await fetch(this.config.appHost + inputLayout.path);
+                        xlfString = await res.text();
+                    } catch (_e) {
+                        continue;
+                    }
+                }
+
+                if (!xlfString) continue;
+
+                const doc = parser.parseFromString(xlfString, 'text/xml');
+                if (doc.documentElement?.getAttribute('code') === layoutCode) {
+                    targetIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (targetIndex === -1) {
+            console.warn('XLR::gotoLayoutByCode - layout not found for code:', layoutCode);
+            return;
+        }
+
+        console.debug('XLR::gotoLayoutByCode', {
+            layoutCode,
+            targetIndex,
+            method: 'XLR::gotoLayoutByCode',
+        });
+
+        // Follow the same pattern as gotoPrevLayout: finish current, set new
+        // index, then explicitly restart the playback cycle so the index change
+        // wins before the automatic layout-end handler fires its own
+        // prepareLayouts() call.
+        await this.currentLayout?.finishAllRegions();
+        this.currentLayoutIndex = targetIndex;
+        this.prepareLayouts().then(async (xlr) => {
+            await this.playSchedules(xlr);
+        });
+    };
+
+    xlrObject.triggerAction = function (triggerCode: string, widgetId?: string) {
+        this.currentLayout?.actionController?.handleWebhookTrigger(triggerCode, widgetId);
+    };
+
     xlrObject.updateInputLayout = function (layoutIndex, layout) {
         const xlrInputLayout = this.inputLayouts[layoutIndex];
 
