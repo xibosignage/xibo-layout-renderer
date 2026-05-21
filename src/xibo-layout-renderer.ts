@@ -231,24 +231,26 @@ export default function XiboLayoutRenderer(
     }
 
     xlrObject.updateScheduleLayouts = async function (scheduleLayouts: InputLayoutType[]) {
-        console.debug('XLR::updateScheduleLayouts > Updating schedule layouts . . .');
-        const inputLayoutIds: (number | string)[] = [];
+        console.debug('XLR::updateScheduleLayouts > Updating schedule layouts . . .', scheduleLayouts);
 
-        for (const [layoutIndex, _layout] of scheduleLayouts.entries()) {
-            const uniqueLayout = _layout;
-            uniqueLayout.index = layoutIndex;
-            uniqueLayout.id = _layout.layoutId;
+        let next = new Map<string, InputLayoutType>();
 
-            this.uniqueLayouts[_layout.layoutId] = uniqueLayout;
-            inputLayoutIds.push(_layout.layoutId);
+        if (scheduleLayouts.length === 0) {
+            this.uniqueLayouts = next;
+            return;
         }
 
-        // Cross-check if we need to remove non-existing layouts based on inputLayouts
-        for (const layoutId of Object.keys(this.uniqueLayouts)) {
-            if (!inputLayoutIds.includes(parseInt(layoutId))) {
-                delete this.uniqueLayouts[layoutId];
-            }
-        }
+        scheduleLayouts.forEach((_layout, layoutIndex) => {
+            next.set(String(_layout.layoutId), {
+                ..._layout,
+                index: layoutIndex,
+                id: _layout.layoutId,
+            });
+        });
+
+        console.debug('XLR::updateScheduleLayouts > next unique layouts', Array.from(next).values());
+
+        this.uniqueLayouts = next;
     };
 
     xlrObject.isLayoutInDOM = function (containerName: string, layoutIndex: number) {
@@ -303,7 +305,7 @@ export default function XiboLayoutRenderer(
             this.currentLayout.emitter.emit('cancelled', this.currentLayout);
         }
 
-        console.debug('>>>>> XLR.debug XLR::updateLoop > uniqueLayouts', this.uniqueLayouts);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > uniqueLayouts', Array.from(this.uniqueLayouts.values()));
         console.debug('>>>>> XLR.debug XLR::updateLoop > inputLayouts', this.inputLayouts);
         console.debug('>>>>> XLR.debug XLR::updateLoop > isCurrentLayoutValid', isCurrentLayoutValid);
         console.debug('>>>>> XLR.debug XLR::updateLoop > currentLayout', this.currentLayout);
@@ -559,7 +561,7 @@ export default function XiboLayoutRenderer(
 
     xlrObject.getLayout = function (inputLayout: InputLayoutType) {
         const isCMS = this.config.platform === ConsumerPlatform.CMS;
-        if (!isCMS && Object.keys(this.uniqueLayouts).length === 0) {
+        if (!isCMS && this.uniqueLayouts.size === 0) {
             return;
         }
 
@@ -579,7 +581,15 @@ export default function XiboLayoutRenderer(
                         activeLayout.id = activeLayout.layoutId;
                     }
                 } else {
-                    activeLayout = { ...this.uniqueLayouts[inputLayout.layoutId] };
+                    const layoutFromUniqueLayouts = this.uniqueLayouts.get(String(inputLayout.layoutId));
+
+                    console.debug('XLR::getLayout > layoutFromUniqueLayouts', {
+                        layoutFromUniqueLayouts,
+                        inputLayout,
+                        uniqueLayouts: this.uniqueLayouts,
+                    });
+
+                    activeLayout = layoutFromUniqueLayouts ? { ...layoutFromUniqueLayouts } : { ...inputLayout };
                 }
 
                 _layout = { ..._layout, ...activeLayout };
@@ -603,13 +613,13 @@ export default function XiboLayoutRenderer(
     };
 
     xlrObject.getLayoutById = function (layoutId: number, layoutIndex) {
-        if (!layoutId || Object.keys(this.uniqueLayouts).length === 0) {
+        if (!layoutId || this.uniqueLayouts.size === 0 || !this.uniqueLayouts.has(String(layoutId))) {
             return undefined;
         }
 
         const _layout = {
             ...initialLayout,
-            ...this.uniqueLayouts[layoutId],
+            ...this.uniqueLayouts.get(String(layoutId)),
         };
 
         // Set layout index if available

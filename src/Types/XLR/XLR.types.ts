@@ -115,7 +115,7 @@ export interface IXlr {
 
     renderOverlayLayouts(): Promise<void>;
 
-    uniqueLayouts: Record<string, InputLayoutType>;
+    uniqueLayouts: Map<string, InputLayoutType>;
 
     updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
 
@@ -190,7 +190,7 @@ export const initialXlr: IXlr = {
     renderOverlayLayouts(): Promise<void> {
         return Promise.resolve();
     },
-    uniqueLayouts: {},
+    uniqueLayouts: new Map<string, InputLayoutType>(),
     updateInputLayout(layoutIndex: number, layout: InputLayoutType) {
     },
     updateLayouts(inputLayouts: InputLayoutType[]) {
