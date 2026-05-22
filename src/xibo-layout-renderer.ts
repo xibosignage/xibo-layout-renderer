@@ -291,6 +291,30 @@ export default function XiboLayoutRenderer(
     xlrObject.updateLoop = async function (inputLayouts: InputLayoutType[]) {
         console.debug('>>>> XLR.debug XLR::updateLoop > Updating schedule loop . . .');
         this.inputLayouts = inputLayouts;
+
+        // Guard against a splash-only update: uniqueLayouts has no entry for layoutId 0,
+        // so parseLayouts() would return undefined current/next and prepareLayoutXlf()
+        // would be called with undefined. Clean up any playing layouts and show splash directly.
+        if (inputLayouts.length === 1 && inputLayouts[0].layoutId === 0) {
+            if (this.currentLayout &&
+                this.isLayoutInDOM(this.currentLayout.containerName, this.currentLayout.index)
+            ) {
+                // Force all regions to complete immediately
+                this.currentLayout.inLoop = false;
+                await this.currentLayout.finishAllRegions();
+                this.currentLayout.removeLayout();
+            }
+            if (this.nextLayout) {
+                // Discard regardless of DOM presence: nextLayout may be preloaded with
+                // DOM elements and video.js players but not yet attached to the screen container.
+                this.nextLayout.discardLayout(LayoutPlaybackType.NEXT);
+            }
+            this.currentLayout = undefined;
+            this.nextLayout = undefined;
+            await this.playSchedules(this);
+            return;
+        }
+
         const playback = this.parseLayouts(true);
 
         let isCurrentLayoutValid = isLayoutValid(this.inputLayouts, this.currentLayout?.layoutId);
