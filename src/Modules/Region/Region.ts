@@ -261,6 +261,11 @@ export default class Region implements IRegion {
             media.iframe && media.checkIframeStatus
         ) {
             prepareHtmlMedia(media, this);
+        } else if (media.mediaType === 'shellcommand') {
+            // Shell command widgets are invisible but must be in the DOM to trigger playback.
+            if (media.html) {
+                this.html.appendChild(media.html);
+            }
         }
     }
 
