@@ -81,6 +81,26 @@ export interface IXlr {
 
     gotoPrevLayout(): void;
 
+    /**
+     * Navigate directly to a layout identified by its CMS code string.
+     * Searches parsed layouts first, then fetches unparsed XLF files via appHost.
+     * No-ops silently if the code is not found in the current loop.
+     */
+    gotoLayoutByCode(layoutCode: string): Promise<void>;
+
+    /**
+     * Play the given layout once as an interrupt, then resume the current loop.
+     * Used by non-CMS platforms for Navigate to Layout interactive actions.
+     * The interrupt is not part of inputLayouts and is spliced in temporarily.
+     */
+    playInterruptLayout(inputLayout: InputLayoutType): Promise<void>;
+
+    /**
+     * Dispatch an incoming webhook trigger code to the current layout's
+     * action controller. Pass an optional widgetId to narrow the match.
+     */
+    triggerAction(triggerCode: string, widgetId?: string): void;
+
     init(): Promise<IXlr>;
 
     inputLayouts: InputLayoutType[];
@@ -115,7 +135,7 @@ export interface IXlr {
 
     renderOverlayLayouts(): Promise<void>;
 
-    uniqueLayouts: Record<string, InputLayoutType>;
+    uniqueLayouts: Map<string, InputLayoutType>;
 
     updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
 
@@ -149,6 +169,14 @@ export const initialXlr: IXlr = {
     gotoNextLayout() {
     },
     gotoPrevLayout() {
+    },
+    gotoLayoutByCode(_layoutCode: string): Promise<void> {
+        return Promise.resolve();
+    },
+    playInterruptLayout(_inputLayout: InputLayoutType): Promise<void> {
+        return Promise.resolve();
+    },
+    triggerAction(_triggerCode: string, _widgetId?: string): void {
     },
     init() {
         return Promise.resolve(<IXlr>{});
@@ -190,7 +218,7 @@ export const initialXlr: IXlr = {
     renderOverlayLayouts(): Promise<void> {
         return Promise.resolve();
     },
-    uniqueLayouts: {},
+    uniqueLayouts: new Map<string, InputLayoutType>(),
     updateInputLayout(layoutIndex: number, layout: InputLayoutType) {
     },
     updateLayouts(inputLayouts: InputLayoutType[]) {
