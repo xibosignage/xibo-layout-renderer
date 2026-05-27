@@ -104,7 +104,13 @@ export default function XiboLayoutRenderer(
         xlrObject.isUpdatingOverlays = true;
         await xlrObject.updateOverlays(overlays);
         xlrObject.isUpdatingOverlays = false;
-    })
+    });
+
+    xlrObject.on('navLayout', (layoutCode: string) => {
+        // Non-CMS platforms handle navLayout in their renderer via playInterruptLayout.
+        // CMS navLayout is handled by ActionController (opens layout in a new tab).
+        console.debug('[navLayout] XLR::on("navLayout") - received', { layoutCode });
+    });
 
     xlrObject.emitSync = async <E extends keyof IXlrEvents>(eventName: E, ...args: Parameters<IXlrEvents[E]>) => {
         const handlers = (xlrObject.emitter.events[eventName] ?? []) as ((...a: any[]) => any)[];
@@ -428,6 +434,16 @@ export default function XiboLayoutRenderer(
             isCurrentLayoutValid = true;
         }
 
+        console.debug('XLR::parseLayouts', {
+            currentLayoutId: this.currentLayout?.layoutId,
+            currentLayoutIndex: this.currentLayoutIndex,
+            nextLayoutId: this.nextLayout?.layoutId,
+            isCurrentLayoutValid,
+            hasChanged: !!hasChanged,
+            inputLayoutsCount: this.inputLayouts.length,
+            inputLayoutIds: this.inputLayouts.map(l => l.layoutId).join(', '),
+        });
+
         _currentLayout = this.currentLayout;
 
         if (this.currentLayout && this.nextLayout) {
@@ -549,6 +565,13 @@ export default function XiboLayoutRenderer(
             _nextLayout.xlr = this;
         }
 
+        console.debug('XLR::parseLayouts result', {
+            currentLayoutId: _currentLayout?.layoutId,
+            currentLayoutIndex: _currentLayoutIndex,
+            nextLayoutId: _nextLayout?.layoutId,
+            nextLayoutIndex: _nextLayoutIndex,
+        });
+
         return {
             currentLayout: _currentLayout,
             nextLayout: _nextLayout,
@@ -634,6 +657,7 @@ export default function XiboLayoutRenderer(
         const self = xlrObject;
 
         if (this.isUpdatingLoop) {
+            console.debug('XLR::prepareLayouts - skipped (isUpdatingLoop)');
             return Promise.resolve(self);
         }
 
@@ -641,12 +665,15 @@ export default function XiboLayoutRenderer(
 
         // Don't prepare layout if it's just the splash screen
         if (self.inputLayouts.length === 1 && self.inputLayouts[0].layoutId === 0) {
+            console.debug('XLR::prepareLayouts - skipped (splash screen only)');
             return Promise.resolve(self);
         }
 
-        console.debug('??? XLR.debug prepareLayouts::playback', {
-            layoutPlayback,
-            shouldParse: false,
+        console.debug('XLR::prepareLayouts', {
+            currentLayoutId: layoutPlayback.currentLayout?.layoutId,
+            currentLayoutIndex: layoutPlayback.currentLayoutIndex,
+            nextLayoutId: layoutPlayback.nextLayout?.layoutId,
+            nextLayoutIndex: layoutPlayback.nextLayoutIndex,
         });
 
         self.currentLayoutId = layoutPlayback.currentLayout?.layoutId as ILayout['layoutId'];
@@ -678,6 +705,10 @@ export default function XiboLayoutRenderer(
         // isUpdatingLoop may already be false if updateLoop finished quickly,
         // so also check layouts[0].done (set by removeLayout inside updateLoop).
         if (self.isUpdatingLoop || layouts[0].done) {
+            console.debug('XLR::prepareLayouts - aborted (concurrent updateLoop)', {
+                isUpdatingLoop: self.isUpdatingLoop,
+                currentLayoutDone: layouts[0].done,
+            });
             // If currentLayout was freshly prepared (not reused from nextLayout),
             // its DOM element was just appended — discard it now so it does not
             // accumulate in screen_container. Also disposes any video.js players
@@ -696,7 +727,13 @@ export default function XiboLayoutRenderer(
             return Promise.resolve(self);
         }
 
-        console.debug('>>>>> XLR.debug prepared layout XLF', layouts);
+        console.debug('XLR::prepareLayouts - layouts prepared', {
+            currentLayoutId: layouts[0]?.layoutId,
+            currentLayoutIndex: layouts[0]?.index,
+            nextLayoutId: layouts[1]?.layoutId,
+            nextLayoutIndex: layouts[1]?.index,
+            currentReused: wasCurrentReused,
+        });
 
         return new Promise<IXlr>(async function (resolve) {
             self.layouts.current = layouts[0];
@@ -857,114 +894,246 @@ export default function XiboLayoutRenderer(
         return _nextLayout;
     };
 
+    // Shared re-entry guard for all layout navigation methods.
+    // Prevents a double-tap from advancing two layouts at once.
+    let isNavigatingLayout = false;
+
     xlrObject.gotoPrevLayout = async function () {
-        const _currentLayoutIndex = this.currentLayoutIndex;
-        let _assumedPrevIndex = _currentLayoutIndex - 1;
+        if (isNavigatingLayout) return;
+        isNavigatingLayout = true;
 
-        // If previous layout is same as current layout or
-        // if there's only one layout, do nothing
-        if (_assumedPrevIndex < 0) {
-            return;
-        }
+        try {
+            const _currentLayoutIndex = this.currentLayoutIndex;
+            let _assumedPrevIndex = _currentLayoutIndex - 1;
 
-        console.debug('XLR::gotoPrevLayout', {
-            previousLayoutIndex: _assumedPrevIndex,
-            method: 'XLR::gotoPrevLayout',
-            shouldParse: false,
-        });
+            // If previous layout is same as current layout or
+            // if there's only one layout, do nothing
+            if (_assumedPrevIndex < 0) {
+                return;
+            }
 
-        if (Boolean(this.inputLayouts[_assumedPrevIndex])) {
-            // end current layout
-            await this.currentLayout?.finishAllRegions();
+            console.debug('XLR::gotoPrevLayout', { previousLayoutIndex: _assumedPrevIndex });
 
-            // and set the previous layout as current layout
-            this.currentLayoutIndex = _assumedPrevIndex;
+            if (Boolean(this.inputLayouts[_assumedPrevIndex])) {
+                // Prevent the natural layout-end handler from also calling
+                // prepareLayouts() when finishAllRegions() causes the layout
+                // 'end' event to fire.
+                if (this.currentLayout) {
+                    this.currentLayout.inLoop = false;
+                }
 
-            this.prepareLayouts().then(async (xlr) => {
-                await this.playSchedules(xlr);
-            });
+                await this.currentLayout?.finishAllRegions();
+
+                // and set the previous layout as current layout
+                this.currentLayoutIndex = _assumedPrevIndex;
+
+                this.prepareLayouts().then(async (xlr) => {
+                    await this.playSchedules(xlr);
+                });
+            }
+        } finally {
+            isNavigatingLayout = false;
         }
     };
 
     xlrObject.gotoNextLayout = async function () {
-        console.debug('XLR::gotoNextLayout', {
-            nextLayoutIndex: this.currentLayoutIndex + 1,
-            method: 'XLR::gotoNextLayout',
-            shouldParse: false,
-        });
+        if (isNavigatingLayout) return;
+        isNavigatingLayout = true;
 
-        await xlrObject.currentLayout?.finishAllRegions();
+        try {
+            const nextIndex = this.currentLayoutIndex + 1;
+
+            if (!Boolean(this.inputLayouts[nextIndex])) {
+                return;
+            }
+
+            console.debug('XLR::gotoNextLayout', { nextLayoutIndex: nextIndex });
+
+            if (this.currentLayout) {
+                this.currentLayout.inLoop = false;
+            }
+
+            await this.currentLayout?.finishAllRegions();
+            this.currentLayoutIndex = nextIndex;
+            this.prepareLayouts().then(async (xlr) => {
+                await this.playSchedules(xlr);
+            });
+        } finally {
+            isNavigatingLayout = false;
+        }
     };
 
     xlrObject.gotoLayoutByCode = async function (layoutCode: string) {
-        let targetIndex = -1;
+        if (isNavigatingLayout) return;
+        isNavigatingLayout = true;
 
-        // 1. Check the two already-parsed layouts first (zero fetch cost)
-        const parsedLayouts: Array<ILayout | undefined> = [
-            this.layouts['current'] as ILayout | undefined,
-            this.layouts['next'] as ILayout | undefined,
-        ];
-        for (const layout of parsedLayouts) {
-            if (!layout) continue;
-            const code = layout.layoutNode?.documentElement?.getAttribute('code');
-            if (code === layoutCode) {
-                targetIndex = this.inputLayouts.findIndex(
-                    (i: InputLayoutType) => i.layoutId === layout.layoutId,
-                );
-                break;
-            }
-        }
+        try {
+            let targetIndex = -1;
 
-        // 2. Fall back: iterate unparsed inputLayouts
-        if (targetIndex === -1) {
-            const parser = new DOMParser();
-            for (let i = 0; i < this.inputLayouts.length; i++) {
-                const inputLayout = this.inputLayouts[i];
-                let xlfString: string | undefined;
-
-                // Prefer getXlf() when available (e.g. CMS platform)
-                xlfString = inputLayout.getXlf?.();
-
-                // Otherwise fetch from the local file server (Electron / ChromeOS)
-                if (!xlfString && this.config.appHost && inputLayout.path) {
-                    try {
-                        const res = await fetch(this.config.appHost + inputLayout.path);
-                        xlfString = await res.text();
-                    } catch (_e) {
-                        continue;
-                    }
-                }
-
-                if (!xlfString) continue;
-
-                const doc = parser.parseFromString(xlfString, 'text/xml');
-                if (doc.documentElement?.getAttribute('code') === layoutCode) {
-                    targetIndex = i;
+            // 1. Check the two already-parsed layouts first (zero fetch cost)
+            const parsedLayouts: Array<ILayout | undefined> = [
+                this.layouts['current'] as ILayout | undefined,
+                this.layouts['next'] as ILayout | undefined,
+            ];
+            for (const layout of parsedLayouts) {
+                if (!layout) continue;
+                const code = layout.layoutNode?.documentElement?.getAttribute('code');
+                if (code === layoutCode) {
+                    targetIndex = this.inputLayouts.findIndex(
+                        (i: InputLayoutType) => i.layoutId === layout.layoutId,
+                    );
                     break;
                 }
             }
+
+            // 2. Fall back: iterate unparsed inputLayouts
+            if (targetIndex === -1) {
+                const parser = new DOMParser();
+                for (let i = 0; i < this.inputLayouts.length; i++) {
+                    const inputLayout = this.inputLayouts[i];
+
+                    // Fast check: code pre-populated by the player (no fetch needed)
+                    if (inputLayout.code !== undefined) {
+                        if (inputLayout.code === layoutCode) {
+                            targetIndex = i;
+                            break;
+                        }
+                        continue;
+                    }
+
+                    let xlfString: string | undefined;
+
+                    // Prefer getXlf() when available (e.g. CMS platform)
+                    xlfString = inputLayout.getXlf?.();
+
+                    // Otherwise fetch from the local file server (Electron / ChromeOS)
+                    if (!xlfString && this.config.appHost && inputLayout.path) {
+                        const url = this.config.appHost + inputLayout.path;
+                        console.debug('[gotoLayoutByCode] Fetching XLF for layoutId', inputLayout.layoutId, url);
+                        try {
+                            const res = await fetch(url);
+                            if (!res.ok) {
+                                console.debug('[gotoLayoutByCode] Fetch non-OK', res.status, url);
+                                continue;
+                            }
+                            xlfString = await res.text();
+                        } catch (_e) {
+                            console.debug('[gotoLayoutByCode] Fetch error for', url, _e);
+                            continue;
+                        }
+                    }
+
+                    if (!xlfString) {
+                        console.debug('[gotoLayoutByCode] No XLF for layoutId', inputLayout.layoutId, 'path:', inputLayout.path);
+                        continue;
+                    }
+
+                    const doc = parser.parseFromString(xlfString, 'text/xml');
+                    const foundCode = doc.documentElement?.getAttribute('code');
+                    if (foundCode === layoutCode) {
+                        targetIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            if (targetIndex === -1) {
+                console.warn('XLR::gotoLayoutByCode - layout not found for code:', layoutCode);
+                return;
+            }
+
+            console.debug('XLR::gotoLayoutByCode', { layoutCode, targetIndex });
+
+            // Prevent the natural layout-end handler from racing with our own
+            // prepareLayouts() call (same pattern as gotoPrevLayout/gotoNextLayout).
+            if (this.currentLayout) {
+                this.currentLayout.inLoop = false;
+            }
+
+            await this.currentLayout?.finishAllRegions();
+            this.currentLayoutIndex = targetIndex;
+            this.prepareLayouts().then(async (xlr) => {
+                await this.playSchedules(xlr);
+            });
+        } finally {
+            isNavigatingLayout = false;
         }
+    };
 
-        if (targetIndex === -1) {
-            console.warn('XLR::gotoLayoutByCode - layout not found for code:', layoutCode);
-            return;
+    xlrObject.playInterruptLayout = async function (inputLayout: InputLayoutType) {
+        if (isNavigatingLayout) return;
+        isNavigatingLayout = true;
+
+        try {
+            const resumeIndex = this.currentLayoutIndex;
+            // Save B (the layout that was queued to play after A) before stopping A.
+            // After the interrupt ends, parseLayouts() will use this to resume the loop.
+            const savedNextLayout = this.nextLayout;
+
+            console.debug('[navLayout] XLR::playInterruptLayout - Starting interrupt', {
+                interruptLayoutId: inputLayout.layoutId,
+                resumeIndex,
+                currentLayoutId: this.currentLayout?.layoutId,
+                resumeNextLayoutId: savedNextLayout?.layoutId,
+            });
+
+            // Prevent A's end handler from calling prepareLayouts (we take over).
+            if (this.currentLayout) {
+                this.currentLayout.inLoop = false;
+            }
+            await this.currentLayout?.finishAllRegions();
+
+            // Register interrupt in uniqueLayouts so getLayout()/prepareLayoutXlf() resolve it.
+            // Do NOT splice into inputLayouts — keeping the original loop intact means
+            // parseLayouts() will see the interrupt as "not in loop" (isCurrentLayoutValid=false)
+            // after it ends, and will correctly advance to savedNextLayout (B).
+            const interruptKey = String(inputLayout.layoutId);
+            const wasInUniqueLayouts = this.uniqueLayouts.has(interruptKey);
+            if (!wasInUniqueLayouts) {
+                this.uniqueLayouts.set(interruptKey, {
+                    ...inputLayout,
+                    index: resumeIndex,
+                    id: inputLayout.layoutId,
+                });
+            }
+
+            // Prepare the interrupt ILayout (fetches XLF, builds regions).
+            const interruptILayout = await this.prepareLayoutXlf(
+                this.getLayout(inputLayout)
+            );
+
+            // Wire into XLR so playLayouts picks up the interrupt as current.
+            // inLoop=true lets the interrupt's own end handler call prepareLayouts normally.
+            interruptILayout.inLoop = true;
+            this.layouts.current = interruptILayout;
+            this.currentLayout = interruptILayout;
+            this.currentLayoutId = interruptILayout.layoutId;
+
+            // Restore nextLayout to B so after the interrupt ends, parseLayouts() resumes
+            // the original loop from B (since interrupt.layoutId is not in inputLayouts,
+            // parseLayouts sees it as invalid and advances to nextLayout).
+            if (savedNextLayout) {
+                this.layouts.next = savedNextLayout;
+                this.nextLayout = savedNextLayout;
+            }
+
+            // Remove interrupt from uniqueLayouts once it ends.
+            const cleanup = this.emitter.on('layoutEnd', (endedLayout: ILayout) => {
+                if (endedLayout !== interruptILayout) return;
+                cleanup();
+                if (!wasInUniqueLayouts) {
+                    this.uniqueLayouts.delete(interruptKey);
+                }
+                console.debug('[navLayout] XLR::playInterruptLayout - Interrupt ended, resuming loop', {
+                    interruptLayoutId: inputLayout.layoutId,
+                    resumeNextLayoutId: savedNextLayout?.layoutId,
+                });
+            });
+
+            await this.playSchedules(xlrObject);
+        } finally {
+            isNavigatingLayout = false;
         }
-
-        console.debug('XLR::gotoLayoutByCode', {
-            layoutCode,
-            targetIndex,
-            method: 'XLR::gotoLayoutByCode',
-        });
-
-        // Follow the same pattern as gotoPrevLayout: finish current, set new
-        // index, then explicitly restart the playback cycle so the index change
-        // wins before the automatic layout-end handler fires its own
-        // prepareLayouts() call.
-        await this.currentLayout?.finishAllRegions();
-        this.currentLayoutIndex = targetIndex;
-        this.prepareLayouts().then(async (xlr) => {
-            await this.playSchedules(xlr);
-        });
     };
 
     xlrObject.triggerAction = function (triggerCode: string, widgetId?: string) {

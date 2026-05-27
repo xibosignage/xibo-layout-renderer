@@ -215,6 +215,8 @@ export default class ActionController {
 
     openLayoutInNewTab(layoutCode: string, options: InactOptions) {
         const url = options.layoutPreviewUrl.replace('[layoutCode]', layoutCode) + '?findByCode=1';
+
+        console.debug('[ActionController::openLayoutInNewTab] Navigating to layout in new tab with code', { layoutCode, url });
         // Send a postMessage to the parent frame so the CMS can handle the confirmation
         // and navigation (confirm() is blocked in sandboxed iframes without allow-modals).
         window.parent.postMessage({ type: 'xlr:navLayout', layoutCode, url }, '*');
@@ -223,22 +225,27 @@ export default class ActionController {
     }
 
     openLayoutInPlayer(layoutCode: string, _options: InactOptions) {
+        console.debug('[ActionController::openLayoutInPlayer] Navigating to layout in player with code', { layoutCode, options: _options });
         this.parent.xlr.emitter.emit('navLayout', layoutCode, '');
     }
 
     prevOrNextLayout(targetId: string, actionType: string) {
-        // Check if currentLayout is the targetId
-        if (this.parent.xlr.currentLayout?.layoutId === parseInt(targetId)) {
-            if (actionType === 'next') {
-                this.parent.xlr.gotoNextLayout();
-            } else if (actionType === 'previous') {
-                this.parent.xlr.gotoPrevLayout();
-            }
+        console.debug('[ActionController::prevOrNextLayout] Changing layout with data', { targetId, actionType });
+        // For screen-level actions targetId may be "0" (the screen has no numeric ID).
+        // Guard using this.parent.layoutId instead so the check always works.
+        if (this.parent.xlr.currentLayout?.layoutId !== this.parent.layoutId) {
+            return;
+        }
+        if (actionType === 'next') {
+            this.parent.xlr.gotoNextLayout();
+        } else if (actionType === 'previous') {
+            this.parent.xlr.gotoPrevLayout();
         }
     }
 
     /** Change media in region (next/previous) */
-    nextMediaInRegion(regionId: string, actionType: string) {
+    gotoMediaInRegion(regionId: string, actionType: string) {
+        console.debug('[ActionController::gotoMediaInRegion] Changing media in region with data', { regionId, actionType });
         // Find target region
         this.parent.regions.forEach((regionObj) => {
             if (regionObj.id === regionId) {
@@ -252,6 +259,7 @@ export default class ActionController {
     }
 
     loadMediaInRegion(regionId: string, widgetId: string) {
+        console.debug('[ActionController::loadMediaInRegion] Loading media in region with data', { regionId, widgetId });
         const self = this;
         // Find target region
         let targetRegion: IRegion | undefined;
@@ -278,17 +286,58 @@ export default class ActionController {
         }
 
         // If region is empty, remove the background color and empty message
-        if (targetRegion?.mediaObjects.length === 0) {
+        if (targetRegion?.totalMediaObjects === 0) {
+            targetRegion.complete = false;
+        }
+
+        // Bail out early when the target widget was not found in the drawer
+        if (!targetMedia) {
+            console.debug('[ActionController::loadMediaInRegion] Target media not found in mediaObjectsActions', { regionId, widgetId });
+            return;
+        }
+
+        // Guard against duplicate insertion if the action fires multiple times before the widget plays
+        if (targetRegion && targetRegion.mediaObjects.some((m) => m.id === targetMedia!.id)) {
+            console.debug('[ActionController::loadMediaInRegion] Target media already queued, skipping duplicate insertion');
+            return;
+        }
+
+        // Cancel the current media's duration timer so it doesn't fire and interrupt
+        // the target widget mid-playback (e.g. an Interactive Zone timer still ticking).
+        if (targetRegion?.currMedia?.mediaTimer) {
+            clearInterval(targetRegion.currMedia.mediaTimer);
+            targetRegion.currMedia.mediaTimer = undefined;
+        }
+
+        // Reset complete so the HTML-media guard in playNextMedia() doesn't block
+        // the transition (that guard is for single-media loops, not navWidget injections).
+        if (targetRegion) {
             targetRegion.complete = false;
         }
 
         // Create media in region and play it next
-        targetRegion?.mediaObjects.splice(targetRegion.currentMediaIndex + 1, 0, targetMedia as IMedia);
+        targetRegion?.mediaObjects.splice(targetRegion.currentMediaIndex + 1, 0, targetMedia);
+
+        // Keep totalMediaObjects in sync with the actual array length
+        if (targetRegion) {
+            targetRegion.totalMediaObjects = targetRegion.mediaObjects.length;
+        }
+
+        // Drawer media items are never run through the normal prepareMedia pipeline,
+        // so their DOM element has no background-image / src set and is not yet in the
+        // region DOM. Prepare it now so Media.run() finds a ready element to show.
+        if (targetRegion) {
+            targetRegion.prepareMedia(targetMedia);
+        }
+
+        console.debug('[ActionController::loadMediaInRegion] Target media loaded, playing next', { regionId, widgetId });
         targetRegion?.playNextMedia();
     }
 
     /** Run action based on action data */
     runAction(actionData: {[k: string]: any}, options: InactOptions) {
+        console.debug('[ActionController::runAction] Triggering action', { actionData });
+
         if(actionData.actiontype == 'navLayout') {
             if (this.parent.xlr.config.platform === ConsumerPlatform.CMS) {
                 // Open layout preview in a new tab (CMS preview only)
@@ -298,7 +347,7 @@ export default class ActionController {
                 this.openLayoutInPlayer(actionData.layoutcode, options);
             }
         } else if((actionData.actiontype == 'previous' || actionData.actiontype == 'next') && actionData.target == 'region') {
-            this.nextMediaInRegion(actionData.targetid, actionData.actiontype);
+            this.gotoMediaInRegion(actionData.targetid, actionData.actiontype);
         } else if(actionData.actiontype == 'navWidget' && actionData.target == 'region') {
             this.loadMediaInRegion(actionData.targetid, actionData.widgetid);
         } else if(actionData.target === 'screen') {

@@ -248,7 +248,12 @@ export class Media implements IMedia {
                 );
             }
 
-            media.region.playNextMedia();
+            // Only advance the region if this media is still the active one.
+            // A user-triggered next/prev action may have already moved currMedia
+            // on, in which case the timer firing here would cause a double-advance.
+            if (media === media.region.currMedia) {
+                media.region.playNextMedia();
+            }
         });
 
         // Initialize Media object
@@ -512,17 +517,14 @@ export class Media implements IMedia {
         };
         const getNewMedia = (): HTMLElement | null => {
             const $region = this.region.html;
-            // This function is for checking whether
-            // the region still has to show a media item
-            // when another region is not finished yet
-            if (this.region.complete && !this.region.layout.allEnded) {
-                // Add currentMedia to the region
-
+            // Re-insert the element whenever it is missing from the DOM. This covers:
+            //   1. Region completed early but the layout is still running (freeze last frame).
+            //   2. Backward navigation — the previous media's element was removed by the
+            //      removeOldMedia setTimeout in transitionNodes.
+            if (this.html) {
                 $region.insertBefore(this.html as Node, $region.lastElementChild);
-
                 return this.html as HTMLElement;
             }
-
             return null;
         };
 

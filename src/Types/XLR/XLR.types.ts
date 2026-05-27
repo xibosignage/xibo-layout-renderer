@@ -89,6 +89,13 @@ export interface IXlr {
     gotoLayoutByCode(layoutCode: string): Promise<void>;
 
     /**
+     * Play the given layout once as an interrupt, then resume the current loop.
+     * Used by non-CMS platforms for Navigate to Layout interactive actions.
+     * The interrupt is not part of inputLayouts and is spliced in temporarily.
+     */
+    playInterruptLayout(inputLayout: InputLayoutType): Promise<void>;
+
+    /**
      * Dispatch an incoming webhook trigger code to the current layout's
      * action controller. Pass an optional widgetId to narrow the match.
      */
@@ -164,6 +171,9 @@ export const initialXlr: IXlr = {
     gotoPrevLayout() {
     },
     gotoLayoutByCode(_layoutCode: string): Promise<void> {
+        return Promise.resolve();
+    },
+    playInterruptLayout(_inputLayout: InputLayoutType): Promise<void> {
         return Promise.resolve();
     },
     triggerAction(_triggerCode: string, _widgetId?: string): void {
