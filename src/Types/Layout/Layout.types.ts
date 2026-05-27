@@ -50,6 +50,7 @@ export type InputLayoutType = {
     duration?: number;
     isOverlay?: boolean;
     shareOfVoice?: number;
+    code?: string;
 };
 
 export type OptionsType = {

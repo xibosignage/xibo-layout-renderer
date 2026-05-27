@@ -210,18 +210,25 @@ export default class Region implements IRegion {
         this.layout.actionController?.actions.forEach((action) => {
             const attributes = getAllAttributes(action.xml);
 
-            if (attributes.target.value === 'region' &&
-                attributes.actionType.value === 'navWidget' &&
-                attributes.targetId.value == this.id
+            // getAllAttributes preserves the XML attribute case. Xibo CMS may export
+            // attributes in camelCase (actionType, targetId, widgetId) or lowercase.
+            // Read both variants so we work with either XLF format.
+            const actionType = (attributes['actionType'] ?? attributes['actiontype'])?.value;
+            const targetId   = (attributes['targetId']   ?? attributes['targetid'])?.value;
+            const widgetId   = (attributes['widgetId']   ?? attributes['widgetid'])?.value;
+
+            if (attributes['target']?.value === 'region' &&
+                actionType === 'navWidget' &&
+                targetId == this.id
             ) {
                 const drawerMediaItems = Array.from(this.layout.drawer?.getElementsByTagName('media') || []);
 
                 drawerMediaItems.forEach((drawerMedia) => {
-                    if (drawerMedia.id === attributes.widgetId?.value) {
+                    if (drawerMedia.getAttribute('id') === widgetId) {
                         // Add drawer media to the region
                         this.mediaObjectsActions.push(new Media(
                             this,
-                            drawerMedia?.getAttribute('id') || '',
+                            drawerMedia.getAttribute('id') || '',
                             drawerMedia as Element,
                             this.options as OptionsType & IRegion['options'],
                             this.xlr,
@@ -261,6 +268,11 @@ export default class Region implements IRegion {
             media.iframe && media.checkIframeStatus
         ) {
             prepareHtmlMedia(media, this);
+        } else if (media.mediaType === 'shellcommand') {
+            // Shell command widgets are invisible but must be in the DOM to trigger playback.
+            if (media.html) {
+                this.html.appendChild(media.html);
+            }
         }
     }
 
@@ -524,9 +536,12 @@ export default class Region implements IRegion {
         const origIndex = this.currentMediaIndex;
 
         // When the region has completed and when currentMedia is html
-        // Then, preserve the currentMedia state
+        // and there is only one media object, preserve the currentMedia state.
+        // Guard is limited to single-media regions so navWidget injections
+        // (which splice a second media in) are not blocked.
         if (this.complete &&
-            this.currMedia?.render === 'html'
+            this.currMedia?.render === 'html' &&
+            this.totalMediaObjects === 1
         ) {
             return;
         }
@@ -587,6 +602,22 @@ export default class Region implements IRegion {
             });
         }
 
+        // Remove single-play media injected via navWidget actions at the end of each cycle
+        if (crossedEnd && this.mediaObjects.some((m) => m.singlePlay)) {
+            this.mediaObjects = this.mediaObjects.filter((m) => !m.singlePlay);
+            this.totalMediaObjects = this.mediaObjects.length;
+
+            if (this.totalMediaObjects === 0) {
+                this.finished();
+                return;
+            }
+
+            const newIndex = this.mediaObjects.findIndex((m) => m === this.currMedia);
+            this.currentMediaIndex = newIndex >= 0 ? newIndex : 0;
+            this.currMedia = this.mediaObjects[this.currentMediaIndex];
+            this.nxtMedia = this.mediaObjects[(this.currentMediaIndex + 1) % this.totalMediaObjects];
+        }
+
         console.debug('??? XLR.debug >> End Region::playNextMedia > execute transitionNodes', {
             regionId: this.id,
             currentMediaIndex: this.currentMediaIndex,
@@ -609,17 +640,17 @@ export default class Region implements IRegion {
     };
 
     playPreviousMedia() {
-        this.currentMediaIndex = this.currentMediaIndex - 1;
-
-        if (this.currentMediaIndex < 0 || this.ended) {
-            this.currentMediaIndex = 0;
+        if (this.currentMediaIndex <= 0 || this.ended) {
             return;
         }
 
-        this.prepareMediaObjects();
+        this.oldMedia = this.currMedia;
+        this.currentMediaIndex -= 1;
+        this.currMedia = this.mediaObjects[this.currentMediaIndex];
+        this.nxtMedia = this.mediaObjects[(this.currentMediaIndex + 1) % this.totalMediaObjects];
+        this.complete = false;
 
         console.debug('region::playPreviousMedia', this);
-        /* Do the transition */
         this.transitionNodes(this.oldMedia, this.currMedia);
     };
 
