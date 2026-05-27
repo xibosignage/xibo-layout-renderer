@@ -141,16 +141,13 @@ export class Media implements IMedia {
                     this.startMediaTimer(media);
                 }
             } else if (media.mediaType === 'shellcommand') {
-                if (this.hasCommandExecuted && !this.loop) {
-                    return;
+                // Fire once per cycle unless loop is enabled, in which case re-fire every play.
+                if (!this.hasCommandExecuted || this.loop) {
+                    this.hasCommandExecuted = true;
+                    this.emitCommand(media);
                 }
-
-                this.hasCommandExecuted = true;
-                this.emitCommand(media);
-
-                if (media.duration > 0) {
-                    this.startMediaTimer(media);
-                }
+                // Always run the timer so the layout advances and stats are recorded correctly.
+                this.startMediaTimer(media);
             } else {
                 this.startMediaTimer(media);
             }
