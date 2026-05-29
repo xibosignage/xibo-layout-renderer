@@ -58,6 +58,7 @@ export default class ActionController {
     $actionControllerTitle: HTMLElement | null;
     $actionsContainer: HTMLElement | null;
     translations: any = {};
+    private keyboardHandler: ((ev: KeyboardEvent) => void) | null = null;
 
     constructor(parent: ILayout, actions: Action[], options: InactOptions) {
         this.parent = parent;
@@ -425,36 +426,40 @@ export default class ActionController {
 
     initKeyboardActions() {
         const self = this;
-
-        // Store actions in a map
         const keyActions = new Map<string, DOMStringMap[]>();
 
-        this.$actionController.querySelectorAll<HTMLElement>('.action[triggerType="keyPress"]').forEach(function ($el) {
+        this.$actionController.querySelectorAll<HTMLElement>('.action[triggertype="keyPress"]').forEach(($el) => {
             const dataset = $el.dataset;
             const code = dataset.triggercode;
 
-            if(code) {
-                // Create an empty array, if not yet set
-                if(!keyActions.get(code)) {
+            if (code) {
+                if (!keyActions.get(code)) {
                     keyActions.set(code, []);
                 }
-
-                // Add new action to array
                 keyActions.get(code)!.push(dataset);
             }
         });
 
-        // Keyboard listener
-        document.addEventListener('keydown', (ev: KeyboardEvent) => {
-            const actions = keyActions.get(ev.code);
+        // Nothing to do if this layout has no keyboard-triggered actions.
+        if (keyActions.size === 0) return;
 
-            // Are there action for this key code?
-            if(actions) {
-                // Run all actions associated with it
+        this.keyboardHandler = (ev: KeyboardEvent) => {
+            const actions = keyActions.get(ev.code);
+            if (actions) {
                 actions.forEach((dataset) => {
                     self.runAction(dataset, self.options);
                 });
             }
-        });
+        };
+
+        document.addEventListener('keydown', this.keyboardHandler);
+    }
+
+    /** Remove the keydown listener registered by initKeyboardActions. Call when the layout ends or is cancelled. */
+    removeKeyboardActions() {
+        if (this.keyboardHandler) {
+            document.removeEventListener('keydown', this.keyboardHandler);
+            this.keyboardHandler = null;
+        }
     }
 }
