@@ -205,7 +205,12 @@ export class Media implements IMedia {
                 );
             }
 
-            media.region.playNextMedia();
+            // Only advance the region if this media is still the active one.
+            // A user-triggered next/prev action may have already moved currMedia
+            // on, in which case the timer firing here would cause a double-advance.
+            if (media === media.region.currMedia) {
+                media.region.playNextMedia();
+            }
         });
 
         this.on('cancelled', (media: IMedia) => {
