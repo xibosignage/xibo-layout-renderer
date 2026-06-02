@@ -58,6 +58,7 @@ export default class ActionController {
     $actionControllerTitle: HTMLElement | null;
     $actionsContainer: HTMLElement | null;
     translations: any = {};
+    private keyboardHandler: ((ev: KeyboardEvent) => void) | null = null;
 
     constructor(parent: ILayout, actions: Action[], options: InactOptions) {
         this.parent = parent;
@@ -243,18 +244,37 @@ export default class ActionController {
         }
     }
 
-    /** Change media in region (next/previous) */
+    /** Change media in region (next/previous) with wrap-around at boundaries. */
     gotoMediaInRegion(regionId: string, actionType: string) {
         console.debug('[ActionController::gotoMediaInRegion] Changing media in region with data', { regionId, actionType });
-        // Find target region
         this.parent.regions.forEach((regionObj) => {
-            if (regionObj.id === regionId) {
-                if (actionType === 'next') {
-                    regionObj.playNextMedia();
-                } else {
-                    regionObj.playPreviousMedia();
-                }
+            if (regionObj.id !== regionId || regionObj.ended) return;
+
+            const total = regionObj.totalMediaObjects;
+            if (total === 0) return;
+
+            // Cancel current media's timer before navigating so it doesn't fire
+            // after currMedia has changed and cause a double-advance.
+            if (regionObj.currMedia?.mediaTimer) {
+                clearInterval(regionObj.currMedia.mediaTimer);
+                regionObj.currMedia.mediaTimer = undefined;
             }
+
+            // Compute new index with wrap-around. We do NOT delegate to
+            // playNextMedia() / playPreviousMedia() here because those carry
+            // normal playlist-cycle semantics (finished(), regionExpired()) that
+            // must not fire during user-driven navigation.
+            const newIndex = actionType === 'next'
+                ? (regionObj.currentMediaIndex + 1) % total
+                : (regionObj.currentMediaIndex - 1 + total) % total;
+
+            regionObj.oldMedia = regionObj.currMedia;
+            regionObj.currentMediaIndex = newIndex;
+            regionObj.currMedia = regionObj.mediaObjects[newIndex];
+            regionObj.nxtMedia = regionObj.mediaObjects[(newIndex + 1) % total];
+            regionObj.complete = false;
+
+            regionObj.transitionNodes(regionObj.oldMedia, regionObj.currMedia);
         });
     }
 
@@ -336,6 +356,13 @@ export default class ActionController {
 
     /** Run action based on action data */
     runAction(actionData: {[k: string]: any}, options: InactOptions) {
+        // If this layout is no longer active (being cancelled or navigated away from),
+        // discard the action so it doesn't interfere with the outgoing transition.
+        // inLoop is set to false synchronously before finishAllRegions() in all nav paths.
+        if (!this.parent.inLoop) {
+            return;
+        }
+
         console.debug('[ActionController::runAction] Triggering action', { actionData });
 
         if(actionData.actiontype == 'navLayout') {
@@ -425,36 +452,40 @@ export default class ActionController {
 
     initKeyboardActions() {
         const self = this;
-
-        // Store actions in a map
         const keyActions = new Map<string, DOMStringMap[]>();
 
-        this.$actionController.querySelectorAll<HTMLElement>('.action[triggerType="keyPress"]').forEach(function ($el) {
+        this.$actionController.querySelectorAll<HTMLElement>('.action[triggertype="keyPress"]').forEach(($el) => {
             const dataset = $el.dataset;
             const code = dataset.triggercode;
 
-            if(code) {
-                // Create an empty array, if not yet set
-                if(!keyActions.get(code)) {
+            if (code) {
+                if (!keyActions.get(code)) {
                     keyActions.set(code, []);
                 }
-
-                // Add new action to array
                 keyActions.get(code)!.push(dataset);
             }
         });
 
-        // Keyboard listener
-        document.addEventListener('keydown', (ev: KeyboardEvent) => {
-            const actions = keyActions.get(ev.code);
+        // Nothing to do if this layout has no keyboard-triggered actions.
+        if (keyActions.size === 0) return;
 
-            // Are there action for this key code?
-            if(actions) {
-                // Run all actions associated with it
+        this.keyboardHandler = (ev: KeyboardEvent) => {
+            const actions = keyActions.get(ev.code);
+            if (actions) {
                 actions.forEach((dataset) => {
                     self.runAction(dataset, self.options);
                 });
             }
-        });
+        };
+
+        document.addEventListener('keydown', this.keyboardHandler);
+    }
+
+    /** Remove the keydown listener registered by initKeyboardActions. Call when the layout ends or is cancelled. */
+    removeKeyboardActions() {
+        if (this.keyboardHandler) {
+            document.removeEventListener('keydown', this.keyboardHandler);
+            this.keyboardHandler = null;
+        }
     }
 }
