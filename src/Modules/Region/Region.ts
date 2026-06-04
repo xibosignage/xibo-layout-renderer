@@ -23,7 +23,7 @@ import { nanoid } from "nanoid";
 
 import { ILayout, OptionsType } from '../../Types/Layout';
 import { IRegion } from '../../Types/Region';
-import { IMedia } from '../../Types/Media';
+import { IMedia, MediaState } from '../../Types/Media';
 import { IRegionEvents } from "../../Types/Events";
 import {
     getMediaId,
@@ -634,6 +634,14 @@ export default class Region implements IRegion {
                 console.debug('??? XLR.debug >> Region - playNextMedia - layout all ended');
                 return;
             }
+
+            // Freeze single-media HTML at its last state while waiting for other
+            // regions to complete. The guard at the top only catches the second
+            // call; this one catches the first completion when complete was just
+            // set by finished() above.
+            if (this.currMedia?.render === 'html' && this.totalMediaObjects === 1 && this.oldMedia === this.currMedia) {
+                return;
+            }
         }
 
         this.transitionNodes(this.oldMedia, this.currMedia);
@@ -644,11 +652,20 @@ export default class Region implements IRegion {
             return;
         }
 
+        const interruptedMedia = this.currMedia;
+
         this.oldMedia = this.currMedia;
         this.currentMediaIndex -= 1;
         this.currMedia = this.mediaObjects[this.currentMediaIndex];
         this.nxtMedia = this.mediaObjects[(this.currentMediaIndex + 1) % this.totalMediaObjects];
         this.complete = false;
+
+        // Cancel the interrupted media after advancing currMedia, using the same
+        // pattern as gotoMediaInRegion — emitting after the update ensures the
+        // handler's (media === currMedia) guard correctly skips playNextMedia.
+        if (interruptedMedia?.state === MediaState.PLAYING) {
+            interruptedMedia.emitter.emit('cancelled', interruptedMedia);
+        }
 
         console.debug('region::playPreviousMedia', this);
         this.transitionNodes(this.oldMedia, this.currMedia);

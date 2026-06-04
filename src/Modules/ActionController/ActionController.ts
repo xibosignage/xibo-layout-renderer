@@ -20,6 +20,7 @@
  */
 // import Moveable from 'moveable';
 import { ConsumerPlatform, ILayout, IMedia, IRegion, OptionsType } from '../../types';
+import { MediaState } from '../../Types/Media';
 import { getAllAttributes, nextId } from '../Generators';
 import './action-controller.css';
 import {PreviewTranslations} from "../../Lib/translations";
@@ -253,12 +254,9 @@ export default class ActionController {
             const total = regionObj.totalMediaObjects;
             if (total === 0) return;
 
-            // Cancel current media's timer before navigating so it doesn't fire
-            // after currMedia has changed and cause a double-advance.
-            if (regionObj.currMedia?.mediaTimer) {
-                clearInterval(regionObj.currMedia.mediaTimer);
-                regionObj.currMedia.mediaTimer = undefined;
-            }
+            // Snapshot the currently-playing media before updating currMedia so
+            // we can cancel it cleanly after the region state is advanced.
+            const interruptedMedia = regionObj.currMedia;
 
             // Compute new index with wrap-around. We do NOT delegate to
             // playNextMedia() / playPreviousMedia() here because those carry
@@ -273,6 +271,17 @@ export default class ActionController {
             regionObj.currMedia = regionObj.mediaObjects[newIndex];
             regionObj.nxtMedia = regionObj.mediaObjects[(newIndex + 1) % total];
             regionObj.complete = false;
+
+            // Properly cancel the interrupted media AFTER updating currMedia.
+            // Using 'cancelled' rather than bare clearInterval ensures state is
+            // reset from PLAYING and mediaTimeCount is zeroed — without this,
+            // returning to a cancelled media causes run() → 'start' to bail on
+            // the state === PLAYING guard, leaving the region stuck indefinitely.
+            // currMedia is already updated so the handler's guard
+            // (media === media.region.currMedia) correctly skips playNextMedia.
+            if (interruptedMedia?.state === MediaState.PLAYING) {
+                interruptedMedia.emitter.emit('cancelled', interruptedMedia);
+            }
 
             regionObj.transitionNodes(regionObj.oldMedia, regionObj.currMedia);
         });
@@ -322,11 +331,19 @@ export default class ActionController {
             return;
         }
 
-        // Cancel the current media's duration timer so it doesn't fire and interrupt
-        // the target widget mid-playback (e.g. an Interactive Zone timer still ticking).
-        if (targetRegion?.currMedia?.mediaTimer) {
-            clearInterval(targetRegion.currMedia.mediaTimer);
-            targetRegion.currMedia.mediaTimer = undefined;
+        // Cancel the interrupted media so it doesn't double-advance when the playlist
+        // returns to it. currMedia has not been advanced yet at this point (playNextMedia
+        // does that below), so we cannot use emitter.emit('cancelled') — the handler's
+        // currMedia guard would fire and call playNextMedia a second time. Instead we
+        // cancel directly: clear the timer and reset state so the 'start' handler does
+        // not bail on the state === PLAYING guard when this media is replayed.
+        if (targetRegion?.currMedia?.state === MediaState.PLAYING) {
+            const interruptedMedia = targetRegion.currMedia;
+            if (interruptedMedia.mediaTimer) {
+                clearInterval(interruptedMedia.mediaTimer);
+                interruptedMedia.mediaTimer = undefined;
+            }
+            interruptedMedia.state = MediaState.CANCELLED;
         }
 
         // Reset complete so the HTML-media guard in playNextMedia() doesn't block

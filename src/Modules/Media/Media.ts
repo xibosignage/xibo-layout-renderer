@@ -263,6 +263,11 @@ export class Media implements IMedia {
     }
 
     private startMediaTimer(media: IMedia) {
+        // Always reset the counter so a media replayed after cancellation runs
+        // for its full duration rather than the residual time left from the
+        // previous play.
+        this.mediaTimeCount = 0;
+
         const preloadTimeMs = 2000;
         let preloadTimeBufferMs = ((media.duration * 1000) / 2) - preloadTimeMs;
         let isPreparingNextMedia = false;
