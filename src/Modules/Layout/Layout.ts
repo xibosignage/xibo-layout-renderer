@@ -355,6 +355,7 @@ export default class Layout implements ILayout {
 
             // Emit layout end event
             console.debug('>>>>> XLR.debug Awaited XLR::emitSync > End - Calling layoutEnd event');
+            layout.actionController?.removeKeyboardActions();
             await layout.xlr.emitSync('layoutEnd', layout);
 
             if (this.xlr.config.platform !== ConsumerPlatform.CMS && layout.inLoop) {
@@ -377,6 +378,7 @@ export default class Layout implements ILayout {
             console.debug('>>>>> XLR.debug / Layout cancelled > Layout ID > ', layout.id);
             layout.state = ELayoutState.CANCELLED;
             layout.inLoop = false;
+            layout.actionController?.removeKeyboardActions();
             // Dispose video handlers immediately so their stall watchdogs and error
             // callbacks can't fire against a layout whose DOM is about to be removed.
             for (const region of layout.regions) {
@@ -560,7 +562,8 @@ export default class Layout implements ILayout {
 
         this.actionController.initTouchActions();
 
-        this.actionController.initKeyboardActions();
+        // Keyboard actions are registered in run() so the global document listener
+        // is only active while the layout is actually playing, not during background preparation.
     };
 
     run(): void {
@@ -590,6 +593,10 @@ export default class Layout implements ILayout {
                 // Also set the background color of the player window > body
                 document.body.style.setProperty('background-color', `${this.bgColor}`);
             }
+
+            // Register keyboard actions now that the layout is active.
+            // Done here (not in parseXlf) so the global listener is scoped to playback time.
+            this.actionController?.initKeyboardActions();
 
             // Emit start event
             this.emitter.emit('start', this);

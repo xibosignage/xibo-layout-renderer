@@ -20,6 +20,7 @@
  */
 // import Moveable from 'moveable';
 import { ConsumerPlatform, ILayout, IMedia, IRegion, OptionsType } from '../../types';
+import { MediaState } from '../../Types/Media';
 import { getAllAttributes, nextId } from '../Generators';
 import './action-controller.css';
 import {PreviewTranslations} from "../../Lib/translations";
@@ -58,6 +59,7 @@ export default class ActionController {
     $actionControllerTitle: HTMLElement | null;
     $actionsContainer: HTMLElement | null;
     translations: any = {};
+    private keyboardHandler: ((ev: KeyboardEvent) => void) | null = null;
 
     constructor(parent: ILayout, actions: Action[], options: InactOptions) {
         this.parent = parent;
@@ -243,18 +245,45 @@ export default class ActionController {
         }
     }
 
-    /** Change media in region (next/previous) */
+    /** Change media in region (next/previous) with wrap-around at boundaries. */
     gotoMediaInRegion(regionId: string, actionType: string) {
         console.debug('[ActionController::gotoMediaInRegion] Changing media in region with data', { regionId, actionType });
-        // Find target region
         this.parent.regions.forEach((regionObj) => {
-            if (regionObj.id === regionId) {
-                if (actionType === 'next') {
-                    regionObj.playNextMedia();
-                } else {
-                    regionObj.playPreviousMedia();
-                }
+            if (regionObj.id !== regionId || regionObj.ended) return;
+
+            const total = regionObj.totalMediaObjects;
+            if (total === 0) return;
+
+            // Snapshot the currently-playing media before updating currMedia so
+            // we can cancel it cleanly after the region state is advanced.
+            const interruptedMedia = regionObj.currMedia;
+
+            // Compute new index with wrap-around. We do NOT delegate to
+            // playNextMedia() / playPreviousMedia() here because those carry
+            // normal playlist-cycle semantics (finished(), regionExpired()) that
+            // must not fire during user-driven navigation.
+            const newIndex = actionType === 'next'
+                ? (regionObj.currentMediaIndex + 1) % total
+                : (regionObj.currentMediaIndex - 1 + total) % total;
+
+            regionObj.oldMedia = regionObj.currMedia;
+            regionObj.currentMediaIndex = newIndex;
+            regionObj.currMedia = regionObj.mediaObjects[newIndex];
+            regionObj.nxtMedia = regionObj.mediaObjects[(newIndex + 1) % total];
+            regionObj.complete = false;
+
+            // Properly cancel the interrupted media AFTER updating currMedia.
+            // Using 'cancelled' rather than bare clearInterval ensures state is
+            // reset from PLAYING and mediaTimeCount is zeroed — without this,
+            // returning to a cancelled media causes run() → 'start' to bail on
+            // the state === PLAYING guard, leaving the region stuck indefinitely.
+            // currMedia is already updated so the handler's guard
+            // (media === media.region.currMedia) correctly skips playNextMedia.
+            if (interruptedMedia?.state === MediaState.PLAYING) {
+                interruptedMedia.emitter.emit('cancelled', interruptedMedia);
             }
+
+            regionObj.transitionNodes(regionObj.oldMedia, regionObj.currMedia);
         });
     }
 
@@ -302,11 +331,19 @@ export default class ActionController {
             return;
         }
 
-        // Cancel the current media's duration timer so it doesn't fire and interrupt
-        // the target widget mid-playback (e.g. an Interactive Zone timer still ticking).
-        if (targetRegion?.currMedia?.mediaTimer) {
-            clearInterval(targetRegion.currMedia.mediaTimer);
-            targetRegion.currMedia.mediaTimer = undefined;
+        // Cancel the interrupted media so it doesn't double-advance when the playlist
+        // returns to it. currMedia has not been advanced yet at this point (playNextMedia
+        // does that below), so we cannot use emitter.emit('cancelled') — the handler's
+        // currMedia guard would fire and call playNextMedia a second time. Instead we
+        // cancel directly: clear the timer and reset state so the 'start' handler does
+        // not bail on the state === PLAYING guard when this media is replayed.
+        if (targetRegion?.currMedia?.state === MediaState.PLAYING) {
+            const interruptedMedia = targetRegion.currMedia;
+            if (interruptedMedia.mediaTimer) {
+                clearInterval(interruptedMedia.mediaTimer);
+                interruptedMedia.mediaTimer = undefined;
+            }
+            interruptedMedia.state = MediaState.CANCELLED;
         }
 
         // Reset complete so the HTML-media guard in playNextMedia() doesn't block
@@ -336,6 +373,13 @@ export default class ActionController {
 
     /** Run action based on action data */
     runAction(actionData: {[k: string]: any}, options: InactOptions) {
+        // If this layout is no longer active (being cancelled or navigated away from),
+        // discard the action so it doesn't interfere with the outgoing transition.
+        // inLoop is set to false synchronously before finishAllRegions() in all nav paths.
+        if (!this.parent.inLoop) {
+            return;
+        }
+
         console.debug('[ActionController::runAction] Triggering action', { actionData });
 
         if(actionData.actiontype == 'navLayout') {
@@ -425,36 +469,40 @@ export default class ActionController {
 
     initKeyboardActions() {
         const self = this;
-
-        // Store actions in a map
         const keyActions = new Map<string, DOMStringMap[]>();
 
-        this.$actionController.querySelectorAll<HTMLElement>('.action[triggerType="keyPress"]').forEach(function ($el) {
+        this.$actionController.querySelectorAll<HTMLElement>('.action[triggertype="keyPress"]').forEach(($el) => {
             const dataset = $el.dataset;
             const code = dataset.triggercode;
 
-            if(code) {
-                // Create an empty array, if not yet set
-                if(!keyActions.get(code)) {
+            if (code) {
+                if (!keyActions.get(code)) {
                     keyActions.set(code, []);
                 }
-
-                // Add new action to array
                 keyActions.get(code)!.push(dataset);
             }
         });
 
-        // Keyboard listener
-        document.addEventListener('keydown', (ev: KeyboardEvent) => {
-            const actions = keyActions.get(ev.code);
+        // Nothing to do if this layout has no keyboard-triggered actions.
+        if (keyActions.size === 0) return;
 
-            // Are there action for this key code?
-            if(actions) {
-                // Run all actions associated with it
+        this.keyboardHandler = (ev: KeyboardEvent) => {
+            const actions = keyActions.get(ev.code);
+            if (actions) {
                 actions.forEach((dataset) => {
                     self.runAction(dataset, self.options);
                 });
             }
-        });
+        };
+
+        document.addEventListener('keydown', this.keyboardHandler);
+    }
+
+    /** Remove the keydown listener registered by initKeyboardActions. Call when the layout ends or is cancelled. */
+    removeKeyboardActions() {
+        if (this.keyboardHandler) {
+            document.removeEventListener('keydown', this.keyboardHandler);
+            this.keyboardHandler = null;
+        }
     }
 }

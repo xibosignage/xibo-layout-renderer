@@ -520,7 +520,7 @@ export function createMediaElement(mediaObject: IMedia) {
 
     $media.style.cssText = cssText;
 
-    if (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage') {
+    if (self.mediaType !== 'spacer' && (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage')) {
         self.checkIframeStatus = true;
         self.iframe = prepareIframe(self);
     }  else if (self.mediaType === "image") {
@@ -683,9 +683,6 @@ export function prepareAudioMedia(media: IMedia, region: IRegion) {
 }
 
 export function prepareHtmlMedia(media: IMedia, region: IRegion) {
-    // Set state as false ( for now )
-    media.ready = false;
-
     if (media.html) {
         const mediaId = getMediaId(media);
 
@@ -700,15 +697,16 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
             mediaInRegion,
         })
 
-        // Append iframe
-        media.html.innerHTML = '';
-        media.html.appendChild(media.iframe as Node);
-
         if (!mediaInRegion) {
-            // Add fresh copy of the media into the region using the direct reference
+            // Append iframe and insert into region only when not already in the DOM.
+            // Calling innerHTML = '' when the element is already present detaches the
+            // iframe, causing the browser to reload its src unnecessarily (e.g. when
+            // a media was preloaded then skipped by a navigation action).
+            media.html.innerHTML = '';
+            media.html.appendChild(media.iframe as Node);
             region.html.appendChild(media.html as HTMLElement);
-            media.ready = true;
         }
+        media.ready = true;
     }
 }
 
