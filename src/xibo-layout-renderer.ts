@@ -23,6 +23,7 @@ import { createNanoEvents } from 'nanoevents';
 import Layout, { getXlf, initRenderingDOM } from './Modules/Layout';
 import { ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType, } from './Types/Layout';
 import { ELayoutType, initialXlr, IXlr, IXlrEvents } from './Types/XLR';
+import { IMedia } from './Types/Media';
 import SplashScreen, { ISplashScreen, PreviewSplashElement } from './Modules/SplashScreen';
 import { hasDefaultOnly, isLayoutValid, getLayoutIndexByLayoutId, hasSspLayout } from "./Modules/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
@@ -1162,6 +1163,31 @@ export default function XiboLayoutRenderer(
 
     xlrObject.triggerAction = function (triggerCode: string, widgetId?: string) {
         this.currentLayout?.actionController?.handleWebhookTrigger(triggerCode, widgetId);
+    };
+
+    function findCurrMediaByWidgetId(layout: ILayout | undefined, widgetId: string): IMedia | undefined {
+        if (!layout) return undefined;
+        for (const region of layout.regions) {
+            const curr = region.currMedia;
+            if (curr && curr.mediaId === widgetId) return curr;
+        }
+        return undefined;
+    }
+
+    xlrObject.expireWidget = function (widgetId: string) {
+        findCurrMediaByWidgetId(this.currentLayout, widgetId)?.expire();
+    };
+
+    xlrObject.extendWidgetDuration = function (widgetId: string, duration: number) {
+        console.debug('XLR::extendWidgetDuration', { widgetId, duration });
+        const media = findCurrMediaByWidgetId(this.currentLayout, widgetId);
+        if (media) media.duration += duration;
+    };
+
+    xlrObject.setWidgetDuration = function (widgetId: string, duration: number) {
+        console.debug('XLR::setWidgetDuration', { widgetId, duration });
+        const media = findCurrMediaByWidgetId(this.currentLayout, widgetId);
+        if (media) media.duration = duration;
     };
 
     xlrObject.updateInputLayout = function (layoutIndex, layout) {

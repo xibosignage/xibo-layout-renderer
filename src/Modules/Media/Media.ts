@@ -413,6 +413,21 @@ export class Media implements IMedia {
         this.html = createMediaElement(this);
     }
 
+    expire(): void {
+        console.debug('[XLR::Media] expire() called for media', {
+            mediaId: this.id,
+            regionId: this.region.id,
+            layoutId: this.region.layout.id,
+        });
+
+        if (this.state !== MediaState.PLAYING) return;
+        if (this.mediaTimer) {
+            clearInterval(this.mediaTimer);
+            this.mediaTimer = undefined;
+        }
+        this.emitter.emit('end', this);
+    }
+
     run() {
         let transInDuration = 1;
         let transInDirection: compassPoints = 'E';
