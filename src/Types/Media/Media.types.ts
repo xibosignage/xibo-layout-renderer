@@ -68,6 +68,8 @@ export interface IMedia {
     region: IRegion;
     render: string;
 
+    expire(): void;
+
     run(): void;
 
     setSspAdUrl(url: string, adMediaType: 'image' | 'video', impressionUrls?: string[], errorUrls?: string[]): void;

@@ -101,6 +101,24 @@ export interface IXlr {
      */
     triggerAction(triggerCode: string, widgetId?: string): void;
 
+    /**
+     * Immediately expire the currently-playing widget identified by widgetId,
+     * advancing the region to the next media item.
+     */
+    expireWidget(widgetId: string): void;
+
+    /**
+     * Add seconds to the remaining duration of the currently-playing widget
+     * identified by widgetId.
+     */
+    extendWidgetDuration(widgetId: string, duration: number): void;
+
+    /**
+     * Set the duration (in seconds) of the currently-playing widget identified
+     * by widgetId to the given value.
+     */
+    setWidgetDuration(widgetId: string, duration: number): void;
+
     init(): Promise<IXlr>;
 
     inputLayouts: InputLayoutType[];
@@ -177,6 +195,12 @@ export const initialXlr: IXlr = {
         return Promise.resolve();
     },
     triggerAction(_triggerCode: string, _widgetId?: string): void {
+    },
+    expireWidget(_widgetId: string): void {
+    },
+    extendWidgetDuration(_widgetId: string, _duration: number): void {
+    },
+    setWidgetDuration(_widgetId: string, _duration: number): void {
     },
     init() {
         return Promise.resolve(<IXlr>{});
