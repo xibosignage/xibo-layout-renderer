@@ -284,9 +284,17 @@ export class Media implements IMedia {
             mediaDuration: media.duration,
         });
 
+        // Capture wall-clock start time so elapsed is measured from real time rather
+        // than counted ticks. This prevents drift from JS event-loop scheduling jitter
+        // accumulating across media items.
+        const startTime = performance.now();
+
         this.mediaTimer = setInterval(() => {
-            this.mediaTimeCount++;
-            const elapsedTimeMs = (this.mediaTimeCount * 1000);
+            const elapsedTimeMs = performance.now() - startTime;
+            // Keep mediaTimeCount in whole seconds for backward-compat with any
+            // external code that reads it (e.g. stats).
+            this.mediaTimeCount = Math.floor(elapsedTimeMs / 1000);
+
             // prepare region's next media
             if (this.region.totalMediaObjects > 1 &&
               elapsedTimeMs >= preloadTimeBufferMs &&
@@ -296,7 +304,10 @@ export class Media implements IMedia {
                 this.region.prepareNextMedia();
             }
 
-            if (this.mediaTimeCount > media.duration) {
+            // Compare against wall-clock elapsed rather than tick count so the end
+            // fires at the true deadline. Reading media.duration each tick respects
+            // dynamic changes from extendWidgetDuration() / setWidgetDuration().
+            if (elapsedTimeMs >= media.duration * 1000) {
                 console.debug('??? XLR.debug >> Media::startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
 
                 console.debug('??? XLR.debug >> Media::startMediaTimer - Media::Emitter > End', {
@@ -316,7 +327,7 @@ export class Media implements IMedia {
                     }
                 }
             }
-        }, 1000);
+        }, 200);
 
         console.debug('startMediaTimer: Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
