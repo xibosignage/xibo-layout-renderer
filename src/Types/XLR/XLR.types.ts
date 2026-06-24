@@ -77,8 +77,17 @@ export interface IXlr {
 
     getLayoutById(layoutId: number, layoutIndex?: number): ILayout | undefined;
 
+    /**
+     * Advance immediately to the next layout in the loop. The loop always
+     * pre-prepares nextLayout, so the transition is gapless — no XLF fetch needed.
+     */
     gotoNextLayout(): void;
 
+    /**
+     * Jump immediately to the previous layout in the loop. Discards the
+     * pre-prepared nextLayout, prepares the target, then ends the current layout
+     * early — on('end') performs the gapless transition.
+     */
     gotoPrevLayout(): void;
 
     /**

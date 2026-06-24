@@ -328,21 +328,6 @@ export default class Layout implements ILayout {
                 isInterrupt: layout.isInterrupt(),
             });
 
-            if ($layout !== null) {
-                $layout.style.setProperty('visibility', 'hidden');
-                $layout.style.setProperty('opacity', '0');
-                $layout.style.setProperty('z-index', '-99');
-                console.debug('??? XLR.debug >> Layout.on("end") - Hiding currentLayout...');
-
-                // setTimeout(() => {
-                    console.debug('??? XLR.debug >> Layout.on("end") > setTimeout - Removing currentLayout', {
-                        layoutId: layout.layoutId,
-                    });
-
-                    $layout.parentElement?.removeChild($layout);
-                // }, 250);
-            }
-
             // Check if stats are enabled for the layout
             if (layout.enableStat) {
                 this.statsBC.postMessage({
@@ -359,11 +344,43 @@ export default class Layout implements ILayout {
             await layout.xlr.emitSync('layoutEnd', layout);
 
             if (this.xlr.config.platform !== ConsumerPlatform.CMS && layout.inLoop) {
-                // Transition next layout to current layout and prepare next layout if exist
+                // Gapless playback: nextLayout is already constructed and in the DOM
+                // (hidden). Show it first, then remove A — both DOM mutations are
+                // synchronous and the browser batches them into a single paint so
+                // there is never a blank frame between the two layouts.
+                // Safety: layout.done was set to true above, so for a single-layout
+                // loop where nextLayout === layout (same object), !immediateNext.done
+                // is false and the fast-path is correctly skipped.
+                const immediateNext = this.xlr.nextLayout;
+                const canRunImmediately =
+                    immediateNext != null &&
+                    !immediateNext.done &&
+                    immediateNext.layoutNode != null &&
+                    immediateNext.xlfString !== '';
+
+                if (canRunImmediately) {
+                    this.xlr.currentLayout = immediateNext;
+                    this.xlr.currentLayoutId = immediateNext.layoutId;
+                    // Update index immediately so any concurrent reader (gotoNextLayout,
+                    // updateLoop's parseLayouts) sees B's position before prepareLayouts()
+                    // has a chance to set it. nextLayout still points to B briefly until
+                    // prepareLayouts() replaces it with C — see updateLoop guard below.
+                    this.xlr.currentLayoutIndex = immediateNext.index;
+                    this.xlr.playLayouts(this.xlr);
+                }
+                // Remove A after B is shown (canRunImmediately) or immediately
+                // (no prepped next) — both paths end here so no blank frame in either case.
+                if ($layout !== null) {
+                    $layout.parentElement?.removeChild($layout);
+                }
+
                 this.xlr.prepareLayouts().then(async (_xlr) => {
                     console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
 
-                    this.xlr.playLayouts(_xlr);
+                    // Skip if fast-path already started the layout — it's already RUNNING.
+                    if (!canRunImmediately) {
+                        this.xlr.playLayouts(_xlr);
+                    }
 
                     if (layout.isInterrupt() && _xlr.currentLayout && !_xlr.currentLayout.isInterrupt()) {
                         // Start back overlay layouts when previous layout is interrupt
@@ -371,6 +388,11 @@ export default class Layout implements ILayout {
                         await _xlr.overlayLayoutManager.resumeOverlays();
                     }
                 });
+            } else {
+                // CMS platform or layout not in loop — remove A immediately.
+                if ($layout !== null) {
+                    $layout.parentElement?.removeChild($layout);
+                }
             }
         });
 
