@@ -92,5 +92,5 @@ export interface IMedia {
     useDuration: boolean;
     xml: Element | null;
     videoHandler?: IVideoMediaHandler;
-    mediaTimer: ReturnType<typeof setInterval> | undefined;
+    mediaTimer: ReturnType<typeof setTimeout> | undefined;
 }

@@ -87,7 +87,7 @@ export class Media implements IMedia {
     xml: Element | null = null;
     videoHandler?: IVideoMediaHandler;
 
-    mediaTimer: ReturnType<typeof setInterval> | undefined;
+    mediaTimer: ReturnType<typeof setTimeout> | undefined;
     sspImpressionUrls: string[] | undefined = undefined;
     sspErrorUrls: string[] | undefined = undefined;
     private isSspWidget: boolean = false;
@@ -173,7 +173,7 @@ export class Media implements IMedia {
             media.state = MediaState.ENDED;
 
             if (this.mediaTimer) {
-                clearInterval(this.mediaTimer);
+                clearTimeout(this.mediaTimer);
                 this.mediaTimeCount = 0;
             }
 
@@ -218,7 +218,7 @@ export class Media implements IMedia {
             media.state = MediaState.CANCELLED;
 
             if (this.mediaTimer) {
-                clearInterval(this.mediaTimer);
+                clearTimeout(this.mediaTimer);
                 this.mediaTimeCount = 0;
             }
 
@@ -289,13 +289,21 @@ export class Media implements IMedia {
         // accumulating across media items.
         const startTime = performance.now();
 
-        this.mediaTimer = setInterval(() => {
+        // Self-rescheduling setTimeout: sleeps for exactly the remaining time to the
+        // next meaningful event (preload or end) rather than polling on a fixed clock.
+        // For a 10 s media item this is ~2 wakeups instead of ~50 with a 200 ms interval.
+        const scheduleNext = () => {
             const elapsedTimeMs = performance.now() - startTime;
+            // Re-read deadline each wakeup so extendWidgetDuration / setWidgetDuration
+            // are picked up automatically — if the deadline moved forward the end check
+            // below is false and we reschedule for the new remaining time.
+            const deadlineMs = media.duration * 1000;
+
             // Keep mediaTimeCount in whole seconds for backward-compat with any
             // external code that reads it (e.g. stats).
             this.mediaTimeCount = Math.floor(elapsedTimeMs / 1000);
 
-            // prepare region's next media
+            // Trigger preload when we reach the buffer point
             if (this.region.totalMediaObjects > 1 &&
               elapsedTimeMs >= preloadTimeBufferMs &&
               !isPreparingNextMedia
@@ -305,9 +313,8 @@ export class Media implements IMedia {
             }
 
             // Compare against wall-clock elapsed rather than tick count so the end
-            // fires at the true deadline. Reading media.duration each tick respects
-            // dynamic changes from extendWidgetDuration() / setWidgetDuration().
-            if (elapsedTimeMs >= media.duration * 1000) {
+            // fires at the true deadline.
+            if (elapsedTimeMs >= deadlineMs) {
                 console.debug('??? XLR.debug >> Media::startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
 
                 console.debug('??? XLR.debug >> Media::startMediaTimer - Media::Emitter > End', {
@@ -326,8 +333,28 @@ export class Media implements IMedia {
                         media.videoHandler.stop(true);
                     }
                 }
+                return; // done — no reschedule
             }
-        }, 200);
+
+            // Sleep until the sooner of: preload trigger or end deadline.
+            let nextFireMs = deadlineMs - elapsedTimeMs;
+            if (!isPreparingNextMedia && this.region.totalMediaObjects > 1) {
+                const preloadRemaining = preloadTimeBufferMs - elapsedTimeMs;
+                if (preloadRemaining > 0) {
+                    nextFireMs = Math.min(nextFireMs, preloadRemaining);
+                }
+            }
+
+            // Floor at 50 ms to avoid a tight spin if we overshoot the deadline slightly.
+            this.mediaTimer = setTimeout(scheduleNext, Math.max(nextFireMs, 50));
+        };
+
+        // First fire: wake at whichever event comes first.
+        const firstFireMs = (this.region.totalMediaObjects > 1)
+            ? Math.min(preloadTimeBufferMs, media.duration * 1000)
+            : media.duration * 1000;
+
+        this.mediaTimer = setTimeout(scheduleNext, Math.max(firstFireMs, 50));
 
         console.debug('startMediaTimer: Showing Media ' + media.id + ' for ' + media.duration + 's of Region ' + media.region.regionId);
     };
@@ -433,7 +460,7 @@ export class Media implements IMedia {
 
         if (this.state !== MediaState.PLAYING) return;
         if (this.mediaTimer) {
-            clearInterval(this.mediaTimer);
+            clearTimeout(this.mediaTimer);
             this.mediaTimer = undefined;
         }
         this.emitter.emit('end', this);
