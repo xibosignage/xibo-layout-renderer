@@ -68,6 +68,8 @@ export interface IMedia {
     region: IRegion;
     render: string;
 
+    expire(): void;
+
     run(): void;
 
     setSspAdUrl(url: string, adMediaType: 'image' | 'video', impressionUrls?: string[], errorUrls?: string[]): void;
@@ -90,5 +92,5 @@ export interface IMedia {
     useDuration: boolean;
     xml: Element | null;
     videoHandler?: IVideoMediaHandler;
-    mediaTimer: ReturnType<typeof setInterval> | undefined;
+    mediaTimer: ReturnType<typeof setTimeout> | undefined;
 }

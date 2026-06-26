@@ -23,6 +23,7 @@ import { createNanoEvents } from 'nanoevents';
 import Layout, { getXlf, initRenderingDOM } from './Modules/Layout';
 import { ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType, } from './Types/Layout';
 import { ELayoutType, initialXlr, IXlr, IXlrEvents } from './Types/XLR';
+import { IMedia } from './Types/Media';
 import SplashScreen, { ISplashScreen, PreviewSplashElement } from './Modules/SplashScreen';
 import { hasDefaultOnly, isLayoutValid, getLayoutIndexByLayoutId, hasSspLayout } from "./Modules/Generators";
 import OverlayLayout from "./Modules/Layout/OverlayLayout";
@@ -380,25 +381,61 @@ export default function XiboLayoutRenderer(
                     this.currentLayout.removeLayout();
                 }
 
-                if (this.nextLayout &&
-                    this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
-                ) {
-                    this.nextLayout.discardLayout(LayoutPlaybackType.NEXT);
-                }
+                // If the pre-prepared nextLayout is still valid in the new schedule
+                // and matches what parseLayouts selected as the new current, reuse it
+                // directly — no async XLF fetch needed, no blank-screen window.
+                const nextIsReusable =
+                    this.nextLayout != null &&
+                    !this.nextLayout.done &&
+                    this.nextLayout.layoutNode != null &&
+                    this.nextLayout.xlfString !== '' &&
+                    playback.currentLayout != null &&
+                    isLayoutValid(this.inputLayouts, this.nextLayout.layoutId) &&
+                    this.nextLayout.layoutId === playback.currentLayout.layoutId;
 
-                if (playback.currentLayout) {
-                    await prepareNewCurrentLayout();
-                }
+                if (nextIsReusable && this.nextLayout) {
+                    const reuseLayout = this.nextLayout;
+                    this.nextLayout = undefined;
+                    this.currentLayout = reuseLayout;
+                    this.currentLayoutId = reuseLayout.layoutId;
+                    this.currentLayoutIndex = playback.currentLayoutIndex;
 
-                if (playback.nextLayout) {
-                    this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
+                    // Kick off prep for the slot after B in the background so
+                    // on('end') can fast-path gaplessly when B finishes.
+                    // .catch() keeps this fire-and-forget from becoming an unhandled
+                    // rejection on network/parse failure — nextLayout stays undefined
+                    // and on('end') falls back to prepareLayouts() for recovery.
+                    if (playback.nextLayout) {
+                        this.prepareLayoutXlf(playback.nextLayout)
+                            .then((next) => this.prepareForSsp(next))
+                            .then((next) => { this.nextLayout = next; })
+                            .catch(() => {});
+                    }
+                } else {
+                    if (this.nextLayout &&
+                        this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
+                    ) {
+                        this.nextLayout.discardLayout(LayoutPlaybackType.NEXT);
+                    }
+
+                    if (playback.currentLayout) {
+                        await prepareNewCurrentLayout();
+                    }
+
+                    if (playback.nextLayout) {
+                        this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.nextLayout));
+                    }
                 }
             }
 
             await this.playSchedules(this);
         } else {
-            // Remove next layout if it is in the DOM
+            // Remove next layout if it is in the DOM.
+            // Guard: never discard nextLayout when it IS currentLayout — this happens
+            // briefly during the gapless fast-path in on('end') while prepareLayouts()
+            // is running asynchronously. Discarding it would remove the playing layout.
             if (this.nextLayout &&
+                this.nextLayout !== this.currentLayout &&
                 this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
             ) {
                 this.nextLayout.discardLayout(LayoutPlaybackType.NEXT);
@@ -939,21 +976,22 @@ export default function XiboLayoutRenderer(
             console.debug('XLR::gotoPrevLayout', { previousLayoutIndex: _assumedPrevIndex });
 
             if (Boolean(this.inputLayouts[_assumedPrevIndex])) {
-                // Prevent the natural layout-end handler from also calling
-                // prepareLayouts() when finishAllRegions() causes the layout
-                // 'end' event to fire.
-                if (this.currentLayout) {
-                    this.currentLayout.inLoop = false;
+                // Discard the existing nextLayout before replacing it with the target.
+                if (this.nextLayout &&
+                    this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
+                ) {
+                    this.nextLayout.discardLayout(LayoutPlaybackType.NEXT);
                 }
 
-                await this.currentLayout?.finishAllRegions();
-
-                // and set the previous layout as current layout
+                // Pre-prepare the target layout as nextLayout while A is still playing.
+                // on('end') will fast-path to it gaplessly — no inLoop=false needed.
+                let targetLayout = this.getLayout(this.inputLayouts[_assumedPrevIndex]);
+                targetLayout = setLayoutIndex(targetLayout, _assumedPrevIndex);
+                this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(targetLayout));
                 this.currentLayoutIndex = _assumedPrevIndex;
 
-                this.prepareLayouts().then(async (xlr) => {
-                    await this.playSchedules(xlr);
-                });
+                await this.currentLayout?.finishAllRegions();
+                // on('end') handles the gapless transition and prepareLayouts for the new next.
             }
         } finally {
             isNavigatingLayout = false;
@@ -973,15 +1011,12 @@ export default function XiboLayoutRenderer(
 
             console.debug('XLR::gotoNextLayout', { nextLayoutIndex: nextIndex });
 
-            if (this.currentLayout) {
-                this.currentLayout.inLoop = false;
-            }
-
-            await this.currentLayout?.finishAllRegions();
+            // The normal loop always pre-prepares the layout at currentLayoutIndex+1 as
+            // nextLayout — that is exactly the target here. No discard or re-prepare
+            // needed: just end A early and let on('end') fast-path to the already-ready
+            // nextLayout gaplessly, then kick off prepareLayouts() for the layout after B.
             this.currentLayoutIndex = nextIndex;
-            this.prepareLayouts().then(async (xlr) => {
-                await this.playSchedules(xlr);
-            });
+            await this.currentLayout?.finishAllRegions();
         } finally {
             isNavigatingLayout = false;
         }
@@ -1068,17 +1103,22 @@ export default function XiboLayoutRenderer(
 
             console.debug('XLR::gotoLayoutByCode', { layoutCode, targetIndex });
 
-            // Prevent the natural layout-end handler from racing with our own
-            // prepareLayouts() call (same pattern as gotoPrevLayout/gotoNextLayout).
-            if (this.currentLayout) {
-                this.currentLayout.inLoop = false;
+            // Discard the existing nextLayout before replacing it with the target.
+            if (this.nextLayout &&
+                this.isLayoutInDOM(this.nextLayout.containerName, this.nextLayout.index)
+            ) {
+                this.nextLayout.discardLayout(LayoutPlaybackType.NEXT);
             }
 
-            await this.currentLayout?.finishAllRegions();
+            // Pre-prepare the target layout as nextLayout while A is still playing.
+            // on('end') will fast-path to it gaplessly — no inLoop=false needed.
+            let targetLayout = this.getLayout(this.inputLayouts[targetIndex]);
+            targetLayout = setLayoutIndex(targetLayout, targetIndex);
+            this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(targetLayout));
             this.currentLayoutIndex = targetIndex;
-            this.prepareLayouts().then(async (xlr) => {
-                await this.playSchedules(xlr);
-            });
+
+            await this.currentLayout?.finishAllRegions();
+            // on('end') handles the gapless transition and prepareLayouts for the new next.
         } finally {
             isNavigatingLayout = false;
         }
@@ -1162,6 +1202,31 @@ export default function XiboLayoutRenderer(
 
     xlrObject.triggerAction = function (triggerCode: string, widgetId?: string) {
         this.currentLayout?.actionController?.handleWebhookTrigger(triggerCode, widgetId);
+    };
+
+    function findCurrMediaByWidgetId(layout: ILayout | undefined, widgetId: string): IMedia | undefined {
+        if (!layout) return undefined;
+        for (const region of layout.regions) {
+            const curr = region.currMedia;
+            if (curr && curr.mediaId === widgetId) return curr;
+        }
+        return undefined;
+    }
+
+    xlrObject.expireWidget = function (widgetId: string) {
+        findCurrMediaByWidgetId(this.currentLayout, widgetId)?.expire();
+    };
+
+    xlrObject.extendWidgetDuration = function (widgetId: string, duration: number) {
+        console.debug('XLR::extendWidgetDuration', { widgetId, duration });
+        const media = findCurrMediaByWidgetId(this.currentLayout, widgetId);
+        if (media) media.duration += duration;
+    };
+
+    xlrObject.setWidgetDuration = function (widgetId: string, duration: number) {
+        console.debug('XLR::setWidgetDuration', { widgetId, duration });
+        const media = findCurrMediaByWidgetId(this.currentLayout, widgetId);
+        if (media) media.duration = duration;
     };
 
     xlrObject.updateInputLayout = function (layoutIndex, layout) {

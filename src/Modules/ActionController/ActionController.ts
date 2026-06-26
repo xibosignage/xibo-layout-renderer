@@ -340,7 +340,7 @@ export default class ActionController {
         if (targetRegion?.currMedia?.state === MediaState.PLAYING) {
             const interruptedMedia = targetRegion.currMedia;
             if (interruptedMedia.mediaTimer) {
-                clearInterval(interruptedMedia.mediaTimer);
+                clearTimeout(interruptedMedia.mediaTimer);
                 interruptedMedia.mediaTimer = undefined;
             }
             interruptedMedia.state = MediaState.CANCELLED;

@@ -77,8 +77,17 @@ export interface IXlr {
 
     getLayoutById(layoutId: number, layoutIndex?: number): ILayout | undefined;
 
+    /**
+     * Advance immediately to the next layout in the loop. The loop always
+     * pre-prepares nextLayout, so the transition is gapless — no XLF fetch needed.
+     */
     gotoNextLayout(): void;
 
+    /**
+     * Jump immediately to the previous layout in the loop. Discards the
+     * pre-prepared nextLayout, prepares the target, then ends the current layout
+     * early — on('end') performs the gapless transition.
+     */
     gotoPrevLayout(): void;
 
     /**
@@ -100,6 +109,24 @@ export interface IXlr {
      * action controller. Pass an optional widgetId to narrow the match.
      */
     triggerAction(triggerCode: string, widgetId?: string): void;
+
+    /**
+     * Immediately expire the currently-playing widget identified by widgetId,
+     * advancing the region to the next media item.
+     */
+    expireWidget(widgetId: string): void;
+
+    /**
+     * Add seconds to the remaining duration of the currently-playing widget
+     * identified by widgetId.
+     */
+    extendWidgetDuration(widgetId: string, duration: number): void;
+
+    /**
+     * Set the duration (in seconds) of the currently-playing widget identified
+     * by widgetId to the given value.
+     */
+    setWidgetDuration(widgetId: string, duration: number): void;
 
     init(): Promise<IXlr>;
 
@@ -177,6 +204,12 @@ export const initialXlr: IXlr = {
         return Promise.resolve();
     },
     triggerAction(_triggerCode: string, _widgetId?: string): void {
+    },
+    expireWidget(_widgetId: string): void {
+    },
+    extendWidgetDuration(_widgetId: string, _duration: number): void {
+    },
+    setWidgetDuration(_widgetId: string, _duration: number): void {
     },
     init() {
         return Promise.resolve(<IXlr>{});
