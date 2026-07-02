@@ -411,7 +411,7 @@ export function prepareIframe(media: IMedia) {
     iframe.height = `${media.divHeight}px`;
     iframe.style.cssText = `border: 0;`;
 
-    if ((media.render === 'html' || media.render === 'webpage' || media.render === 'native') && media.url !== null) {
+    if ((media.render === 'html' || media.render === 'webpage') && media.url !== null) {
         iframe.src = media.url;
     } else {
         iframe.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
