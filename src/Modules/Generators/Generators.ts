@@ -409,7 +409,7 @@ export function prepareIframe(media: IMedia) {
     iframe.style.cssText = `border: 0;`;
 
 
-    if ((media.render === 'html' || media.render === 'webpage') && media.url !== null) {
+    if ((media.render === 'html' || media.mediaType === 'webpage') && media.url !== null) {
         iframe.src = media.url;
     } else {
         iframe.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
