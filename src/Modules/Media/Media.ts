@@ -401,14 +401,11 @@ export class Media implements IMedia {
             fileId: this.fileId,
             scaleFactor: this.region.layout.scaleFactor,
             uri: this.uri,
+            mediaType: this.mediaType,
             isGlobalContent: this.mediaType === 'global',
             isImageOrVideo: this.mediaType === 'image' || this.mediaType === 'video',
             render: this.render,
         };
-
-        if (this.mediaType === 'image' || this.mediaType === 'video') {
-            resourceUrlParams.mediaType = this.mediaType;
-        }
 
         // SSP widget: URL is not known until the consumer resolves an ad at play-time.
         // Skip all URL composition and leave url as null.
