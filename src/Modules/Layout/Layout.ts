@@ -240,6 +240,8 @@ export default class Layout implements ILayout {
     shareOfVoice: number = 0;
     state: ELayoutState = ELayoutState.IDLE;
     scheduleId?: number;
+    groupKey?: number;
+    cyclePlayback?: boolean;
     layoutNode?: Document;
     path?: string = '';
     errorCode: number | null = null;
@@ -425,6 +427,8 @@ export default class Layout implements ILayout {
         this.id = this.layoutObj.id;
         this.layoutId = this.layoutObj.layoutId;
         this.scheduleId = this.layoutObj.scheduleId;
+        this.groupKey = this.layoutObj.groupKey;
+        this.cyclePlayback = this.layoutObj.cyclePlayback;
         this.index = this.layoutObj.index;
         this.xlfString = this.layoutObj.xlfString;
         this.duration = this.layoutObj.duration;
