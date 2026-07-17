@@ -189,7 +189,10 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
         }
     } else if (options.platform === ConsumerPlatform.ELECTRON) {
-        if (params.render === 'html' || params.mediaType === 'ticker' || params.mediaType === 'webpage') {
+        if (params.mediaType === 'webpage' && params.modeid === '1') {
+            // Open Natively mode, use the widget URL directly as the iframe src.
+            resourceUrl = params.uri;
+        } else if (params.render === 'html' || params.mediaType === 'ticker' || params.mediaType === 'webpage') {
             resourceUrl = options.appHost +
                 'layout_' + params.layoutId +
                 '_region_' + params.regionId +
@@ -408,11 +411,21 @@ export function prepareIframe(media: IMedia) {
     iframe.height = `${media.divHeight}px`;
     iframe.style.cssText = `border: 0;`;
 
-
     if ((media.render === 'html' || media.render === 'webpage') && media.url !== null) {
         iframe.src = media.url;
     } else {
         iframe.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
+    }
+
+    const displayTags = media.region.xlr.config.displayTags;
+    const isEmbeddedHtml = media.url !== null && /\/layout_\d+_region_\d+_media_\d+\.html$/.test(media.url);
+
+    if (displayTags && Object.keys(displayTags).length > 0 && isEmbeddedHtml) {
+        iframe.onload = () => {
+            if (iframe.contentWindow && (iframe.contentWindow as any).xiboIC) {
+                (iframe.contentWindow as any).xiboIC.set(media.id, 'displayTags', displayTags);
+            }
+        };
     }
 
     return iframe;
@@ -689,8 +702,9 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
         // Clean up old copy of the media
         // before inserting fresh copy
         const $layout = document.querySelector(`#${region.layout.containerName}[data-sequence="${region.layout.index}"]`) as HTMLDivElement;
+        if (!$layout) return;
         const $region = $layout.querySelector('#' + region.containerName) as HTMLElement;
-        const mediaInRegion = $region.querySelector('.' + mediaId);
+        const mediaInRegion = $region?.querySelector('.' + mediaId);
 
         console.debug('<><> XLR.debug >> [Media] - [Generators::prepareHtmlMedia]', {
             mediaId,

@@ -80,6 +80,7 @@ export type OptionsType = {
         splashScreen: string;
         logo: string;
     };
+    displayTags?: Record<string, string>;
 };
 
 export interface ILayout {
