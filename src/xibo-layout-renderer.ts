@@ -118,11 +118,89 @@ export default function XiboLayoutRenderer(
         await Promise.all(handlers.map(handler => handler(...args)));
     };
 
+    // Cycle playback state: one entry per campaign groupKey
+    let rawInputLayouts: InputLayoutType[] = [];
+    const cycleGroupSequence = new Map<number, number>();
+    const cycleGroupPlays = new Map<number, number>();
+
+    // Returns a filtered copy of layouts with only the currently active layout per cycle campaign.
+    // Non-cycle layouts pass through unchanged. Zero overhead when no cycle campaigns are present.
+    const applyCyclePlayback = (layouts: InputLayoutType[]): InputLayoutType[] => {
+        // Group all cycle layouts by campaign
+        const cycleGroups = new Map<number, InputLayoutType[]>();
+        for (const layout of layouts) {
+            if (layout.cyclePlayback && layout.groupKey) {
+                if (!cycleGroups.has(layout.groupKey)) {
+                    cycleGroups.set(layout.groupKey, []);
+                }
+                cycleGroups.get(layout.groupKey)!.push(layout);
+            }
+        }
+
+        // No cycle campaigns, nothing to do
+        if (cycleGroups.size === 0) {
+            return layouts;
+        }
+
+        const placedCampaigns = new Set<number>();
+        const result: InputLayoutType[] = [];
+
+        for (const layout of layouts) {
+            // Non-cycle layouts go straight through
+            if (!layout.cyclePlayback || !layout.groupKey) {
+                result.push(layout);
+                continue;
+            }
+
+            // Each campaign gets one slot, remaining layouts from the same campaign are skipped
+            if (placedCampaigns.has(layout.groupKey)) continue;
+
+            placedCampaigns.add(layout.groupKey);
+            const group = cycleGroups.get(layout.groupKey)!;
+            // Reset to the last valid index if the campaign has fewer layouts than before
+            const sequence = Math.min(cycleGroupSequence.get(layout.groupKey) ?? 0, group.length - 1);
+            cycleGroupSequence.set(layout.groupKey, sequence);
+            result.push(group[sequence]);
+        }
+
+        return result;
+    };
+
+    // Advance cycle state when a cycle layout finishes. Runs synchronously inside emitSync
+    // so inputLayouts is updated before XLR selects the next layout to prepare.
+    xlrObject.on('layoutEnd', (layout: ILayout) => {
+        // Only act on cycle layouts
+        if (!layout.cyclePlayback || !layout.groupKey) return;
+
+        const groupKey = layout.groupKey;
+        // All layouts belonging to this campaign
+        const group = rawInputLayouts.filter(l => l.cyclePlayback && l.groupKey === groupKey);
+        if (group.length === 0) return;
+
+        const sequence = Math.min(cycleGroupSequence.get(groupKey) ?? 0, group.length - 1);
+        // Treat 0 as 1, a layout must play at least once before advancing
+        const playCount = Math.max(group[sequence].playCount ?? 1, 1);
+        const plays = (cycleGroupPlays.get(groupKey) ?? 0) + 1;
+
+        if (plays >= playCount) {
+            // Move to the next layout in the campaign, wrapping back to the first after the last
+            const nextSequence = (sequence + 1) % group.length;
+            cycleGroupSequence.set(groupKey, nextSequence);
+            cycleGroupPlays.set(groupKey, 0);
+            xlrObject.inputLayouts = applyCyclePlayback(rawInputLayouts);
+            console.info(`[XLR] Cycle campaign ${groupKey}: advancing to layout index ${nextSequence}`);
+        } else {
+            // Not ready to advance yet, just record the play
+            cycleGroupPlays.set(groupKey, plays);
+        }
+    });
+
     xlrObject.bootstrap = function () {
         // Place to set configurations and initialize required props
         const self = this;
-        self.inputLayouts = !Array.isArray(props.inputLayouts) ?
+        rawInputLayouts = !Array.isArray(props.inputLayouts) ?
             [props.inputLayouts] : props.inputLayouts;
+        self.inputLayouts = applyCyclePlayback(rawInputLayouts);
         self.overlays = overlays;
         self.config = props.options as OptionsType;
 
@@ -299,7 +377,22 @@ export default function XiboLayoutRenderer(
 
     xlrObject.updateLoop = async function (inputLayouts: InputLayoutType[]) {
         console.debug('>>>> XLR.debug XLR::updateLoop > Updating schedule loop . . .');
-        this.inputLayouts = inputLayouts;
+
+        // Store the full schedule list and clear state for campaigns no longer present
+        rawInputLayouts = inputLayouts;
+        const validGroupKeys = new Set(
+            inputLayouts
+                .filter(l => l.cyclePlayback && l.groupKey)
+                .map(l => l.groupKey as number)
+        );
+        for (const key of cycleGroupSequence.keys()) {
+            if (!validGroupKeys.has(key)) {
+                cycleGroupSequence.delete(key);
+                cycleGroupPlays.delete(key);
+            }
+        }
+
+        this.inputLayouts = applyCyclePlayback(rawInputLayouts);
 
         // Guard against a splash-only update: uniqueLayouts has no entry for layoutId 0,
         // so parseLayouts() would return undefined current/next and prepareLayoutXlf()
@@ -693,6 +786,10 @@ export default function XiboLayoutRenderer(
 
         iLayout = { ...iLayout, ..._layout };
 
+        // Cycle properties come from the schedule loop, not uniqueLayouts, always take from inputLayout
+        iLayout.groupKey = inputLayout.groupKey;
+        iLayout.cyclePlayback = inputLayout.cyclePlayback;
+
         return iLayout;
     };
 
@@ -884,6 +981,8 @@ export default function XiboLayoutRenderer(
             xlrLayoutObj.id = Number(inputLayout.layoutId);
             xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
             xlrLayoutObj.scheduleId = inputLayout?.scheduleId || undefined;
+            xlrLayoutObj.groupKey = inputLayout.groupKey;
+            xlrLayoutObj.cyclePlayback = inputLayout.cyclePlayback;
             xlrLayoutObj.options = newOptions;
             xlrLayoutObj.index = inputLayout.index;
             xlrLayoutObj.xlfString = layoutXlf;
