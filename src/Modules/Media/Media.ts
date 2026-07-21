@@ -439,12 +439,12 @@ export class Media implements IMedia {
                 if (this.region.layout.layoutId === -1) {
                     tmpUrl = this.uri;
                 }
+            }
 
-                // Open Natively webpage: decode the URI then substitute [[tagName]] placeholders.
-                if (this.mediaType === 'webpage' && this.options['modeid'] === '1') {
-                    const displayTags = this.xlr.config.displayTags ?? {};
-                    tmpUrl = decodeURIComponent(this.uri).replace(/\[\[(\w+)\]\]/g, (_, key) => displayTags[key] ?? '');
-                }
+            // Open Natively webpage: decode the URI then substitute [[tagName]] placeholders.
+            if (this.mediaType === 'webpage' && this.options['modeid'] === '1') {
+                const displayTags = this.xlr.config.displayTags ?? {};
+                tmpUrl = decodeURIComponent(this.uri).replace(/\[\[(\w+)\]\]/g, (_, key) => displayTags[key] ?? '');
             }
 
             this.url = tmpUrl;

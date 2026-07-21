@@ -169,6 +169,11 @@ export function videoFileType(str: string) {
 }
 
 export function composeResourceUrlByPlatform(options: OptionsType, params: any) {
+    // Open Natively mode: use the widget URL directly as the iframe src, regardless of platform.
+    if (params.mediaType === 'webpage' && params.modeid === '1') {
+        return params.uri;
+    }
+
     let resourceUrl = '';
     
     if (params.regionOptions && Boolean(params.regionOptions.getResourceUrl)) {
@@ -189,10 +194,7 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
             resourceUrl = resourceEndpoint + params.fileId + '?saveAs=' + params.uri;
         }
     } else if (options.platform === ConsumerPlatform.ELECTRON) {
-        if (params.mediaType === 'webpage' && params.modeid === '1') {
-            // Open Natively mode, use the widget URL directly as the iframe src.
-            resourceUrl = params.uri;
-        } else if (params.render === 'html' || params.mediaType === 'ticker' || params.mediaType === 'webpage') {
+        if (params.render === 'html' || params.mediaType === 'ticker' || params.mediaType === 'webpage') {
             resourceUrl = options.appHost +
                 'layout_' + params.layoutId +
                 '_region_' + params.regionId +
@@ -418,9 +420,11 @@ export function prepareIframe(media: IMedia) {
     }
 
     const displayTags = media.region.xlr.config.displayTags;
-    const isEmbeddedHtml = media.url !== null && /\/layout_\d+_region_\d+_media_\d+\.html$/.test(media.url);
 
-    if (displayTags && Object.keys(displayTags).length > 0 && isEmbeddedHtml) {
+    // Only the Embedded widget type runs user-authored code that may need displayTags context.
+    const isEmbeddedWidget = media.url !== null && media.mediaType === 'embedded';
+
+    if (displayTags && Object.keys(displayTags).length > 0 && isEmbeddedWidget) {
         iframe.onload = () => {
             if (iframe.contentWindow && (iframe.contentWindow as any).xiboIC) {
                 (iframe.contentWindow as any).xiboIC.set(media.id, 'displayTags', displayTags);
