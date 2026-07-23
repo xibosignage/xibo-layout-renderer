@@ -404,9 +404,10 @@ export class Media implements IMedia {
             isGlobalContent: this.mediaType === 'global',
             isImageOrVideo: this.mediaType === 'image' || this.mediaType === 'video',
             render: this.render,
+            modeid: this.options['modeid'],
         };
 
-        if (this.mediaType === 'image' || this.mediaType === 'video') {
+        if (this.mediaType === 'image' || this.mediaType === 'video' || this.mediaType === 'webpage') {
             resourceUrlParams.mediaType = this.mediaType;
         }
 
@@ -438,9 +439,16 @@ export class Media implements IMedia {
                 if (this.region.layout.layoutId === -1) {
                     tmpUrl = this.uri;
                 }
+
+                // Open Natively webpage: decode the URI then substitute [[tagName]] placeholders.
+                if (this.mediaType === 'webpage' && this.options['modeid'] === '1') {
+                    const displayTags = this.xlr.config.displayTags ?? {};
+                    tmpUrl = decodeURIComponent(this.uri).replace(/\[\[(\w+)\]\]/g, (_, key) => displayTags[key] ?? '');
+                }
             }
 
             this.url = tmpUrl;
+
         }
 
         // Loop if media has loop, or if region has loop and a single media

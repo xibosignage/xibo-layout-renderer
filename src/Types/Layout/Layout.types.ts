@@ -51,6 +51,9 @@ export type InputLayoutType = {
     isOverlay?: boolean;
     shareOfVoice?: number;
     code?: string;
+    cyclePlayback?: boolean;
+    groupKey?: number;
+    playCount?: number;
 };
 
 export type OptionsType = {
@@ -77,6 +80,7 @@ export type OptionsType = {
         splashScreen: string;
         logo: string;
     };
+    displayTags?: Record<string, string>;
 };
 
 export interface ILayout {
@@ -137,6 +141,8 @@ export interface ILayout {
     state: ELayoutState;
     errorCode: number | null;
     html: HTMLElement | null;
+    groupKey?: number;
+    cyclePlayback?: boolean;
 }
 
 export const initialLayout: ILayout = {
