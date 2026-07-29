@@ -92,6 +92,7 @@ export interface IRegion {
     zIndex: number;
     prepareNextMedia(): void;
     xlr: IXlr;
+    playlistRawMediaObjects: IMedia[];
 }
 
 export const initialRegion: IRegion = {
@@ -154,4 +155,5 @@ export const initialRegion: IRegion = {
     prepareNextMedia() {
     },
     xlr: <IXlr>{},
+    playlistRawMediaObjects: [],
 };
