@@ -79,6 +79,7 @@ export default class Region implements IRegion {
     totalMediaObjects: number = 0;
     uniqueId: string = nanoid();
     zIndex: number = 0;
+    playlistRawMediaObjects: IMedia[] = [];
 
     emitter = createNanoEvents<IRegionEvents>();
 
@@ -118,6 +119,7 @@ export default class Region implements IRegion {
         this.uniqueId = `${nextId(this.options as OptionsType & IRegion["options"])}`;
         this.containerName = `R-${this.id}-${this.uniqueId}`;
         this.mediaObjects = [];
+        this.playlistRawMediaObjects = [];
 
         this.sWidth = (this.xml) ? Number(this.xml?.getAttribute('width')) * this.layout.scaleFactor : 0;
         this.sHeight = (this.xml) ? Number(this.xml?.getAttribute('height')) * this.layout.scaleFactor : 0;
@@ -200,6 +202,8 @@ export default class Region implements IRegion {
             this.mediaObjects.push(mediaObj);
         });
 
+        this.playlistRawMediaObjects = [...this.mediaObjects];
+        this.mediaObjects = this.applyPlaylistCyclePlayback();
         this.totalMediaObjects = this.mediaObjects.length;
 
         console.debug('??? XLR.debug >> Region - done looping through media', {
@@ -513,6 +517,57 @@ export default class Region implements IRegion {
         }
     };
 
+    /**
+     * Filters mediaObjects down to one active item per playlist cycle group.
+     * Non-cycle items pass through unchanged. Groups are ordered by displayOrder
+     * so the sequence is consistent regardless of XLF element order.
+     */
+    private applyPlaylistCyclePlayback(): IMedia[] {
+        // Group all cycle items by parentWidgetId and sort each group by displayOrder
+        const cycleGroups = new Map<string, IMedia[]>();
+        for (const media of this.playlistRawMediaObjects) {
+            if (media.playlistCyclePlayback && media.playlistParentWidgetId) {
+                if (!cycleGroups.has(media.playlistParentWidgetId)) {
+                    cycleGroups.set(media.playlistParentWidgetId, []);
+                }
+                cycleGroups.get(media.playlistParentWidgetId)!.push(media);
+            }
+        }
+
+        // No cycle groups, return the full list unchanged
+        if (cycleGroups.size === 0) return this.playlistRawMediaObjects;
+
+        for (const group of cycleGroups.values()) {
+            group.sort((a, b) => a.playlistDisplayOrder - b.playlistDisplayOrder);
+        }
+
+        // Build the filtered list. Each cycle group occupies exactly one slot,
+        // filled by the item at the current sequence index.
+        const placed = new Set<string>();
+        const result: IMedia[] = [];
+        for (const media of this.playlistRawMediaObjects) {
+            // Non-cycle items go straight through
+            if (!media.playlistCyclePlayback || !media.playlistParentWidgetId) {
+                result.push(media);
+                continue;
+            }
+            // Each group gets one slot. Subsequent items from the same group are skipped.
+            if (placed.has(media.playlistParentWidgetId)) continue;
+            placed.add(media.playlistParentWidgetId);
+
+            const group = cycleGroups.get(media.playlistParentWidgetId)!;
+            const stateKey = `${this.id}:${media.playlistParentWidgetId}`;
+            // Guard against a stale index if the group shrank since last play
+            const sequence = Math.min(
+                this.xlr.playlistCycleGroupSequence.get(stateKey) ?? 0,
+                group.length - 1,
+            );
+            this.xlr.playlistCycleGroupSequence.set(stateKey, sequence);
+            result.push(group[sequence]);
+        }
+        return result;
+    }
+
     playNextMedia() {
         console.debug('??? XLR.debug Region playing next media', {
             regionId: this.id,
@@ -616,6 +671,57 @@ export default class Region implements IRegion {
             this.currentMediaIndex = newIndex >= 0 ? newIndex : 0;
             this.currMedia = this.mediaObjects[this.currentMediaIndex];
             this.nxtMedia = this.mediaObjects[(this.currentMediaIndex + 1) % this.totalMediaObjects];
+        }
+
+        // Advance playlist cycle groups at the end of each full region pass, before the
+        // next transition fires, so the correct item is always queued up.
+        if (crossedEnd && this.playlistRawMediaObjects.some((m) => m.playlistCyclePlayback)) {
+            // Collect all cycle groups, sorted by displayOrder within each group
+            const cycleGroups = new Map<string, IMedia[]>();
+            for (const media of this.playlistRawMediaObjects) {
+                if (media.playlistCyclePlayback && media.playlistParentWidgetId) {
+                    if (!cycleGroups.has(media.playlistParentWidgetId)) {
+                        cycleGroups.set(media.playlistParentWidgetId, []);
+                    }
+                    cycleGroups.get(media.playlistParentWidgetId)!.push(media);
+                }
+            }
+            for (const group of cycleGroups.values()) {
+                group.sort((a, b) => a.playlistDisplayOrder - b.playlistDisplayOrder);
+            }
+
+            for (const [groupKey, group] of cycleGroups) {
+                const stateKey = `${this.id}:${groupKey}`;
+                const sequence = this.xlr.playlistCycleGroupSequence.get(stateKey) ?? 0;
+                const currentItem = group[sequence];
+                const plays = (this.xlr.playlistCycleGroupPlays.get(stateKey) ?? 0) + 1;
+
+                if (plays >= currentItem.playlistPlayCount) {
+                    // playCount reached, move to next item. Random if isRandom, sequential otherwise.
+                    let nextSequence: number;
+                    if (currentItem.playlistIsRandom && group.length > 1) {
+                        // Pick a random index, excluding the current one to avoid repeating
+                        do {
+                            nextSequence = Math.floor(Math.random() * group.length);
+                        } while (nextSequence === sequence);
+                    } else {
+                        nextSequence = (sequence + 1) % group.length;
+                    }
+                    this.xlr.playlistCycleGroupSequence.set(stateKey, nextSequence);
+                    this.xlr.playlistCycleGroupPlays.set(stateKey, 0);
+                    console.info(`[XLR] Playlist cycle group ${groupKey}: advancing to item index ${nextSequence}`);
+                } else {
+                    // playCount not yet reached, keep showing the same item next pass
+                    this.xlr.playlistCycleGroupPlays.set(stateKey, plays);
+                }
+            }
+
+            // Rebuild the filtered list with the updated sequence positions
+            this.mediaObjects = this.applyPlaylistCyclePlayback();
+            this.totalMediaObjects = this.mediaObjects.length;
+            this.currentMediaIndex = 0;
+            this.currMedia = this.mediaObjects[0];
+            this.nxtMedia = this.mediaObjects[this.totalMediaObjects > 1 ? 1 : 0];
         }
 
         console.debug('??? XLR.debug >> End Region::playNextMedia > execute transitionNodes', {
