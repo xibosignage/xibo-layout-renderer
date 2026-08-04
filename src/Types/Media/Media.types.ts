@@ -93,4 +93,9 @@ export interface IMedia {
     xml: Element | null;
     videoHandler?: IVideoMediaHandler;
     mediaTimer: ReturnType<typeof setTimeout> | undefined;
+    playlistParentWidgetId: string;
+    playlistDisplayOrder: number;
+    playlistCyclePlayback: boolean;
+    playlistPlayCount: number;
+    playlistIsRandom: boolean;
 }

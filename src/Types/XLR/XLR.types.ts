@@ -163,6 +163,8 @@ export interface IXlr {
     renderOverlayLayouts(): Promise<void>;
 
     uniqueLayouts: Map<string, InputLayoutType>;
+    playlistCycleGroupSequence: Map<string, number>;
+    playlistCycleGroupPlays: Map<string, number>;
 
     updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
 
@@ -252,6 +254,8 @@ export const initialXlr: IXlr = {
         return Promise.resolve();
     },
     uniqueLayouts: new Map<string, InputLayoutType>(),
+    playlistCycleGroupSequence: new Map<string, number>(),
+    playlistCycleGroupPlays: new Map<string, number>(),
     updateInputLayout(layoutIndex: number, layout: InputLayoutType) {
     },
     updateLayouts(inputLayouts: InputLayoutType[]) {

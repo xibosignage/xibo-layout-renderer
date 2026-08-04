@@ -90,6 +90,11 @@ export class Media implements IMedia {
     mediaTimer: ReturnType<typeof setTimeout> | undefined;
     sspImpressionUrls: string[] | undefined = undefined;
     sspErrorUrls: string[] | undefined = undefined;
+    playlistParentWidgetId: string = '';
+    playlistDisplayOrder: number = 0;
+    playlistCyclePlayback: boolean = false;
+    playlistPlayCount: number = 1;
+    playlistIsRandom: boolean = false;
     private isSspWidget: boolean = false;
     private mediaTimeCount = 0;
     private xlr: IXlr = <IXlr>{};
@@ -121,7 +126,11 @@ export class Media implements IMedia {
         this.hasCommandExecuted = false;
         this.fromDt = this.xml?.getAttribute('fromDt') || '';
         this.toDt = this.xml?.getAttribute('toDt') || '';
-
+        this.playlistParentWidgetId = this.xml?.getAttribute('parentWidgetId') || '';
+        this.playlistDisplayOrder = parseInt(this.xml?.getAttribute('displayOrder') as string) || 0;
+        this.playlistCyclePlayback = this.xml?.getAttribute('cyclePlayback') === '1';
+        this.playlistPlayCount = Math.max(parseInt(this.xml?.getAttribute('playCount') as string) || 1, 1);
+        this.playlistIsRandom = this.xml?.getAttribute('isRandom') === '1';
 
         this.on('start', (media: IMedia) => {
             if (media.state === MediaState.PLAYING) return;
@@ -439,12 +448,12 @@ export class Media implements IMedia {
                 if (this.region.layout.layoutId === -1) {
                     tmpUrl = this.uri;
                 }
+            }
 
-                // Open Natively webpage: decode the URI then substitute [[tagName]] placeholders.
-                if (this.mediaType === 'webpage' && this.options['modeid'] === '1') {
-                    const displayTags = this.xlr.config.displayTags ?? {};
-                    tmpUrl = decodeURIComponent(this.uri).replace(/\[\[(\w+)\]\]/g, (_, key) => displayTags[key] ?? '');
-                }
+            // Open Natively webpage: decode the URI then substitute [[tagName]] placeholders.
+            if (this.mediaType === 'webpage' && this.options['modeid'] === '1') {
+                const displayTags = this.xlr.config.displayTags ?? {};
+                tmpUrl = decodeURIComponent(this.uri).replace(/\[\[(\w+)\]\]/g, (_, key) => displayTags[key] ?? '');
             }
 
             this.url = tmpUrl;

@@ -123,6 +123,10 @@ export default function XiboLayoutRenderer(
     const cycleGroupSequence = new Map<number, number>();
     const cycleGroupPlays = new Map<number, number>();
 
+    // Playlist cycle playback state: keyed by regionId:parentWidgetId, persists across layout re-instantiation
+    xlrObject.playlistCycleGroupSequence = new Map<string, number>();
+    xlrObject.playlistCycleGroupPlays = new Map<string, number>();
+
     // Returns a filtered copy of layouts with only the currently active layout per cycle campaign.
     // Non-cycle layouts pass through unchanged. Zero overhead when no cycle campaigns are present.
     const applyCyclePlayback = (layouts: InputLayoutType[]): InputLayoutType[] => {
