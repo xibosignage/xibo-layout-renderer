@@ -66,6 +66,12 @@ export type OptionsType = {
     idCounter: number;
     inPreview: boolean;
     appHost?: string | null;
+    /**
+     * Base URL the consumer serves an extracted HTML Package (.htz) from, with a
+     * trailing slash. The package URL is composed as
+     * `htmlPackageUrl + <uri> + '/' + <nominatedFile>`.
+     */
+    htmlPackageUrl?: string | null;
     platform: ConsumerPlatform;
     config?: {
         cmsUrl: string | null;
