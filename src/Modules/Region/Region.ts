@@ -29,6 +29,7 @@ import {
     getMediaId,
     nextId,
     getAllAttributes,
+    isHtmlDocumentMedia,
     prepareAudioMedia,
     prepareHtmlMedia,
     prepareImageMedia,
@@ -268,7 +269,7 @@ export default class Region implements IRegion {
             prepareImageMedia(media, this);
         } else if (media.mediaType === 'audio' && media.url !== null) {
             prepareAudioMedia(media, this);
-        } else if ((media.render === 'html' || media.mediaType === 'webpage') &&
+        } else if ((isHtmlDocumentMedia(media) || media.mediaType === 'webpage') &&
             media.iframe && media.checkIframeStatus
         ) {
             prepareHtmlMedia(media, this);
@@ -595,7 +596,7 @@ export default class Region implements IRegion {
         // Guard is limited to single-media regions so navWidget injections
         // (which splice a second media in) are not blocked.
         if (this.complete &&
-            this.currMedia?.render === 'html' &&
+            this.currMedia && isHtmlDocumentMedia(this.currMedia) &&
             this.totalMediaObjects === 1
         ) {
             return;
@@ -745,7 +746,9 @@ export default class Region implements IRegion {
             // regions to complete. The guard at the top only catches the second
             // call; this one catches the first completion when complete was just
             // set by finished() above.
-            if (this.currMedia?.render === 'html' && this.totalMediaObjects === 1 && this.oldMedia === this.currMedia) {
+            if (this.currMedia && isHtmlDocumentMedia(this.currMedia) &&
+                this.totalMediaObjects === 1 && this.oldMedia === this.currMedia
+            ) {
                 return;
             }
         }

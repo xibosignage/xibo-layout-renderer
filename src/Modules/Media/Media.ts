@@ -27,6 +27,7 @@ import { IRegion } from '../../Types/Region';
 import { IMedia, MediaState } from '../../Types/Media';
 import {
     capitalizeStr,
+    composeHtmlPackageUrl,
     composeMediaUrl,
     composeResourceUrl,
     composeResourceUrlByPlatform,
@@ -414,9 +415,16 @@ export class Media implements IMedia {
             isImageOrVideo: this.mediaType === 'image' || this.mediaType === 'video',
             render: this.render,
             modeid: this.options['modeid'],
+            // XLF option node names are lower-cased when parsed above, so the
+            // CMS property "nominatedFile" arrives as "nominatedfile".
+            nominatedFile: this.options['nominatedfile'],
         };
 
-        if (this.mediaType === 'image' || this.mediaType === 'video' || this.mediaType === 'webpage') {
+        if (this.mediaType === 'image' ||
+            this.mediaType === 'video' ||
+            this.mediaType === 'webpage' ||
+            this.mediaType === 'htmlpackage'
+        ) {
             resourceUrlParams.mediaType = this.mediaType;
         }
 
@@ -428,7 +436,12 @@ export class Media implements IMedia {
         } else {
             let tmpUrl = '';
 
-            if (this.xlr.config.platform === ConsumerPlatform.CMS) {
+            if (this.mediaType === 'htmlpackage') {
+                // HTML Package: the consumer extracts the .htz locally and serves the
+                // result itself, so the URL has the same shape on every platform and
+                // only the base differs (config.htmlPackageUrl).
+                tmpUrl = composeHtmlPackageUrl(this.xlr.config, resourceUrlParams);
+            } else if (this.xlr.config.platform === ConsumerPlatform.CMS) {
                 tmpUrl = composeResourceUrlByPlatform(this.xlr.config, resourceUrlParams);
             } else if (this.xlr.config.platform === ConsumerPlatform.CHROMEOS) {
                 tmpUrl = composeResourceUrl(this.xlr.config, resourceUrlParams);
