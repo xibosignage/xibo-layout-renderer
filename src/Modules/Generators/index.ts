@@ -11,6 +11,8 @@ export {
     composeMediaUrl,
     fetchText,
     getDataBlob,
+    composeHtmlPackageUrl,
+    isHtmlDocumentMedia,
     composeResourceUrl,
     composeResourceUrlByPlatform,
     getIndexByLayoutId,

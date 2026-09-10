@@ -210,6 +210,60 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
     return resourceUrl;
 }
 
+/**
+ * Is this media a document XLR loads into an iframe it owns?
+ *
+ * `render === 'html'` covers every widget the CMS renders server-side. An HTML
+ * Package is `render === 'native'` because the *player* produces the document
+ * rather than the CMS, but to the renderer the two are the same thing — an
+ * iframe pointing at a URL — so every branch that treats html widgets specially
+ * has to treat HTML Packages the same way. Those branches are spread across
+ * Region and Generators, and getting one of them wrong is invisible until a
+ * layout misbehaves at a cycle boundary, so the test lives here instead of
+ * being spelled out at each call site.
+ *
+ * `webpage` is deliberately absent even though it is also `render === 'native'`:
+ * it has never been included in these branches, and changing that belongs to a
+ * separate piece of work.
+ */
+export function isHtmlDocumentMedia(media: Pick<IMedia, 'render' | 'mediaType'>): boolean {
+    return media.render === 'html' || media.mediaType === 'htmlpackage';
+}
+
+/**
+ * Constrain the CMS "Nominated File" to a path inside the package directory.
+ *
+ * The value is free text typed by a user, and the composed URL is normalised by
+ * the browser before it is requested. Left alone, `../../index.html` resolves
+ * clear of the package and the player ends up serving its own app shell into
+ * the widget iframe, and a leading slash produces a double separator that
+ * matches nothing. Neither is malicious, but both fail in ways that are very
+ * hard to read from the symptom, so the path is reduced to plain segments here.
+ */
+function safeNominatedFile(nominatedFile: any): string {
+    const segments = String(nominatedFile ?? '')
+        .replace(/\\/g, '/')
+        .split('/')
+        // Drops leading/doubled separators ('') along with '.' and '..'.
+        .filter((segment) => segment !== '' && segment !== '.' && segment !== '..');
+
+    return segments.length > 0 ? segments.join('/') : 'index.html';
+}
+
+/**
+ * URL of the nominated file inside an extracted HTML Package (.htz).
+ *
+ * The consumer downloads the archive, extracts it, and serves the result under
+ * `options.htmlPackageUrl` in a directory named after the archive's stored
+ * filename (`params.uri`). That convention is identical on every platform, so
+ * only the base URL differs.
+ */
+export function composeHtmlPackageUrl(options: OptionsType, params: any) {
+    const base = options.htmlPackageUrl ?? '';
+
+    return base + params.uri + '/' + safeNominatedFile(params.nominatedFile);
+}
+
 export function composeResourceUrl(options: OptionsType, params: any) {
     const schemaVersion = (options) && options.config?.schemaVersion;
     const hardwareKey = (options) && options.config?.hardwareKey;
@@ -413,7 +467,10 @@ export function prepareIframe(media: IMedia) {
     iframe.height = `${media.divHeight}px`;
     iframe.style.cssText = `border: 0;`;
 
-    if ((media.render === 'html' || media.render === 'webpage') && media.url !== null) {
+    // An HTML Package resolves to a plain file path under the consumer's local
+    // server, so it must be used verbatim — the width/height query string the
+    // else branch appends would corrupt it.
+    if ((isHtmlDocumentMedia(media) || media.render === 'webpage') && media.url !== null) {
         iframe.src = media.url;
     } else {
         iframe.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
@@ -537,7 +594,11 @@ export function createMediaElement(mediaObject: IMedia) {
 
     $media.style.cssText = cssText;
 
-    if (self.mediaType !== 'spacer' && (self.render === 'html' || self.mediaType === 'ticker' || self.mediaType === 'webpage')) {
+    if (self.mediaType !== 'spacer' && (
+        isHtmlDocumentMedia(self) ||
+        self.mediaType === 'ticker' ||
+        self.mediaType === 'webpage'
+    )) {
         self.checkIframeStatus = true;
         self.iframe = prepareIframe(self);
     }  else if (self.mediaType === "image") {
