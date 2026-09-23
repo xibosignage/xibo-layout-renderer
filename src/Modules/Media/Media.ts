@@ -74,6 +74,7 @@ export class Media implements IMedia {
     player?: Player = undefined;
     ready: boolean = true;
     region: IRegion = <IRegion>{};
+    resourceRegionId: string = '';
     render: string = 'html';
     schemaVersion: string = '1';
     singlePlay: boolean = false;
@@ -107,9 +108,11 @@ export class Media implements IMedia {
         mediaId: string,
         xml: Element,
         options: OptionsType,
-        xlr: IXlr
+        xlr: IXlr,
+        resourceRegionId?: string
     ) {
         this.region = region;
+        this.resourceRegionId = resourceRegionId || region.id;
         this.id = mediaId;
         this.mediaId = this.id;
         this.xml = xml;
@@ -406,7 +409,7 @@ export class Media implements IMedia {
             ...this.xlr.config.config,
             regionOptions: this.region.options,
             layoutId: this.region.layout.layoutId,
-            regionId: this.region.id,
+            regionId: this.resourceRegionId,
             mediaId: this.id,
             fileId: this.fileId,
             scaleFactor: this.region.layout.scaleFactor,
