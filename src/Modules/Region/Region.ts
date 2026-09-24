@@ -228,6 +228,13 @@ export default class Region implements IRegion {
             ) {
                 const drawerMediaItems = Array.from(this.layout.drawer?.getElementsByTagName('media') || []);
 
+                // Resource HTML files (e.g. text/webpage/htmlpackage widgets) are
+                // downloaded and saved by the player under the widget's original,
+                // CMS-assigned drawer region id - not the region it gets displayed
+                // in once navigated to. Pass it through separately so the resource
+                // URL matches the file actually on disk.
+                const drawerRegionId = this.layout.drawer?.getAttribute('id') || '';
+
                 drawerMediaItems.forEach((drawerMedia) => {
                     if (drawerMedia.getAttribute('id') === widgetId) {
                         // Add drawer media to the region
@@ -237,6 +244,7 @@ export default class Region implements IRegion {
                             drawerMedia as Element,
                             this.options as OptionsType & IRegion['options'],
                             this.xlr,
+                            drawerRegionId,
                         ));
                     }
                 });

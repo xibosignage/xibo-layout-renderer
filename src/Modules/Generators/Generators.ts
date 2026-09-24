@@ -223,8 +223,7 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
  * being spelled out at each call site.
  *
  * `webpage` is deliberately absent even though it is also `render === 'native'`:
- * it has never been included in these branches, and changing that belongs to a
- * separate piece of work.
+ * the branches that need it name it explicitly alongside `isHtmlDocumentMedia`.
  */
 export function isHtmlDocumentMedia(media: Pick<IMedia, 'render' | 'mediaType'>): boolean {
     return media.render === 'html' || media.mediaType === 'htmlpackage';
@@ -467,10 +466,9 @@ export function prepareIframe(media: IMedia) {
     iframe.height = `${media.divHeight}px`;
     iframe.style.cssText = `border: 0;`;
 
-    // An HTML Package resolves to a plain file path under the consumer's local
-    // server, so it must be used verbatim — the width/height query string the
-    // else branch appends would corrupt it.
-    if ((isHtmlDocumentMedia(media) || media.render === 'webpage') && media.url !== null) {
+    // An HTML Package and a Webpage both resolve to a plain URL, so it must be used
+    // verbatim — the width/height query string the else branch appends would corrupt it.
+    if ((isHtmlDocumentMedia(media) || media.mediaType === 'webpage') && media.url !== null) {
         iframe.src = media.url;
     } else {
         iframe.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
