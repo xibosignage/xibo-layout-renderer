@@ -699,63 +699,63 @@ export function createMediaElement(mediaObject: IMedia) {
 
 export function prepareVideoMedia(media: IMedia, region: IRegion) {
     const mediaId = getMediaId(media);
-    // Check if html is ready and is in the DOM
-    if (media.html !== null) {
+    // Always (re)build the element. A video that has played is disposed
+    // (VideoMedia.stop sets media.html = null), so skipping on a null html
+    // left a playlist blank once it wrapped back to its first video.
 
-        // Clean up video.js instance
-        const existingPlayer = videojs.getPlayer(mediaId);
+    // Clean up video.js instance
+    const existingPlayer = videojs.getPlayer(mediaId);
 
-        if (existingPlayer !== undefined) {
-            existingPlayer.dispose();
-            media.player = undefined;
-        }
-
-        const $layout = region.layout.html;
-        const layoutSelector = '#' + region.layout.containerName +
-          '[data-sequence="' + region.layout.index + '"]';
-        const $layoutWithIndex = document.querySelector(layoutSelector);
-        const $region = region.html;
-        const mediaInRegion = $region?.querySelector('.' + mediaId);
-
-        console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
-            layoutSelector,
-            $layoutWithIndex,
-            $region,
-            mediaInRegion,
-            mediaHtml: media.html,
-            existingPlayer,
-            mediaId,
-            layoutInDOM: document.body.contains($layout),
-        })
-        if (!mediaInRegion) {
-            media.html = createMediaElement(media);
-        } else {
-            mediaInRegion.remove();
-            media.html = createMediaElement(media);
-        }
-
-        // Append fresh copy of the media into the region
-        region.html.appendChild(media.html);
-
-        const isMediaInDOM = document.body.contains(media.html);
-
-        console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
-            isMediaInDOM,
-            mediaHtml: media.html,
-            mediaId,
-        })
-
-        // Initialize video.js
-        media.player = videojs(mediaId, {
-            ...defaultVjsOpts,
-            errorDisplay: !reportToPlayerPlatform.includes(region.xlr.config.platform),
-            loop: media.loop,
-        });
-
-        (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
-        (media.player.el() as HTMLElement).style.setProperty('opacity', '0');
-        (media.player.el() as HTMLElement).style.setProperty('z-index', '-99');
+    if (existingPlayer !== undefined) {
+        existingPlayer.dispose();
+        media.player = undefined;
     }
+
+    const $layout = region.layout.html;
+    const layoutSelector = '#' + region.layout.containerName +
+      '[data-sequence="' + region.layout.index + '"]';
+    const $layoutWithIndex = document.querySelector(layoutSelector);
+    const $region = region.html;
+    const mediaInRegion = $region?.querySelector('.' + mediaId);
+
+    console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
+        layoutSelector,
+        $layoutWithIndex,
+        $region,
+        mediaInRegion,
+        mediaHtml: media.html,
+        existingPlayer,
+        mediaId,
+        layoutInDOM: document.body.contains($layout),
+    })
+    if (!mediaInRegion) {
+        media.html = createMediaElement(media);
+    } else {
+        mediaInRegion.remove();
+        media.html = createMediaElement(media);
+    }
+
+    // Append fresh copy of the media into the region
+    region.html.appendChild(media.html);
+
+    const isMediaInDOM = document.body.contains(media.html);
+
+    console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
+        isMediaInDOM,
+        mediaHtml: media.html,
+        mediaId,
+    })
+
+    // Initialize video.js
+    media.player = videojs(mediaId, {
+        ...defaultVjsOpts,
+        errorDisplay: !reportToPlayerPlatform.includes(region.xlr.config.platform),
+        loop: media.loop,
+    });
+
+    (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
+    (media.player.el() as HTMLElement).style.setProperty('opacity', '0');
+    (media.player.el() as HTMLElement).style.setProperty('z-index', '-99');
 }
 
 export function prepareImageMedia(media: IMedia, region: IRegion) {
