@@ -34,6 +34,7 @@ import {
     getMediaId,
     nextId,
     createMediaElement,
+    loadIframeAfterLayout,
 } from '../Generators';
 import { compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions } from '../Transitions';
 import { AudioMedia } from './AudioMedia';
@@ -615,7 +616,15 @@ export class Media implements IMedia {
             //   2. Backward navigation — the previous media's element was removed by the
             //      removeOldMedia setTimeout in transitionNodes.
             if (this.html) {
+                // Re-inserting reloads the iframe, so defer that load until it is laid out
+                const hasIframe = this.iframe !== null && this.html.contains(this.iframe);
+                if (hasIframe) {
+                    this.iframe!.removeAttribute('src');
+                }
                 $region.insertBefore(this.html as Node, $region.lastElementChild);
+                if (hasIframe) {
+                    loadIframeAfterLayout(this.iframe);
+                }
                 return this.html as HTMLElement;
             }
             return null;

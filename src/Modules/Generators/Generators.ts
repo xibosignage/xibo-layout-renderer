@@ -468,10 +468,11 @@ export function prepareIframe(media: IMedia) {
 
     // An HTML Package and a Webpage both resolve to a plain URL, so it must be used
     // verbatim — the width/height query string the else branch appends would corrupt it.
+    // The URL is only stored here; see loadIframeAfterLayout for why src is set later.
     if ((isHtmlDocumentMedia(media) || media.mediaType === 'webpage') && media.url !== null) {
-        iframe.src = media.url;
+        iframe.dataset.src = media.url;
     } else {
-        iframe.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
+        iframe.dataset.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
     }
 
     const displayTags = media.region.xlr.config.displayTags;
@@ -488,6 +489,41 @@ export function prepareIframe(media: IMedia) {
     }
 
     return iframe;
+}
+
+/**
+ * Navigate a widget iframe only once the host page has laid it out.
+ *
+ * Widget iframes are usually cross-origin to the player page (e.g. file:// vs
+ * http://localhost), so each runs in its own renderer process and only learns
+ * its viewport size when the host commits a frame with the iframe's rect. If
+ * src is set on insertion, a cached widget document can finish loading and run
+ * its one-shot xiboLayoutScaler before that happens — it measures a 0x0 window,
+ * applies scale(0) and never recovers, so the widget is invisible when shown.
+ * This is most likely at a layout boundary, when the host main thread is busy
+ * ending one layout and preparing the next.
+ *
+ * Waiting two animation frames guarantees a host frame containing the iframe
+ * has been produced. The timeout covers a window that is not painting (rAF
+ * does not fire while hidden). Inserting an iframe that still has a src
+ * reloads it immediately, so callers re-attaching one must remove src before
+ * insertion and call this afterwards.
+ */
+export function loadIframeAfterLayout(iframe: HTMLIFrameElement | null) {
+    const src = iframe?.dataset.src;
+    if (!iframe || !src) return;
+
+    let loaded = false;
+    const load = () => {
+        if (loaded || !iframe.isConnected) return;
+        loaded = true;
+        if (iframe.getAttribute('src') !== src) {
+            iframe.src = src;
+        }
+    };
+
+    requestAnimationFrame(() => requestAnimationFrame(load));
+    setTimeout(load, 500);
 }
 
 export function prepareImage(media: IMedia, container: HTMLElement) {
@@ -782,6 +818,7 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
             media.html.innerHTML = '';
             media.html.appendChild(media.iframe as Node);
             region.html.appendChild(media.html as HTMLElement);
+            loadIframeAfterLayout(media.iframe);
         }
         media.ready = true;
     }
