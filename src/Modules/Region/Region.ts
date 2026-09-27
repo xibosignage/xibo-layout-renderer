@@ -759,10 +759,30 @@ export default class Region implements IRegion {
             ) {
                 return;
             }
+
+            // Same for a single non-looping image/video: hold its last frame
+            // rather than replaying it. Replaying a video here restarted the
+            // player that VideoMedia.stop() was about to dispose, blanking the region.
+            if (this.isFrozenOn(this.currMedia)) {
+                return;
+            }
         }
 
         this.transitionNodes(this.oldMedia, this.currMedia);
     };
+
+    /**
+     * Is this region holding the given image/video on its last frame until the
+     * layout ends? True once a single-item, non-looping region has completed.
+     */
+    isFrozenOn(media: IMedia | undefined): boolean {
+        return media !== undefined &&
+            this.complete &&
+            this.totalMediaObjects === 1 &&
+            this.currMedia === media &&
+            !media.loop &&
+            (media.mediaType === 'image' || media.mediaType === 'video');
+    }
 
     playPreviousMedia() {
         if (this.currentMediaIndex <= 0 || this.ended) {

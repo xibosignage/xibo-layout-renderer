@@ -341,9 +341,10 @@ export class Media implements IMedia {
                 media.emitter.emit('end', media);
 
                 if (media.mediaType === 'video') {
-                    // Dispose the video media
+                    // Dispose the video media, unless the region is holding it on its
+                    // last frame; the layout disposes it when it ends.
                     console.debug(`??? XLR.debug >> VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    if (media.videoHandler !== undefined) {
+                    if (media.videoHandler !== undefined && !media.region.isFrozenOn(media)) {
                         media.videoHandler.stop(true);
                     }
                 }

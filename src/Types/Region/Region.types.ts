@@ -64,6 +64,8 @@ export interface IRegion {
         [k: string]: any;
     };
 
+    isFrozenOn(media: IMedia | undefined): boolean;
+
     playNextMedia(): void;
 
     playPreviousMedia(): void;
@@ -128,6 +130,9 @@ export const initialRegion: IRegion = {
     },
     oneMedia: false,
     options: {},
+    isFrozenOn(_media: IMedia | undefined) {
+        return false;
+    },
     playNextMedia() {
     },
     playPreviousMedia() {

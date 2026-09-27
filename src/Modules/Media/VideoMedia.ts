@@ -309,6 +309,14 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
             if (vjsPlayer !== undefined && !vjsPlayer.isDisposed()) {
                 if (!disposeOnly) {
                     media.emitter.emit('end', media);
+
+                    // The region is now holding this video on its last frame until
+                    // the layout ends, which disposes it (Layout 'end' handler).
+                    if (media.region.isFrozenOn(media)) {
+                        clearStallWatchdog();
+                        stopped = true;
+                        return;
+                    }
                 }
 
                 vjsPlayer.dispose();
