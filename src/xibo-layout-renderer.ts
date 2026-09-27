@@ -127,6 +127,43 @@ export default function XiboLayoutRenderer(
     xlrObject.playlistCycleGroupSequence = new Map<string, number>();
     xlrObject.playlistCycleGroupPlays = new Map<string, number>();
 
+    // Next-layout widget preload. Nothing is due until a layout is playing and we
+    // know when it should end, so a layout prepared at startup waits as well.
+    const DEFAULT_PRELOAD_LEAD_TIME = 5;
+    let preloadTimer: ReturnType<typeof setTimeout> | undefined;
+    xlrObject.preloadDueAt = Infinity;
+
+    xlrObject.schedulePreload = function (layout: ILayout) {
+        if (preloadTimer) {
+            clearTimeout(preloadTimer);
+            preloadTimer = undefined;
+        }
+
+        const duration = Number(layout.duration) || 0;
+        const leadTime = Number(this.config?.preloadLeadTime ?? DEFAULT_PRELOAD_LEAD_TIME);
+
+        // Unknown duration: load straight away, as before
+        const delayMs = duration > 0 ? Math.max(0, duration - leadTime) * 1000 : 0;
+        this.preloadDueAt = Date.now() + delayMs;
+
+        console.debug('XLR::schedulePreload', { layoutId: layout.layoutId, duration, leadTime, delayMs });
+
+        if (delayMs === 0) {
+            this.releaseNextLayoutIfDue();
+        } else {
+            preloadTimer = setTimeout(() => this.releaseNextLayoutIfDue(), delayMs);
+        }
+    };
+
+    xlrObject.releaseNextLayoutIfDue = function () {
+        if (Date.now() < this.preloadDueAt) return;
+
+        const next = this.nextLayout;
+        if (next && next !== this.currentLayout) {
+            next.releaseDeferredMedia();
+        }
+    };
+
     // Returns a filtered copy of layouts with only the currently active layout per cycle campaign.
     // Non-cycle layouts pass through unchanged. Zero overhead when no cycle campaigns are present.
     const applyCyclePlayback = (layouts: InputLayoutType[]): InputLayoutType[] => {

@@ -166,6 +166,11 @@ export interface IXlr {
     playlistCycleGroupSequence: Map<string, number>;
     playlistCycleGroupPlays: Map<string, number>;
 
+    /** Time (ms since epoch) from which the next layout's widgets may load */
+    preloadDueAt: number;
+    schedulePreload(layout: ILayout): void;
+    releaseNextLayoutIfDue(): void;
+
     updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
 
     updateLayouts(inputLayouts: InputLayoutType[]): void;
@@ -256,6 +261,11 @@ export const initialXlr: IXlr = {
     uniqueLayouts: new Map<string, InputLayoutType>(),
     playlistCycleGroupSequence: new Map<string, number>(),
     playlistCycleGroupPlays: new Map<string, number>(),
+    preloadDueAt: Infinity,
+    schedulePreload(_layout: ILayout) {
+    },
+    releaseNextLayoutIfDue() {
+    },
     updateInputLayout(layoutIndex: number, layout: InputLayoutType) {
     },
     updateLayouts(inputLayouts: InputLayoutType[]) {

@@ -87,6 +87,11 @@ export type OptionsType = {
         logo: string;
     };
     displayTags?: Record<string, string>;
+    /**
+     * Seconds before the current layout is due to end at which the next layout's
+     * widgets are loaded. Defaults to 5. Needs the layout duration from the schedule.
+     */
+    preloadLeadTime?: number;
 };
 
 export interface ILayout {
@@ -138,6 +143,8 @@ export interface ILayout {
     inLoop: boolean;
     removeLayout(caller?: LayoutPlaybackType): void;
     discardLayout(caller?: LayoutPlaybackType): void;
+    loadIframe(iframe: HTMLIFrameElement | null): void;
+    releaseDeferredMedia(): void;
     xlfString: string;
     getXlf(): string;
     ad: any;
@@ -219,6 +226,10 @@ export const initialLayout: ILayout = {
     removeLayout() {
     },
     discardLayout() {
+    },
+    loadIframe() {
+    },
+    releaseDeferredMedia() {
     },
     getXlf(): string {
         return '';

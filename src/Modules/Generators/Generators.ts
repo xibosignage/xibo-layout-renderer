@@ -818,7 +818,8 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
             media.html.innerHTML = '';
             media.html.appendChild(media.iframe as Node);
             region.html.appendChild(media.html as HTMLElement);
-            loadIframeAfterLayout(media.iframe);
+            // The layout decides when: now if it is playing, else when it is released
+            region.layout.loadIframe(media.iframe);
         }
         media.ready = true;
     }

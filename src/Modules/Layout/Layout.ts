@@ -29,7 +29,7 @@ import {
 } from '../../Types/Layout';
 import {ConsumerPlatform, ILayoutEvents} from "../../types";
 import {IXlr} from '../../Types/XLR';
-import {composeBgUrlByPlatform, nextId} from '../Generators';
+import {composeBgUrlByPlatform, loadIframeAfterLayout, nextId} from '../Generators';
 import {Region} from '../Region';
 
 import './layout.css';
@@ -250,6 +250,10 @@ export default class Layout implements ILayout {
     options: OptionsType = {} as OptionsType;
     xlr: IXlr = <IXlr>{};
 
+    // Widget iframes held back until the layout is about to play (see loadIframe)
+    private deferredIframes: HTMLIFrameElement[] = [];
+    private mediaReleased: boolean = false;
+
     private readonly layoutObj: ILayout = <ILayout>{};
     protected readonly statsBC = new BroadcastChannel('statsBC');
 
@@ -271,6 +275,11 @@ export default class Layout implements ILayout {
         this.on('start', (layout: ILayout) => {
             layout.done = false;
             layout.state = ELayoutState.RUNNING;
+
+            // Time the next layout's widget load from when this one should end
+            if (!layout.isOverlay) {
+                layout.xlr.schedulePreload(layout);
+            }
             console.debug('>>>> XLR.debug Layout start emitted > Layout > ', {
                 layoutId: layout.id,
                 layoutIndex: layout.index,
@@ -293,6 +302,11 @@ export default class Layout implements ILayout {
         });
 
         this.on('end', async (layout: ILayout) => {
+            // Nothing is due until the next layout starts and schedules its own preload
+            if (!layout.isOverlay) {
+                layout.xlr.preloadDueAt = Infinity;
+            }
+
             // Only proceed when last layout state is RUNNING
             if (layout.state === ELayoutState.CANCELLED) {
                 console.debug('>>>> XLR.debug Layout end emitted but layout is already cancelled > Layout ID > ', {
@@ -412,6 +426,9 @@ export default class Layout implements ILayout {
             console.debug('>>>>> XLR.debug / Layout cancelled > Layout ID > ', layout.id);
             layout.state = ELayoutState.CANCELLED;
             layout.inLoop = false;
+            if (!layout.isOverlay) {
+                layout.xlr.preloadDueAt = Infinity;
+            }
             layout.actionController?.removeKeyboardActions();
             // Dispose video handlers immediately so their stall watchdogs and error
             // callbacks can't fire against a layout whose DOM is about to be removed.
@@ -634,6 +651,10 @@ export default class Layout implements ILayout {
             // Done here (not in parseXlf) so the global listener is scoped to playback time.
             this.actionController?.initKeyboardActions();
 
+            // Load any widgets still held back, e.g. when this layout ended up playing
+            // before its scheduled preload time.
+            this.releaseDeferredMedia();
+
             // Emit start event
             this.emitter.emit('start', this);
 
@@ -770,6 +791,39 @@ export default class Layout implements ILayout {
             }
         }
         this.removeLayout(caller);
+    }
+
+    /**
+     * Load a widget iframe now, or hold it back until the layout is released.
+     *
+     * A layout is prepared while the previous one plays, which can be minutes
+     * ahead. Widgets start as soon as their document loads (a countdown sets its
+     * end time, a ticker starts scrolling), so loading them that early leaves them
+     * finished or mid-way when shown. XLR releases the layout shortly before it
+     * is due (XLR::releaseNextLayoutIfDue), and run() releases anything left.
+     */
+    loadIframe(iframe: HTMLIFrameElement | null): void {
+        if (!iframe) return;
+
+        // Prepared after the preload point (e.g. the next layout was replaced late)
+        if (!this.mediaReleased && Date.now() >= this.xlr.preloadDueAt) {
+            this.releaseDeferredMedia();
+        }
+
+        if (this.mediaReleased) {
+            loadIframeAfterLayout(iframe);
+        } else {
+            this.deferredIframes.push(iframe);
+        }
+    }
+
+    releaseDeferredMedia(): void {
+        if (this.mediaReleased) return;
+        this.mediaReleased = true;
+
+        const iframes = this.deferredIframes;
+        this.deferredIframes = [];
+        iframes.forEach((iframe) => loadIframeAfterLayout(iframe));
     }
 
     getXlf(): string {
