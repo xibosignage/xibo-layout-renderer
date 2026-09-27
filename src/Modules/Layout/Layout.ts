@@ -396,6 +396,16 @@ export default class Layout implements ILayout {
                     $layout.parentElement?.removeChild($layout);
                 }
             }
+
+            // Dispose video players now that A is off screen, as 'cancelled' does.
+            // Otherwise they keep running (and firing stats) after the DOM is gone.
+            for (const region of layout.regions) {
+                for (const media of region.mediaObjects) {
+                    if (media.videoHandler) {
+                        media.videoHandler.stop(true);
+                    }
+                }
+            }
         });
 
         this.on('cancelled', (layout: ILayout) => {
