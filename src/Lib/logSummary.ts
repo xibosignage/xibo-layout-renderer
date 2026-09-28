@@ -202,8 +202,9 @@ export function layoutListSummary(layouts: Iterable<Loose> | null | undefined) {
 /**
  * An error's useful parts. Its message and stack are not enumerable, so logged
  * whole they are lost when the player serialises logs; an axios error instead
- * carries its whole request and response. Keep the text, code, first stack
- * lines and, for HTTP failures, the method, URL, status and start of the body.
+ * carries its whole request and response. Keep the text, code and, for HTTP
+ * failures, the method, URL, status and start of the body. The stack is left
+ * out: logs reach the CMS, and it exposes install paths and source file names.
  */
 export function errorSummary(err: unknown): Record<string, any> | string {
     if (!err || typeof err !== 'object') return String(err);
@@ -215,7 +216,6 @@ export function errorSummary(err: unknown): Record<string, any> | string {
         name: e.name,
         message: e.message,
         code: e.code,
-        stack: typeof e.stack === 'string' ? e.stack.split('\n').slice(0, 5).join('\n') : undefined,
         method: e.config?.method ? String(e.config.method).toUpperCase() : undefined,
         url: e.config?.url,
         status: e.response?.status ?? e.status,
