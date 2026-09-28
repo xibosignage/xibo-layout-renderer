@@ -45,6 +45,7 @@ import {
     transitionElement,
 } from '../Transitions';
 import { IXlr } from '../../Types/XLR';
+import { elementSummary, mediaSummary, regionSummary } from '../../Lib';
 
 export default class Region implements IRegion {
     // ===== Properties =====
@@ -208,7 +209,8 @@ export default class Region implements IRegion {
         this.totalMediaObjects = this.mediaObjects.length;
 
         console.debug('??? XLR.debug >> Region - done looping through media', {
-            mediaObjects: this.mediaObjects,
+            regionId: this.id,
+            mediaObjects: this.mediaObjects.map(mediaSummary),
         });
 
         // Add media to region for targeted actions
@@ -252,7 +254,8 @@ export default class Region implements IRegion {
         });
 
         console.debug('??? XLR.debug >> Region::prepareRegion', {
-            mediaItems: this.mediaObjects,
+            regionId: this.id,
+            mediaItems: this.mediaObjects.map(mediaSummary),
             totalMediaItems: this.totalMediaObjects,
         });
 
@@ -443,7 +446,7 @@ export default class Region implements IRegion {
                     if ($oldMedia) {
                         const removeOldMedia = () => {
                             console.debug('??? XLR.debug >> Region transitionNodes - removeOldMedia fn', {
-                                $oldMedia,
+                                oldMedia: elementSummary($oldMedia),
                             })
                             $oldMedia.style.setProperty('visibility', 'hidden');
                             $oldMedia.style.setProperty('z-index', '-999');
@@ -497,8 +500,8 @@ export default class Region implements IRegion {
                                 setTimeout(() => {
                                     console.debug('??? XLR.debug >> Region transitionNode - hideOldMedia execute setTimeout', {
                                         transOutDuration,
-                                        oldMedia,
-                                        $oldMedia,
+                                        oldMedia: mediaSummary(oldMedia),
+                                        oldMediaEl: elementSummary($oldMedia),
                                     });
                                     removeOldMedia();
                                 }, (transOutDuration / 2));
@@ -804,7 +807,7 @@ export default class Region implements IRegion {
             interruptedMedia.emitter.emit('cancelled', interruptedMedia);
         }
 
-        console.debug('region::playPreviousMedia', this);
+        console.debug('region::playPreviousMedia', regionSummary(this));
         this.transitionNodes(this.oldMedia, this.currMedia);
     };
 
@@ -813,7 +816,7 @@ export default class Region implements IRegion {
         /* The Layout has finished running */
         /* Do any region exit transition then clean up */
         this.layout.regions[this.index] = this;
-        console.debug('Calling Region::end ', this);
+        console.debug('Calling Region::end ', regionSummary(this));
         this.exitTransition();
     };
 
@@ -835,7 +838,7 @@ export default class Region implements IRegion {
         this.ended = false;
         this.complete = false;
         this.ending = false;
-        console.debug('Resetting region states', this);
+        console.debug('Resetting region states', regionSummary(this));
     }
 
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]) {

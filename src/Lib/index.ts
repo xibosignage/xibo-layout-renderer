@@ -20,6 +20,7 @@
  */
 
 export { BlobLoader } from './BlobLoader';
+export * from './logSummary';
 
 // Existing Lib exports
 export { default as PwaSW } from './pwa-sw';

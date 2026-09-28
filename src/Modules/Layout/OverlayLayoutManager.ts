@@ -22,6 +22,7 @@
 import {ELayoutState, ILayout, initialLayout, InputLayoutType} from "../../Types/Layout";
 import {IXlr} from "../../Types/XLR";
 import OverlayLayout from "./OverlayLayout";
+import {elementSummary, inputLayoutSummary, layoutListSummary, layoutSummary} from "../../Lib";
 
 export class OverlayLayoutManager {
     overlays: OverlayLayout[] = [];
@@ -44,8 +45,8 @@ export class OverlayLayoutManager {
             const overlayLayout = await this.parent.prepareLayoutXlf(<ILayout>{...initialLayout, ...inputOverlay});
 
             console.debug('<> XLR.debug OverlayLayoutManager::parseOverlays prepared overlay layout', {
-                overlayLayout,
-                inputOverlay,
+                overlayLayout: layoutSummary(overlayLayout),
+                inputOverlay: inputLayoutSummary(inputOverlay),
             });
 
             // Hide all overlays first
@@ -65,8 +66,8 @@ export class OverlayLayoutManager {
         this.parent = parent;
 
         console.debug('<> XLR.debug OverlayLayoutManager::prepareOverlayLayouts', {
-            existingOverlays: this.overlays,
-            newOverlays: list,
+            existingOverlays: layoutListSummary(this.overlays),
+            newOverlays: layoutListSummary(list),
             hasChanged,
         });
 
@@ -103,8 +104,8 @@ export class OverlayLayoutManager {
         }
 
         console.debug('<> XLR.debug OverlayLayoutManager::prepareOverlayLayouts', {
-            existingOverlays: this.overlays,
-            newOverlays: list,
+            existingOverlays: layoutListSummary(this.overlays),
+            newOverlays: layoutListSummary(list),
             hasChanged,
         });
 
@@ -132,8 +133,8 @@ export class OverlayLayoutManager {
             const overlayHtml = <HTMLDivElement | null>(document.querySelector(`#${overlay.containerName}[data-sequence="${overlay.index}"]`));
 
             console.debug('<> XLR.debug OverlayLayoutManager::stopOverlays', {
-                overlay,
-                overlayHtml,
+                overlay: layoutSummary(overlay),
+                overlayHtml: elementSummary(overlayHtml),
             });
 
             if (overlayHtml !== null) {

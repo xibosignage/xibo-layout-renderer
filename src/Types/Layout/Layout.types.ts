@@ -89,7 +89,7 @@ export type OptionsType = {
     displayTags?: Record<string, string>;
     /**
      * Seconds before the current layout is due to end at which the next layout's
-     * widgets are loaded. Defaults to 5. Needs the layout duration from the schedule.
+     * widgets are loaded. Defaults to 1. Needs the layout duration from the schedule.
      */
     preloadLeadTime?: number;
 };

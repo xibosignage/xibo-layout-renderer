@@ -30,6 +30,7 @@ import OverlayLayout from "./Modules/Layout/OverlayLayout";
 import { OverlayLayoutManager } from "./Modules/Layout/OverlayLayoutManager";
 import { ConsumerPlatform, LayoutPlaybackType } from './types';
 import { setLayoutIndex } from './Modules/Generators/Generators';
+import { inputLayoutSummary, layoutListSummary, layoutSummary } from './Lib';
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -129,7 +130,9 @@ export default function XiboLayoutRenderer(
 
     // Next-layout widget preload. Nothing is due until a layout is playing and we
     // know when it should end, so a layout prepared at startup waits as well.
-    const DEFAULT_PRELOAD_LEAD_TIME = 5;
+    // Local widget documents load in well under a second, and every second of lead
+    // is time a countdown or ticker has already run when its layout is shown
+    const DEFAULT_PRELOAD_LEAD_TIME = 1;
     let preloadTimer: ReturnType<typeof setTimeout> | undefined;
     xlrObject.preloadDueAt = Infinity;
 
@@ -335,11 +338,11 @@ export default function XiboLayoutRenderer(
             }]
         }, []);
 
-        console.log('XLR::renderOverlayLayouts', { overlayLayouts });
+        console.log('XLR::renderOverlayLayouts', { overlayLayouts: layoutListSummary(overlayLayouts) });
         await Promise.all(overlayLayouts.map(async (_overlayLayout) => {
             const _overlay = await this.prepareLayoutXlf(_overlayLayout);
 
-            console.log('>>>> XLR.debug XLR::renderOverlayLayouts >> prepareLayoutXlf', _overlay);
+            console.log('>>>> XLR.debug XLR::renderOverlayLayouts >> prepareLayoutXlf', layoutSummary(_overlay));
             console.log('>>>> XLR.debug XLR::renderOverlayLayouts >> currentLayout.isInterrupt()', this.currentLayout?.isInterrupt());
 
             if (_overlay) {
@@ -357,7 +360,7 @@ export default function XiboLayoutRenderer(
     }
 
     xlrObject.updateScheduleLayouts = async function (scheduleLayouts: InputLayoutType[]) {
-        console.debug('XLR::updateScheduleLayouts > Updating schedule layouts . . .', scheduleLayouts);
+        console.debug('XLR::updateScheduleLayouts > Updating schedule layouts . . .', layoutListSummary(scheduleLayouts));
 
         let next = new Map<string, InputLayoutType>();
 
@@ -374,7 +377,7 @@ export default function XiboLayoutRenderer(
             });
         });
 
-        console.debug('XLR::updateScheduleLayouts > next unique layouts', Array.from(next).values());
+        console.debug('XLR::updateScheduleLayouts > next unique layouts', layoutListSummary(next.values()));
 
         this.uniqueLayouts = next;
     };
@@ -470,12 +473,16 @@ export default function XiboLayoutRenderer(
             this.currentLayout.emitter.emit('cancelled', this.currentLayout);
         }
 
-        console.debug('>>>>> XLR.debug XLR::updateLoop > uniqueLayouts', Array.from(this.uniqueLayouts.values()));
-        console.debug('>>>>> XLR.debug XLR::updateLoop > inputLayouts', this.inputLayouts);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > uniqueLayouts', layoutListSummary(this.uniqueLayouts.values()));
+        console.debug('>>>>> XLR.debug XLR::updateLoop > inputLayouts', layoutListSummary(this.inputLayouts));
         console.debug('>>>>> XLR.debug XLR::updateLoop > isCurrentLayoutValid', isCurrentLayoutValid);
-        console.debug('>>>>> XLR.debug XLR::updateLoop > currentLayout', this.currentLayout);
-        console.debug('>>>>> XLR.debug XLR::updateLoop > nextLayout', this.nextLayout);
-        console.debug('>>>>> XLR.debug XLR::updateLoop > playback', playback);
+        console.debug('>>>>> XLR.debug XLR::updateLoop > currentLayout', layoutSummary(this.currentLayout));
+        console.debug('>>>>> XLR.debug XLR::updateLoop > nextLayout', layoutSummary(this.nextLayout));
+        console.debug('>>>>> XLR.debug XLR::updateLoop > playback', {
+            ...playback,
+            currentLayout: layoutSummary(playback.currentLayout),
+            nextLayout: layoutSummary(playback.nextLayout),
+        });
 
         const prepareNewCurrentLayout = async () => {
             this.currentLayout = await this.prepareLayoutXlf(playback.currentLayout);
@@ -602,7 +609,7 @@ export default function XiboLayoutRenderer(
                 this.nextLayout = await this.prepareForSsp(await this.prepareLayoutXlf(playback.currentLayout));
             }
 
-            console.debug('>>>> XLR.debug XLR::updateLoop > updated nextLayout', this.nextLayout);
+            console.debug('>>>> XLR.debug XLR::updateLoop > updated nextLayout', layoutSummary(this.nextLayout));
         }
     };
 
@@ -802,9 +809,9 @@ export default function XiboLayoutRenderer(
                     const layoutFromUniqueLayouts = this.uniqueLayouts.get(String(inputLayout.layoutId));
 
                     console.debug('XLR::getLayout > layoutFromUniqueLayouts', {
-                        layoutFromUniqueLayouts,
-                        inputLayout,
-                        uniqueLayouts: this.uniqueLayouts,
+                        layoutFromUniqueLayouts: inputLayoutSummary(layoutFromUniqueLayouts),
+                        inputLayout: inputLayoutSummary(inputLayout),
+                        uniqueLayouts: layoutListSummary(this.uniqueLayouts.values()),
                     });
 
                     activeLayout = layoutFromUniqueLayouts ? { ...layoutFromUniqueLayouts } : { ...inputLayout };
@@ -813,9 +820,9 @@ export default function XiboLayoutRenderer(
                 _layout = { ..._layout, ...activeLayout };
 
                 console.debug('XLR::getLayout > activeLayout from uniqueLayouts', {
-                    activeLayout,
-                    inputLayout,
-                    uniqueLayouts: this.uniqueLayouts,
+                    activeLayout: inputLayoutSummary(activeLayout),
+                    inputLayout: inputLayoutSummary(inputLayout),
+                    uniqueLayouts: layoutListSummary(this.uniqueLayouts.values()),
                 });
 
                 // Must set index/sequence from schedule loop
@@ -993,8 +1000,8 @@ export default function XiboLayoutRenderer(
                 sspInputLayout = self.inputLayouts[inputLayout.index];
 
                 console.debug('XLR::prepareLayoutXlf > SSP input layout', {
-                    sspInputLayout,
-                    inputLayout,
+                    sspInputLayout: inputLayoutSummary(sspInputLayout),
+                    inputLayout: inputLayoutSummary(inputLayout),
                 });
 
                 // @ts-ignore
@@ -1017,7 +1024,7 @@ export default function XiboLayoutRenderer(
                 ad: inputLayout.ad ?? initialLayout.ad
             };
 
-            console.log('XLR::prepareLayoutXlf >> Promise', { xlrLayoutObj, inputLayout });
+            console.log('XLR::prepareLayoutXlf >> Promise', { xlrLayoutObj: layoutSummary(xlrLayoutObj), inputLayout: inputLayoutSummary(inputLayout) });
 
             xlrLayoutObj.id = Number(inputLayout.layoutId);
             xlrLayoutObj.layoutId = Number(inputLayout.layoutId);
@@ -1031,7 +1038,7 @@ export default function XiboLayoutRenderer(
             xlrLayoutObj.isOverlay = isOverlayLayout;
             xlrLayoutObj.shareOfVoice = inputLayout.shareOfVoice;
 
-            console.log('XLR::prepareLayoutXlf >> Promise >> xlrLayoutObj', xlrLayoutObj);
+            console.log('XLR::prepareLayoutXlf >> Promise >> xlrLayoutObj', layoutSummary(xlrLayoutObj));
 
             if (sspInputLayout) {
                 xlrLayoutObj.duration = sspInputLayout.duration || 0;
@@ -1378,8 +1385,8 @@ export default function XiboLayoutRenderer(
 
         console.debug('XLR::updateInputLayout', {
             layoutIndex,
-            layout,
-            xlrInputLayout,
+            layout: inputLayoutSummary(layout),
+            xlrInputLayout: inputLayoutSummary(xlrInputLayout),
         });
 
         this.inputLayouts[layoutIndex] = layout || xlrInputLayout;

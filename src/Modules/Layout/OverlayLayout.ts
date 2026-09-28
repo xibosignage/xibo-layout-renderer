@@ -25,6 +25,7 @@ import Layout from "./Layout";
 import {ELayoutState, ILayout, OptionsType} from "../../Types/Layout";
 import {ILayoutEvents} from "../../Types/Events";
 import {IXlr} from "../../Types/XLR";
+import {elementSummary, layoutSummary} from "../../Lib";
 
 export interface IOverlayLayoutEvents extends ILayoutEvents {}
 
@@ -75,8 +76,8 @@ export default class OverlayLayout extends Layout {
       // Check if currentLayout is already done
       // If not, don't remove the overlay layout until currentLayout.done = true
       console.log('XLR::OverlayLayout >> emitter.on("end")', {
-        currentLayout: overlay.xlr.currentLayout,
-        overlay,
+        currentLayout: layoutSummary(overlay.xlr.currentLayout),
+        overlay: layoutSummary(overlay),
       });
 
       console.debug('XLR::OverlayLayout >> Ending overlay layout with ID of > ', overlay.layoutId);
@@ -86,7 +87,7 @@ export default class OverlayLayout extends Layout {
       );
 
       overlay.done = true;
-      console.debug({overlayHtml: $overlay});
+      console.debug('XLR::OverlayLayout >> overlay container', elementSummary($overlay));
 
       if ($overlay !== null) {
         $overlay.parentElement?.removeChild($overlay);

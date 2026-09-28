@@ -27,7 +27,7 @@ import {composeVideoSource, defaultVjsOpts, reportToPlayerPlatform} from "../Med
 import {transitionElement} from "../Transitions";
 import {IRegion} from "../../Types/Region";
 import {ConsumerPlatform} from "../../Types/Platform";
-import {PwaSW} from "../../Lib";
+import {elementSummary, playerSummary, PwaSW} from "../../Lib";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -720,11 +720,11 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
 
     console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
         layoutSelector,
-        $layoutWithIndex,
-        $region,
-        mediaInRegion,
-        mediaHtml: media.html,
-        existingPlayer,
+        layoutEl: elementSummary($layoutWithIndex),
+        regionEl: elementSummary($region),
+        mediaInRegion: elementSummary(mediaInRegion),
+        mediaHtml: elementSummary(media.html),
+        existingPlayer: playerSummary(existingPlayer),
         mediaId,
         layoutInDOM: document.body.contains($layout),
     })
@@ -742,7 +742,7 @@ export function prepareVideoMedia(media: IMedia, region: IRegion) {
 
     console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
         isMediaInDOM,
-        mediaHtml: media.html,
+        mediaHtml: elementSummary(media.html),
         mediaId,
     })
 
@@ -807,7 +807,7 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
 
         console.debug('<><> XLR.debug >> [Media] - [Generators::prepareHtmlMedia]', {
             mediaId,
-            mediaInRegion,
+            mediaInRegion: elementSummary(mediaInRegion),
         })
 
         if (!mediaInRegion) {

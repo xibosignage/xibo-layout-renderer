@@ -24,6 +24,7 @@ import Player from "video.js/dist/types/player";
 import { IMedia } from '../../Types/Media';
 import {capitalizeStr, videoFileType, getFileExt, getMediaId, playerReportFault, FaultCodes} from '../Generators';
 import {ConsumerPlatform, IXlr} from '../../types';
+import { elementSummary, playerSummary } from '../../Lib';
 
 import './media.css';
 
@@ -300,9 +301,9 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
             const vjsPlayer = videoPlayer.player ?? media.player;
 
             console.debug('??? XLR.debug >> VideoMedia::stop', {
-                vjsPlayer,
-                isDisposed: vjsPlayer?.isDisposed(),
-                el: vjsPlayer?.el(),
+                mediaId: media.id,
+                vjsPlayer: playerSummary(vjsPlayer),
+                el: elementSummary(vjsPlayer && !vjsPlayer.isDisposed() ? vjsPlayer.el() : null),
             });
 
             // Expire the media and dispose the video

@@ -40,7 +40,7 @@ import { compassPoints, flyTransitionKeyframes, transitionElement, TransitionEle
 import { AudioMedia } from './AudioMedia';
 import { IXlr } from '../../Types/XLR';
 import { IMediaEvents } from "../../Types/Events";
-import { BlobLoader } from "../../Lib";
+import { BlobLoader, elementSummary, layoutSummary, mediaSummary, playerSummary, regionSummary } from "../../Lib";
 
 import 'video.js/dist/video-js.min.css';
 import { IVideoMediaHandler, VideoMedia, vjsDefaultOptions } from "./VideoMedia";
@@ -332,10 +332,10 @@ export class Media implements IMedia {
                 console.debug('??? XLR.debug >> Media::startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
 
                 console.debug('??? XLR.debug >> Media::startMediaTimer - Media::Emitter > End', {
-                    currentLayout: this.xlr.currentLayout,
-                    media,
-                    region: media.region,
-                    layout: media.region.layout,
+                    currentLayout: layoutSummary(this.xlr.currentLayout),
+                    media: mediaSummary(media),
+                    region: regionSummary(media.region),
+                    layout: layoutSummary(media.region.layout),
                 })
 
                 media.emitter.emit('end', media);
@@ -544,16 +544,15 @@ export class Media implements IMedia {
             console.debug('??? XLR.debug >> Media run - show current media:', {
                 inDOM: document.body.contains($media),
                 mediaId,
-                $media,
-                mediaObject: this,
+                el: elementSummary($media),
+                media: mediaSummary(this),
             });
 
             if ($media) {
                 if (this.mediaType === 'video') {
                     console.debug('??? XLR.debug >> Media.run() > showCurrentMedia() - Video media::START', {
-                        mediaPlayer: this.player,
-                        isDisposed: this.player?.isDisposed(),
-                        el: this.player?.el_,
+                        mediaPlayer: playerSummary(this.player),
+                        el: elementSummary(this.player?.el_ as Element | undefined),
                     });
 
                     // Make sure that vjs is available on the media
@@ -577,9 +576,8 @@ export class Media implements IMedia {
                     }
 
                     console.debug('??? XLR.debug >> Media.run() > showCurrentMedia() - Video media::END', {
-                        mediaPlayer: this.player,
-                        isDisposed: this.player?.isDisposed(),
-                        el: this.player?.el_,
+                        mediaPlayer: playerSummary(this.player),
+                        el: elementSummary(this.player?.el_ as Element | undefined),
                     });
 
                     if (this.player !== undefined && this.player.el_ !== null) {
@@ -591,7 +589,7 @@ export class Media implements IMedia {
                     console.debug('??? XLR.debug >> Media::run() > showCurrentMedia', {
                         mediaType: this.mediaType,
                         render: this.render,
-                        $media,
+                        el: elementSummary($media),
                         state: this.state,
                     })
                     $media.style.setProperty('visibility', 'visible');

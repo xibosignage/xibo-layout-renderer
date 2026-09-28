@@ -30,6 +30,7 @@ import {
 import {ConsumerPlatform, ILayoutEvents} from "../../types";
 import {IXlr} from '../../Types/XLR';
 import {composeBgUrlByPlatform, loadIframeAfterLayout, nextId} from '../Generators';
+import {elementSummary, layoutSummary, regionSummary, xlrSummary} from '../../Lib';
 import {Region} from '../Region';
 
 import './layout.css';
@@ -336,7 +337,7 @@ export default class Layout implements ILayout {
 
             layout.done = true;
             console.debug('>>> XLR.debug Layout end emitted > Layout ID > ', {
-                $layout,
+                layoutEl: elementSummary($layout),
                 layoutId: layout.id,
                 layoutIndex: layout.index,
                 layoutState: layout.state,
@@ -391,7 +392,12 @@ export default class Layout implements ILayout {
                 }
 
                 this.xlr.prepareLayouts().then(async (_xlr) => {
-                    console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
+                    console.log('>>>> XLR.debug XLR::Layout.on("end")', {
+                        endedLayout: layoutSummary(layout),
+                        currentLayout: layoutSummary(_xlr.currentLayout),
+                        nextLayout: layoutSummary(_xlr.nextLayout),
+                        xlr: xlrSummary(_xlr),
+                    });
 
                     // Skip if fast-path already started the layout — it's already RUNNING.
                     if (!canRunImmediately) {
@@ -470,7 +476,7 @@ export default class Layout implements ILayout {
         this.regions = [];
         this.actions = [];
 
-        console.log('XLR::Layout/parseXlf', this);
+        console.log('XLR::Layout/parseXlf', layoutSummary(this));
 
         /* Create a hidden div to show the layout in */
         let $layout = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
@@ -631,7 +637,7 @@ export default class Layout implements ILayout {
         console.debug('??? XLR.debug >> Layout::run() - Checking if layout container is still in the DOM before playing regions...', {
             layoutId: this.id,
             layoutContainerExists: !!$layoutContainer,
-            $layoutContainer,
+            layoutEl: elementSummary($layoutContainer),
             layoutIndex: this.index,
             shouldParse: false,
         });
@@ -665,7 +671,7 @@ export default class Layout implements ILayout {
 
     playRegions() {
         console.debug('??? XLR.debug >> Layout playRegions() - Layout running > Layout ID > ', this.id);
-        console.debug('??? XLR.debug >> Layout playRegions() - Layout Regions > ', this.regions);
+        console.debug('??? XLR.debug >> Layout playRegions() - Layout Regions > ', this.regions.map(regionSummary));
 
         for (let i = 0; i < this.regions.length; i++) {
             // playLog(4, "debug", "Running region " + self.regions[i].id, false);
@@ -690,7 +696,7 @@ export default class Layout implements ILayout {
     }
 
     end(): void {
-        console.debug('Executing Layout::end and Calling Region::end ', this);
+        console.debug('Executing Layout::end and Calling Region::end ', layoutSummary(this));
 
         /* Ask the layout to gracefully stop running now */
         for (let layoutRegion of this.regions) {
@@ -770,7 +776,7 @@ export default class Layout implements ILayout {
         const $layout = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
 
         this.done = true;
-        console.debug({$layout});
+        console.debug('??? XLR.debug >> Layout::removeLayout - container', elementSummary($layout));
 
         if ($layout !== null) {
             $layout.parentElement?.removeChild($layout);
