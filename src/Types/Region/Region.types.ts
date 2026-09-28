@@ -6,16 +6,16 @@
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { DefaultEvents, Emitter, Unsubscribe } from 'nanoevents';
@@ -63,6 +63,8 @@ export interface IRegion {
     options: {
         [k: string]: any;
     };
+
+    isFrozenOn(media: IMedia | undefined): boolean;
 
     playNextMedia(): void;
 
@@ -128,6 +130,9 @@ export const initialRegion: IRegion = {
     },
     oneMedia: false,
     options: {},
+    isFrozenOn(_media: IMedia | undefined) {
+        return false;
+    },
     playNextMedia() {
     },
     playPreviousMedia() {

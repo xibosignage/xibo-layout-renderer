@@ -41,3 +41,13 @@
 .vjs-control-bar, .vjs-big-play-button {
     display: none !important;
 }
+
+/*
+ * video.js paints its wrapper black, which shows as bars wherever a video does not fill
+ * its region (e.g. an aspect-scaled 16:9 video in a taller region). Keep it transparent
+ * so the region or layout background shows through instead. Two classes so this wins
+ * over video.js's own .video-js rule regardless of stylesheet order.
+ */
+.media--item.video-js {
+    background-color: transparent;
+}

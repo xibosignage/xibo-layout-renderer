@@ -6,16 +6,16 @@
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {createNanoEvents, Emitter} from 'nanoevents';
@@ -29,7 +29,8 @@ import {
 } from '../../Types/Layout';
 import {ConsumerPlatform, ILayoutEvents} from "../../types";
 import {IXlr} from '../../Types/XLR';
-import {composeBgUrlByPlatform, nextId} from '../Generators';
+import {composeBgUrlByPlatform, loadIframeAfterLayout, nextId} from '../Generators';
+import {elementSummary, errorSummary, layoutSummary, regionSummary, xlrSummary} from '../../Lib';
 import {Region} from '../Region';
 
 import './layout.css';
@@ -127,7 +128,7 @@ export async function getXlf(layoutOptions: OptionsType) {
 }
 
 export function handleAxiosError(error: any, message?: string) {
-    console.error(error);
+    console.error('XLR::handleAxiosError', errorSummary(error));
     if (error.response.status == 500) {
         // SOAP responses are always 500's
         // Return the body
@@ -250,6 +251,10 @@ export default class Layout implements ILayout {
     options: OptionsType = {} as OptionsType;
     xlr: IXlr = <IXlr>{};
 
+    // Widget iframes held back until the layout is about to play (see loadIframe)
+    private deferredIframes: HTMLIFrameElement[] = [];
+    private mediaReleased: boolean = false;
+
     private readonly layoutObj: ILayout = <ILayout>{};
     protected readonly statsBC = new BroadcastChannel('statsBC');
 
@@ -271,6 +276,11 @@ export default class Layout implements ILayout {
         this.on('start', (layout: ILayout) => {
             layout.done = false;
             layout.state = ELayoutState.RUNNING;
+
+            // Time the next layout's widget load from when this one should end
+            if (!layout.isOverlay) {
+                layout.xlr.schedulePreload(layout);
+            }
             console.debug('>>>> XLR.debug Layout start emitted > Layout > ', {
                 layoutId: layout.id,
                 layoutIndex: layout.index,
@@ -293,6 +303,11 @@ export default class Layout implements ILayout {
         });
 
         this.on('end', async (layout: ILayout) => {
+            // Nothing is due until the next layout starts and schedules its own preload
+            if (!layout.isOverlay) {
+                layout.xlr.preloadDueAt = Infinity;
+            }
+
             // Only proceed when last layout state is RUNNING
             if (layout.state === ELayoutState.CANCELLED) {
                 console.debug('>>>> XLR.debug Layout end emitted but layout is already cancelled > Layout ID > ', {
@@ -322,7 +337,7 @@ export default class Layout implements ILayout {
 
             layout.done = true;
             console.debug('>>> XLR.debug Layout end emitted > Layout ID > ', {
-                $layout,
+                layoutEl: elementSummary($layout),
                 layoutId: layout.id,
                 layoutIndex: layout.index,
                 layoutState: layout.state,
@@ -377,7 +392,12 @@ export default class Layout implements ILayout {
                 }
 
                 this.xlr.prepareLayouts().then(async (_xlr) => {
-                    console.log('>>>> XLR.debug XLR::Layout.on("end")', {_xlr, layout});
+                    console.log('>>>> XLR.debug XLR::Layout.on("end")', {
+                        endedLayout: layoutSummary(layout),
+                        currentLayout: layoutSummary(_xlr.currentLayout),
+                        nextLayout: layoutSummary(_xlr.nextLayout),
+                        xlr: xlrSummary(_xlr),
+                    });
 
                     // Skip if fast-path already started the layout — it's already RUNNING.
                     if (!canRunImmediately) {
@@ -396,12 +416,25 @@ export default class Layout implements ILayout {
                     $layout.parentElement?.removeChild($layout);
                 }
             }
+
+            // Dispose video players now that A is off screen, as 'cancelled' does.
+            // Otherwise they keep running (and firing stats) after the DOM is gone.
+            for (const region of layout.regions) {
+                for (const media of region.mediaObjects) {
+                    if (media.videoHandler) {
+                        media.videoHandler.stop(true);
+                    }
+                }
+            }
         });
 
         this.on('cancelled', (layout: ILayout) => {
             console.debug('>>>>> XLR.debug / Layout cancelled > Layout ID > ', layout.id);
             layout.state = ELayoutState.CANCELLED;
             layout.inLoop = false;
+            if (!layout.isOverlay) {
+                layout.xlr.preloadDueAt = Infinity;
+            }
             layout.actionController?.removeKeyboardActions();
             // Dispose video handlers immediately so their stall watchdogs and error
             // callbacks can't fire against a layout whose DOM is about to be removed.
@@ -443,7 +476,7 @@ export default class Layout implements ILayout {
         this.regions = [];
         this.actions = [];
 
-        console.log('XLR::Layout/parseXlf', this);
+        console.log('XLR::Layout/parseXlf', layoutSummary(this));
 
         /* Create a hidden div to show the layout in */
         let $layout = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
@@ -604,7 +637,7 @@ export default class Layout implements ILayout {
         console.debug('??? XLR.debug >> Layout::run() - Checking if layout container is still in the DOM before playing regions...', {
             layoutId: this.id,
             layoutContainerExists: !!$layoutContainer,
-            $layoutContainer,
+            layoutEl: elementSummary($layoutContainer),
             layoutIndex: this.index,
             shouldParse: false,
         });
@@ -624,6 +657,10 @@ export default class Layout implements ILayout {
             // Done here (not in parseXlf) so the global listener is scoped to playback time.
             this.actionController?.initKeyboardActions();
 
+            // Load any widgets still held back, e.g. when this layout ended up playing
+            // before its scheduled preload time.
+            this.releaseDeferredMedia();
+
             // Emit start event
             this.emitter.emit('start', this);
 
@@ -634,7 +671,7 @@ export default class Layout implements ILayout {
 
     playRegions() {
         console.debug('??? XLR.debug >> Layout playRegions() - Layout running > Layout ID > ', this.id);
-        console.debug('??? XLR.debug >> Layout playRegions() - Layout Regions > ', this.regions);
+        console.debug('??? XLR.debug >> Layout playRegions() - Layout Regions > ', this.regions.map(regionSummary));
 
         for (let i = 0; i < this.regions.length; i++) {
             // playLog(4, "debug", "Running region " + self.regions[i].id, false);
@@ -659,7 +696,7 @@ export default class Layout implements ILayout {
     }
 
     end(): void {
-        console.debug('Executing Layout::end and Calling Region::end ', this);
+        console.debug('Executing Layout::end and Calling Region::end ', layoutSummary(this));
 
         /* Ask the layout to gracefully stop running now */
         for (let layoutRegion of this.regions) {
@@ -739,7 +776,7 @@ export default class Layout implements ILayout {
         const $layout = <HTMLDivElement | null>(document.querySelector(`#${this.containerName}[data-sequence="${this.index}"]`));
 
         this.done = true;
-        console.debug({$layout});
+        console.debug('??? XLR.debug >> Layout::removeLayout - container', elementSummary($layout));
 
         if ($layout !== null) {
             $layout.parentElement?.removeChild($layout);
@@ -760,6 +797,39 @@ export default class Layout implements ILayout {
             }
         }
         this.removeLayout(caller);
+    }
+
+    /**
+     * Load a widget iframe now, or hold it back until the layout is released.
+     *
+     * A layout is prepared while the previous one plays, which can be minutes
+     * ahead. Widgets start as soon as their document loads (a countdown sets its
+     * end time, a ticker starts scrolling), so loading them that early leaves them
+     * finished or mid-way when shown. XLR releases the layout shortly before it
+     * is due (XLR::releaseNextLayoutIfDue), and run() releases anything left.
+     */
+    loadIframe(iframe: HTMLIFrameElement | null): void {
+        if (!iframe) return;
+
+        // Prepared after the preload point (e.g. the next layout was replaced late)
+        if (!this.mediaReleased && Date.now() >= this.xlr.preloadDueAt) {
+            this.releaseDeferredMedia();
+        }
+
+        if (this.mediaReleased) {
+            loadIframeAfterLayout(iframe);
+        } else {
+            this.deferredIframes.push(iframe);
+        }
+    }
+
+    releaseDeferredMedia(): void {
+        if (this.mediaReleased) return;
+        this.mediaReleased = true;
+
+        const iframes = this.deferredIframes;
+        this.deferredIframes = [];
+        iframes.forEach((iframe) => loadIframeAfterLayout(iframe));
     }
 
     getXlf(): string {

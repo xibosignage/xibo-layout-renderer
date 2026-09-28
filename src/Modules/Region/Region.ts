@@ -6,16 +6,16 @@
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { createNanoEvents } from 'nanoevents';
@@ -45,6 +45,7 @@ import {
     transitionElement,
 } from '../Transitions';
 import { IXlr } from '../../Types/XLR';
+import { elementSummary, mediaSummary, regionSummary } from '../../Lib';
 
 export default class Region implements IRegion {
     // ===== Properties =====
@@ -208,7 +209,8 @@ export default class Region implements IRegion {
         this.totalMediaObjects = this.mediaObjects.length;
 
         console.debug('??? XLR.debug >> Region - done looping through media', {
-            mediaObjects: this.mediaObjects,
+            regionId: this.id,
+            mediaObjects: this.mediaObjects.map(mediaSummary),
         });
 
         // Add media to region for targeted actions
@@ -252,7 +254,8 @@ export default class Region implements IRegion {
         });
 
         console.debug('??? XLR.debug >> Region::prepareRegion', {
-            mediaItems: this.mediaObjects,
+            regionId: this.id,
+            mediaItems: this.mediaObjects.map(mediaSummary),
             totalMediaItems: this.totalMediaObjects,
         });
 
@@ -443,7 +446,7 @@ export default class Region implements IRegion {
                     if ($oldMedia) {
                         const removeOldMedia = () => {
                             console.debug('??? XLR.debug >> Region transitionNodes - removeOldMedia fn', {
-                                $oldMedia,
+                                oldMedia: elementSummary($oldMedia),
                             })
                             $oldMedia.style.setProperty('visibility', 'hidden');
                             $oldMedia.style.setProperty('z-index', '-999');
@@ -497,8 +500,8 @@ export default class Region implements IRegion {
                                 setTimeout(() => {
                                     console.debug('??? XLR.debug >> Region transitionNode - hideOldMedia execute setTimeout', {
                                         transOutDuration,
-                                        oldMedia,
-                                        $oldMedia,
+                                        oldMedia: mediaSummary(oldMedia),
+                                        oldMediaEl: elementSummary($oldMedia),
                                     });
                                     removeOldMedia();
                                 }, (transOutDuration / 2));
@@ -759,10 +762,30 @@ export default class Region implements IRegion {
             ) {
                 return;
             }
+
+            // Same for a single non-looping image/video: hold its last frame
+            // rather than replaying it. Replaying a video here restarted the
+            // player that VideoMedia.stop() was about to dispose, blanking the region.
+            if (this.isFrozenOn(this.currMedia)) {
+                return;
+            }
         }
 
         this.transitionNodes(this.oldMedia, this.currMedia);
     };
+
+    /**
+     * Is this region holding the given image/video on its last frame until the
+     * layout ends? True once a single-item, non-looping region has completed.
+     */
+    isFrozenOn(media: IMedia | undefined): boolean {
+        return media !== undefined &&
+            this.complete &&
+            this.totalMediaObjects === 1 &&
+            this.currMedia === media &&
+            !media.loop &&
+            (media.mediaType === 'image' || media.mediaType === 'video');
+    }
 
     playPreviousMedia() {
         if (this.currentMediaIndex <= 0 || this.ended) {
@@ -784,7 +807,7 @@ export default class Region implements IRegion {
             interruptedMedia.emitter.emit('cancelled', interruptedMedia);
         }
 
-        console.debug('region::playPreviousMedia', this);
+        console.debug('region::playPreviousMedia', regionSummary(this));
         this.transitionNodes(this.oldMedia, this.currMedia);
     };
 
@@ -793,7 +816,7 @@ export default class Region implements IRegion {
         /* The Layout has finished running */
         /* Do any region exit transition then clean up */
         this.layout.regions[this.index] = this;
-        console.debug('Calling Region::end ', this);
+        console.debug('Calling Region::end ', regionSummary(this));
         this.exitTransition();
     };
 
@@ -815,7 +838,7 @@ export default class Region implements IRegion {
         this.ended = false;
         this.complete = false;
         this.ending = false;
-        console.debug('Resetting region states', this);
+        console.debug('Resetting region states', regionSummary(this));
     }
 
     on<E extends keyof IRegionEvents>(event: E, callback: IRegionEvents[E]) {

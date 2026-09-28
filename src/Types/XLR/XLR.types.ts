@@ -6,16 +6,16 @@
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {Emitter, Unsubscribe} from 'nanoevents';
@@ -166,6 +166,11 @@ export interface IXlr {
     playlistCycleGroupSequence: Map<string, number>;
     playlistCycleGroupPlays: Map<string, number>;
 
+    /** Time (ms since epoch) from which the next layout's widgets may load */
+    preloadDueAt: number;
+    schedulePreload(layout: ILayout): void;
+    releaseNextLayoutIfDue(): void;
+
     updateInputLayout(layoutIndex: number, layout: InputLayoutType): void;
 
     updateLayouts(inputLayouts: InputLayoutType[]): void;
@@ -256,6 +261,11 @@ export const initialXlr: IXlr = {
     uniqueLayouts: new Map<string, InputLayoutType>(),
     playlistCycleGroupSequence: new Map<string, number>(),
     playlistCycleGroupPlays: new Map<string, number>(),
+    preloadDueAt: Infinity,
+    schedulePreload(_layout: ILayout) {
+    },
+    releaseNextLayoutIfDue() {
+    },
     updateInputLayout(layoutIndex: number, layout: InputLayoutType) {
     },
     updateLayouts(inputLayouts: InputLayoutType[]) {
