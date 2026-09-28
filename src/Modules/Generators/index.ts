@@ -21,6 +21,7 @@ export {
     hasDefaultOnly,
     isLayoutValid,
     createMediaElement,
+    loadIframeAfterLayout,
     playerReportFault,
     getAllAttributes,
     prepareAudioMedia,

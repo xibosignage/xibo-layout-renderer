@@ -6,16 +6,16 @@
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {format} from "date-fns";
@@ -27,7 +27,7 @@ import {composeVideoSource, defaultVjsOpts, reportToPlayerPlatform} from "../Med
 import {transitionElement} from "../Transitions";
 import {IRegion} from "../../Types/Region";
 import {ConsumerPlatform} from "../../Types/Platform";
-import {PwaSW} from "../../Lib";
+import {elementSummary, errorSummary, playerSummary, PwaSW} from "../../Lib";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -108,7 +108,7 @@ export async function fetchJSON(url: string, jwtToken: string|null) {
         })
         .then(res => res.json())
         .catch(err => {
-            console.debug(err);
+            console.debug('XLR::fetchJSON failed', { url, error: errorSummary(err) });
         });
 }
 
@@ -129,7 +129,7 @@ export async function fetchText(url: string, jwtToken: string|null): Promise<str
             }
         })
         .catch(err => {
-            console.debug(err);
+            console.debug('XLR::fetchText failed', { url, error: errorSummary(err) });
             return err?.message;
         });
 }
@@ -468,10 +468,11 @@ export function prepareIframe(media: IMedia) {
 
     // An HTML Package and a Webpage both resolve to a plain URL, so it must be used
     // verbatim — the width/height query string the else branch appends would corrupt it.
+    // The URL is only stored here; see loadIframeAfterLayout for why src is set later.
     if ((isHtmlDocumentMedia(media) || media.mediaType === 'webpage') && media.url !== null) {
-        iframe.src = media.url;
+        iframe.dataset.src = media.url;
     } else {
-        iframe.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
+        iframe.dataset.src = `${media.url}&width=${media.divWidth}&height=${media.divHeight}`;
     }
 
     const displayTags = media.region.xlr.config.displayTags;
@@ -488,6 +489,41 @@ export function prepareIframe(media: IMedia) {
     }
 
     return iframe;
+}
+
+/**
+ * Navigate a widget iframe only once the host page has laid it out.
+ *
+ * Widget iframes are usually cross-origin to the player page (e.g. file:// vs
+ * http://localhost), so each runs in its own renderer process and only learns
+ * its viewport size when the host commits a frame with the iframe's rect. If
+ * src is set on insertion, a cached widget document can finish loading and run
+ * its one-shot xiboLayoutScaler before that happens — it measures a 0x0 window,
+ * applies scale(0) and never recovers, so the widget is invisible when shown.
+ * This is most likely at a layout boundary, when the host main thread is busy
+ * ending one layout and preparing the next.
+ *
+ * Waiting two animation frames guarantees a host frame containing the iframe
+ * has been produced. The timeout covers a window that is not painting (rAF
+ * does not fire while hidden). Inserting an iframe that still has a src
+ * reloads it immediately, so callers re-attaching one must remove src before
+ * insertion and call this afterwards.
+ */
+export function loadIframeAfterLayout(iframe: HTMLIFrameElement | null) {
+    const src = iframe?.dataset.src;
+    if (!iframe || !src) return;
+
+    let loaded = false;
+    const load = () => {
+        if (loaded || !iframe.isConnected) return;
+        loaded = true;
+        if (iframe.getAttribute('src') !== src) {
+            iframe.src = src;
+        }
+    };
+
+    requestAnimationFrame(() => requestAnimationFrame(load));
+    setTimeout(load, 500);
 }
 
 export function prepareImage(media: IMedia, container: HTMLElement) {
@@ -663,63 +699,63 @@ export function createMediaElement(mediaObject: IMedia) {
 
 export function prepareVideoMedia(media: IMedia, region: IRegion) {
     const mediaId = getMediaId(media);
-    // Check if html is ready and is in the DOM
-    if (media.html !== null) {
+    // Always (re)build the element. A video that has played is disposed
+    // (VideoMedia.stop sets media.html = null), so skipping on a null html
+    // left a playlist blank once it wrapped back to its first video.
 
-        // Clean up video.js instance
-        const existingPlayer = videojs.getPlayer(mediaId);
+    // Clean up video.js instance
+    const existingPlayer = videojs.getPlayer(mediaId);
 
-        if (existingPlayer !== undefined) {
-            existingPlayer.dispose();
-            media.player = undefined;
-        }
-
-        const $layout = region.layout.html;
-        const layoutSelector = '#' + region.layout.containerName +
-          '[data-sequence="' + region.layout.index + '"]';
-        const $layoutWithIndex = document.querySelector(layoutSelector);
-        const $region = region.html;
-        const mediaInRegion = $region?.querySelector('.' + mediaId);
-
-        console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
-            layoutSelector,
-            $layoutWithIndex,
-            $region,
-            mediaInRegion,
-            mediaHtml: media.html,
-            existingPlayer,
-            mediaId,
-            layoutInDOM: document.body.contains($layout),
-        })
-        if (!mediaInRegion) {
-            media.html = createMediaElement(media);
-        } else {
-            mediaInRegion.remove();
-            media.html = createMediaElement(media);
-        }
-
-        // Append fresh copy of the media into the region
-        region.html.appendChild(media.html);
-
-        const isMediaInDOM = document.body.contains(media.html);
-
-        console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
-            isMediaInDOM,
-            mediaHtml: media.html,
-            mediaId,
-        })
-
-        // Initialize video.js
-        media.player = videojs(mediaId, {
-            ...defaultVjsOpts,
-            errorDisplay: !reportToPlayerPlatform.includes(region.xlr.config.platform),
-            loop: media.loop,
-        });
-
-        (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
-        (media.player.el() as HTMLElement).style.setProperty('opacity', '0');
-        (media.player.el() as HTMLElement).style.setProperty('z-index', '-99');
+    if (existingPlayer !== undefined) {
+        existingPlayer.dispose();
+        media.player = undefined;
     }
+
+    const $layout = region.layout.html;
+    const layoutSelector = '#' + region.layout.containerName +
+      '[data-sequence="' + region.layout.index + '"]';
+    const $layoutWithIndex = document.querySelector(layoutSelector);
+    const $region = region.html;
+    const mediaInRegion = $region?.querySelector('.' + mediaId);
+
+    console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
+        layoutSelector,
+        layoutEl: elementSummary($layoutWithIndex),
+        regionEl: elementSummary($region),
+        mediaInRegion: elementSummary(mediaInRegion),
+        mediaHtml: elementSummary(media.html),
+        existingPlayer: playerSummary(existingPlayer),
+        mediaId,
+        layoutInDOM: document.body.contains($layout),
+    })
+    if (!mediaInRegion) {
+        media.html = createMediaElement(media);
+    } else {
+        mediaInRegion.remove();
+        media.html = createMediaElement(media);
+    }
+
+    // Append fresh copy of the media into the region
+    region.html.appendChild(media.html);
+
+    const isMediaInDOM = document.body.contains(media.html);
+
+    console.debug('??? XLR.debug >> [Generators::prepareVideoMedia]', {
+        isMediaInDOM,
+        mediaHtml: elementSummary(media.html),
+        mediaId,
+    })
+
+    // Initialize video.js
+    media.player = videojs(mediaId, {
+        ...defaultVjsOpts,
+        errorDisplay: !reportToPlayerPlatform.includes(region.xlr.config.platform),
+        loop: media.loop,
+    });
+
+    (media.player.el() as HTMLElement).style.setProperty('visibility', 'hidden');
+    (media.player.el() as HTMLElement).style.setProperty('opacity', '0');
+    (media.player.el() as HTMLElement).style.setProperty('z-index', '-99');
 }
 
 export function prepareImageMedia(media: IMedia, region: IRegion) {
@@ -771,7 +807,7 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
 
         console.debug('<><> XLR.debug >> [Media] - [Generators::prepareHtmlMedia]', {
             mediaId,
-            mediaInRegion,
+            mediaInRegion: elementSummary(mediaInRegion),
         })
 
         if (!mediaInRegion) {
@@ -782,6 +818,8 @@ export function prepareHtmlMedia(media: IMedia, region: IRegion) {
             media.html.innerHTML = '';
             media.html.appendChild(media.iframe as Node);
             region.html.appendChild(media.html as HTMLElement);
+            // The layout decides when: now if it is playing, else when it is released
+            region.layout.loadIframe(media.iframe);
         }
         media.ready = true;
     }

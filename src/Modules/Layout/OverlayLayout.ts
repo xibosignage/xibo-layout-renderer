@@ -6,16 +6,16 @@
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -25,6 +25,7 @@ import Layout from "./Layout";
 import {ELayoutState, ILayout, OptionsType} from "../../Types/Layout";
 import {ILayoutEvents} from "../../Types/Events";
 import {IXlr} from "../../Types/XLR";
+import {elementSummary, layoutSummary} from "../../Lib";
 
 export interface IOverlayLayoutEvents extends ILayoutEvents {}
 
@@ -75,8 +76,8 @@ export default class OverlayLayout extends Layout {
       // Check if currentLayout is already done
       // If not, don't remove the overlay layout until currentLayout.done = true
       console.log('XLR::OverlayLayout >> emitter.on("end")', {
-        currentLayout: overlay.xlr.currentLayout,
-        overlay,
+        currentLayout: layoutSummary(overlay.xlr.currentLayout),
+        overlay: layoutSummary(overlay),
       });
 
       console.debug('XLR::OverlayLayout >> Ending overlay layout with ID of > ', overlay.layoutId);
@@ -86,7 +87,7 @@ export default class OverlayLayout extends Layout {
       );
 
       overlay.done = true;
-      console.debug({overlayHtml: $overlay});
+      console.debug('XLR::OverlayLayout >> overlay container', elementSummary($overlay));
 
       if ($overlay !== null) {
         $overlay.parentElement?.removeChild($overlay);

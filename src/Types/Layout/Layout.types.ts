@@ -6,16 +6,16 @@
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {Emitter, Unsubscribe} from 'nanoevents';
@@ -87,6 +87,11 @@ export type OptionsType = {
         logo: string;
     };
     displayTags?: Record<string, string>;
+    /**
+     * Seconds before the current layout is due to end at which the next layout's
+     * widgets are loaded. Defaults to 1. Needs the layout duration from the schedule.
+     */
+    preloadLeadTime?: number;
 };
 
 export interface ILayout {
@@ -138,6 +143,8 @@ export interface ILayout {
     inLoop: boolean;
     removeLayout(caller?: LayoutPlaybackType): void;
     discardLayout(caller?: LayoutPlaybackType): void;
+    loadIframe(iframe: HTMLIFrameElement | null): void;
+    releaseDeferredMedia(): void;
     xlfString: string;
     getXlf(): string;
     ad: any;
@@ -219,6 +226,10 @@ export const initialLayout: ILayout = {
     removeLayout() {
     },
     discardLayout() {
+    },
+    loadIframe() {
+    },
+    releaseDeferredMedia() {
     },
     getXlf(): string {
         return '';

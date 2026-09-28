@@ -6,16 +6,16 @@
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { createNanoEvents, Emitter } from 'nanoevents';
@@ -34,12 +34,13 @@ import {
     getMediaId,
     nextId,
     createMediaElement,
+    loadIframeAfterLayout,
 } from '../Generators';
 import { compassPoints, flyTransitionKeyframes, transitionElement, TransitionElementOptions } from '../Transitions';
 import { AudioMedia } from './AudioMedia';
 import { IXlr } from '../../Types/XLR';
 import { IMediaEvents } from "../../Types/Events";
-import { BlobLoader } from "../../Lib";
+import { BlobLoader, elementSummary, layoutSummary, mediaSummary, playerSummary, regionSummary } from "../../Lib";
 
 import 'video.js/dist/video-js.min.css';
 import { IVideoMediaHandler, VideoMedia, vjsDefaultOptions } from "./VideoMedia";
@@ -331,18 +332,19 @@ export class Media implements IMedia {
                 console.debug('??? XLR.debug >> Media::startMediaTimer: emit>end: on media ' + media.id + ' of Region ' + media.region.regionId);
 
                 console.debug('??? XLR.debug >> Media::startMediaTimer - Media::Emitter > End', {
-                    currentLayout: this.xlr.currentLayout,
-                    media,
-                    region: media.region,
-                    layout: media.region.layout,
+                    currentLayout: layoutSummary(this.xlr.currentLayout),
+                    media: mediaSummary(media),
+                    region: regionSummary(media.region),
+                    layout: layoutSummary(media.region.layout),
                 })
 
                 media.emitter.emit('end', media);
 
                 if (media.mediaType === 'video') {
-                    // Dispose the video media
+                    // Dispose the video media, unless the region is holding it on its
+                    // last frame; the layout disposes it when it ends.
                     console.debug(`??? XLR.debug >> VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    if (media.videoHandler !== undefined) {
+                    if (media.videoHandler !== undefined && !media.region.isFrozenOn(media)) {
                         media.videoHandler.stop(true);
                     }
                 }
@@ -542,16 +544,15 @@ export class Media implements IMedia {
             console.debug('??? XLR.debug >> Media run - show current media:', {
                 inDOM: document.body.contains($media),
                 mediaId,
-                $media,
-                mediaObject: this,
+                el: elementSummary($media),
+                media: mediaSummary(this),
             });
 
             if ($media) {
                 if (this.mediaType === 'video') {
                     console.debug('??? XLR.debug >> Media.run() > showCurrentMedia() - Video media::START', {
-                        mediaPlayer: this.player,
-                        isDisposed: this.player?.isDisposed(),
-                        el: this.player?.el_,
+                        mediaPlayer: playerSummary(this.player),
+                        el: elementSummary(this.player?.el_ as Element | undefined),
                     });
 
                     // Make sure that vjs is available on the media
@@ -575,9 +576,8 @@ export class Media implements IMedia {
                     }
 
                     console.debug('??? XLR.debug >> Media.run() > showCurrentMedia() - Video media::END', {
-                        mediaPlayer: this.player,
-                        isDisposed: this.player?.isDisposed(),
-                        el: this.player?.el_,
+                        mediaPlayer: playerSummary(this.player),
+                        el: elementSummary(this.player?.el_ as Element | undefined),
                     });
 
                     if (this.player !== undefined && this.player.el_ !== null) {
@@ -589,7 +589,7 @@ export class Media implements IMedia {
                     console.debug('??? XLR.debug >> Media::run() > showCurrentMedia', {
                         mediaType: this.mediaType,
                         render: this.render,
-                        $media,
+                        el: elementSummary($media),
                         state: this.state,
                     })
                     $media.style.setProperty('visibility', 'visible');
@@ -615,7 +615,15 @@ export class Media implements IMedia {
             //   2. Backward navigation — the previous media's element was removed by the
             //      removeOldMedia setTimeout in transitionNodes.
             if (this.html) {
+                // Re-inserting reloads the iframe, so defer that load until it is laid out
+                const hasIframe = this.iframe !== null && this.html.contains(this.iframe);
+                if (hasIframe) {
+                    this.iframe!.removeAttribute('src');
+                }
                 $region.insertBefore(this.html as Node, $region.lastElementChild);
+                if (hasIframe) {
+                    loadIframeAfterLayout(this.iframe);
+                }
                 return this.html as HTMLElement;
             }
             return null;

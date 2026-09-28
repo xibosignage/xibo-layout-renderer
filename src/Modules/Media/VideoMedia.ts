@@ -6,16 +6,16 @@
  * This file is part of Xibo.
  *
  * Xibo is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
  * Xibo is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 import videojs from 'video.js';
@@ -24,6 +24,7 @@ import Player from "video.js/dist/types/player";
 import { IMedia } from '../../Types/Media';
 import {capitalizeStr, videoFileType, getFileExt, getMediaId, playerReportFault, FaultCodes} from '../Generators';
 import {ConsumerPlatform, IXlr} from '../../types';
+import { elementSummary, playerSummary } from '../../Lib';
 
 import './media.css';
 
@@ -300,15 +301,23 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
             const vjsPlayer = videoPlayer.player ?? media.player;
 
             console.debug('??? XLR.debug >> VideoMedia::stop', {
-                vjsPlayer,
-                isDisposed: vjsPlayer?.isDisposed(),
-                el: vjsPlayer?.el(),
+                mediaId: media.id,
+                vjsPlayer: playerSummary(vjsPlayer),
+                el: elementSummary(vjsPlayer && !vjsPlayer.isDisposed() ? vjsPlayer.el() : null),
             });
 
             // Expire the media and dispose the video
             if (vjsPlayer !== undefined && !vjsPlayer.isDisposed()) {
                 if (!disposeOnly) {
                     media.emitter.emit('end', media);
+
+                    // The region is now holding this video on its last frame until
+                    // the layout ends, which disposes it (Layout 'end' handler).
+                    if (media.region.isFrozenOn(media)) {
+                        clearStallWatchdog();
+                        stopped = true;
+                        return;
+                    }
                 }
 
                 vjsPlayer.dispose();
