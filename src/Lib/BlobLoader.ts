@@ -1,3 +1,5 @@
+import { errorSummary } from './logSummary';
+
 export class BlobLoader {
   // Map to store active Object URLs: { originalUrl: blobUrl }
   private static cache: Map<string, string> = new Map();
@@ -21,7 +23,7 @@ export class BlobLoader {
       this.cache.set(url, objectUrl);
       return objectUrl;
     } catch (err) {
-      console.error(`BlobLoader Error:`, err);
+      console.error(`BlobLoader Error:`, { url, error: errorSummary(err) });
       throw err;
     }
   }

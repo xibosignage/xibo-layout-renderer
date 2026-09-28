@@ -27,7 +27,7 @@ import {composeVideoSource, defaultVjsOpts, reportToPlayerPlatform} from "../Med
 import {transitionElement} from "../Transitions";
 import {IRegion} from "../../Types/Region";
 import {ConsumerPlatform} from "../../Types/Platform";
-import {elementSummary, playerSummary, PwaSW} from "../../Lib";
+import {elementSummary, errorSummary, playerSummary, PwaSW} from "../../Lib";
 
 export function nextId(options: { idCounter: number; }) {
     if (options.idCounter > 500) {
@@ -108,7 +108,7 @@ export async function fetchJSON(url: string, jwtToken: string|null) {
         })
         .then(res => res.json())
         .catch(err => {
-            console.debug(err);
+            console.debug('XLR::fetchJSON failed', { url, error: errorSummary(err) });
         });
 }
 
@@ -129,7 +129,7 @@ export async function fetchText(url: string, jwtToken: string|null): Promise<str
             }
         })
         .catch(err => {
-            console.debug(err);
+            console.debug('XLR::fetchText failed', { url, error: errorSummary(err) });
             return err?.message;
         });
 }

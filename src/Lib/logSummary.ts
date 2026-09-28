@@ -199,6 +199,30 @@ export function layoutListSummary(layouts: Iterable<Loose> | null | undefined) {
     return Array.from(layouts, inputLayoutSummary);
 }
 
+/**
+ * An error's useful parts. Its message and stack are not enumerable, so logged
+ * whole they are lost when the player serialises logs; an axios error instead
+ * carries its whole request and response. Keep the text, code, first stack
+ * lines and, for HTTP failures, the method, URL, status and start of the body.
+ */
+export function errorSummary(err: unknown): Record<string, any> | string {
+    if (!err || typeof err !== 'object') return String(err);
+    const e = err as Record<string, any>;
+    const body = e.response?.data;
+    const bodyText = body === undefined || body === null ? undefined
+        : (typeof body === 'string' ? body : safe(() => JSON.stringify(body)) ?? String(body));
+    return compact({
+        name: e.name,
+        message: e.message,
+        code: e.code,
+        stack: typeof e.stack === 'string' ? e.stack.split('\n').slice(0, 5).join('\n') : undefined,
+        method: e.config?.method ? String(e.config.method).toUpperCase() : undefined,
+        url: e.config?.url,
+        status: e.response?.status ?? e.status,
+        responseData: bodyText && bodyText.length > 300 ? bodyText.slice(0, 300) + '…' : bodyText,
+    });
+}
+
 /** XLR loop state: which layout is playing, what is queued and whether the loop is updating */
 export function xlrSummary(xlr: Loose) {
     if (!xlr) return xlr ?? null;

@@ -30,7 +30,7 @@ import OverlayLayout from "./Modules/Layout/OverlayLayout";
 import { OverlayLayoutManager } from "./Modules/Layout/OverlayLayoutManager";
 import { ConsumerPlatform, LayoutPlaybackType } from './types';
 import { setLayoutIndex } from './Modules/Generators/Generators';
-import { inputLayoutSummary, layoutListSummary, layoutSummary } from './Lib';
+import { errorSummary, inputLayoutSummary, layoutListSummary, layoutSummary } from './Lib';
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -1224,7 +1224,7 @@ export default function XiboLayoutRenderer(
                             }
                             xlfString = await res.text();
                         } catch (_e) {
-                            console.debug('[gotoLayoutByCode] Fetch error for', url, _e);
+                            console.debug('[gotoLayoutByCode] Fetch error for', url, errorSummary(_e));
                             continue;
                         }
                     }

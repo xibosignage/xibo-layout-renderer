@@ -30,7 +30,7 @@ import {
 import {ConsumerPlatform, ILayoutEvents} from "../../types";
 import {IXlr} from '../../Types/XLR';
 import {composeBgUrlByPlatform, loadIframeAfterLayout, nextId} from '../Generators';
-import {elementSummary, layoutSummary, regionSummary, xlrSummary} from '../../Lib';
+import {elementSummary, errorSummary, layoutSummary, regionSummary, xlrSummary} from '../../Lib';
 import {Region} from '../Region';
 
 import './layout.css';
@@ -128,7 +128,7 @@ export async function getXlf(layoutOptions: OptionsType) {
 }
 
 export function handleAxiosError(error: any, message?: string) {
-    console.error(error);
+    console.error('XLR::handleAxiosError', errorSummary(error));
     if (error.response.status == 500) {
         // SOAP responses are always 500's
         // Return the body
