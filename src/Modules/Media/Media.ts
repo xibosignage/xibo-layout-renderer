@@ -142,11 +142,20 @@ export class Media implements IMedia {
 
             media.state = MediaState.PLAYING;
             if (media.mediaType === 'video') {
+                // Only video media is started in a single-item overlay region. Loop it for as
+                // long as the overlay is scheduled rather than ending it, as there is nothing
+                // to replay it with once VideoMedia disposes it.
+                const isHeldInOverlay = media.region.layout.isOverlay && media.region.totalMediaObjects === 1;
+
+                if (isHeldInOverlay) {
+                    media.loop = true;
+                }
+
                 media.videoHandler = VideoMedia(media, this.xlr);
 
                 media.videoHandler.init();
 
-                if (media.duration > 0) {
+                if (media.duration > 0 && !isHeldInOverlay) {
                     this.startMediaTimer(media);
                 }
             } else if (media.mediaType === 'audio') {
@@ -601,8 +610,11 @@ export class Media implements IMedia {
                     $media.animate(transIn.keyframes, transIn.timing);
                 }
 
+                // A single-item overlay region just holds its media, but a video still needs
+                // 'start' to initialise and play it, or its black video.js box is all that shows.
                 if (!this.region.layout.isOverlay ||
-                    (this.region.layout.isOverlay && this.region.totalMediaObjects > 1)
+                    (this.region.layout.isOverlay && this.region.totalMediaObjects > 1) ||
+                    this.mediaType === 'video'
                 ) {
                     this.emitter.emit('start', <IMedia>this);
                 }
