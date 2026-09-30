@@ -230,6 +230,9 @@ export default class Layout implements ILayout {
     actions: Action[] = <Action[]>[];
     done: boolean = false;
     allEnded: boolean = false;
+    // How long the ended layout stays on screen for its widgets' out transitions,
+    // when it hands off to the next copy of itself
+    exitHoldMs: number = 0;
     emitter: Emitter<ILayoutEvents> = createNanoEvents<ILayoutEvents>();
     index: number = -1;
     actionController: ActionController | undefined = undefined;
@@ -375,6 +378,16 @@ export default class Layout implements ILayout {
                     immediateNext.layoutNode != null &&
                     immediateNext.xlfString !== '';
 
+                // Handing off to the next copy of this layout (playlist cycle): A's last
+                // widgets are still animating out, so B plays over A with a see-through
+                // background and A is removed once the out transitions finish.
+                const holdMs = canRunImmediately ? layout.exitHoldMs : 0;
+                const $next = holdMs > 0 && immediateNext
+                    ? <HTMLDivElement | null>(
+                        document.querySelector(`#${immediateNext.containerName}[data-sequence="${immediateNext.index}"]`)
+                    )
+                    : null;
+
                 if (canRunImmediately) {
                     this.xlr.currentLayout = immediateNext;
                     this.xlr.currentLayoutId = immediateNext.layoutId;
@@ -385,9 +398,25 @@ export default class Layout implements ILayout {
                     this.xlr.currentLayoutIndex = immediateNext.index;
                     this.xlr.playLayouts(this.xlr);
                 }
-                // Remove A after B is shown (canRunImmediately) or immediately
-                // (no prepped next) — both paths end here so no blank frame in either case.
-                if ($layout !== null) {
+
+                if ($layout !== null && $next !== null) {
+                    const nextBgColor = $next.style.getPropertyValue('background-color');
+                    const nextBgImage = $next.style.getPropertyValue('background-image');
+                    $next.style.setProperty('background-color', 'transparent');
+                    $next.style.setProperty('background-image', 'none');
+                    $layout.style.setProperty('z-index', `${(parseInt($next.style.zIndex) || 0) - 1}`);
+                    // Keep cleanupOrphanedLayouts from removing A before it has finished
+                    $layout.dataset.exiting = '1';
+
+                    setTimeout(() => {
+                        $layout.parentElement?.removeChild($layout);
+                        $next.style.setProperty('background-color', nextBgColor);
+                        $next.style.setProperty('background-image', nextBgImage);
+                        disposeVideos();
+                    }, holdMs);
+                } else if ($layout !== null) {
+                    // Remove A after B is shown (canRunImmediately) or immediately
+                    // (no prepped next) — both paths end here so no blank frame in either case.
                     $layout.parentElement?.removeChild($layout);
                 }
 
@@ -417,14 +446,20 @@ export default class Layout implements ILayout {
                 }
             }
 
-            // Dispose video players now that A is off screen, as 'cancelled' does.
+            // Dispose video players once A is off screen, as 'cancelled' does.
             // Otherwise they keep running (and firing stats) after the DOM is gone.
-            for (const region of layout.regions) {
-                for (const media of region.mediaObjects) {
-                    if (media.videoHandler) {
-                        media.videoHandler.stop(true);
+            function disposeVideos() {
+                for (const region of layout.regions) {
+                    for (const media of region.mediaObjects) {
+                        if (media.videoHandler) {
+                            media.videoHandler.stop(true);
+                        }
                     }
                 }
+            }
+
+            if (!$layout?.dataset.exiting) {
+                disposeVideos();
             }
         });
 
@@ -681,7 +716,7 @@ export default class Layout implements ILayout {
         }
     }
 
-    regionExpired(): void {
+    regionExpired(skipExitTransition = false): void {
         this.allExpired = true;
 
         for (let layoutRegion of this.regions) {
@@ -691,17 +726,43 @@ export default class Layout implements ILayout {
         }
 
         if (this.allExpired) {
-            this.end();
+            this.end(skipExitTransition);
         }
     }
 
-    end(): void {
+    end(skipExitTransition = false): void {
         console.debug('Executing Layout::end and Calling Region::end ', layoutSummary(this));
+
+        // When the next layout is another copy of this one, the widgets' out transitions
+        // play alongside its first widgets instead of before it (see 'end' handler)
+        const handOff = !skipExitTransition && this.handsOffToItself();
+        this.exitHoldMs = 0;
 
         /* Ask the layout to gracefully stop running now */
         for (let layoutRegion of this.regions) {
-            layoutRegion.end();
+            // Regions that already ended must not report it again, or 'end' is emitted twice
+            if (!layoutRegion.ended) {
+                layoutRegion.end(skipExitTransition, handOff);
+            }
         }
+    }
+
+    /**
+     * Will the 'end' handler go straight to a prepared copy of this layout?
+     * Mirrors its gapless fast-path conditions.
+     */
+    handsOffToItself(): boolean {
+        const next = this.xlr.nextLayout;
+
+        return !this.isOverlay &&
+            this.inLoop &&
+            this.xlr.config.platform !== ConsumerPlatform.CMS &&
+            next != null &&
+            next !== this &&
+            next.layoutId === this.layoutId &&
+            !next.done &&
+            next.layoutNode != null &&
+            next.xlfString !== '';
     }
 
     regionEnded(): void {
@@ -762,7 +823,7 @@ export default class Layout implements ILayout {
     }
 
     finishAllRegions(): Promise<void[]> {
-        return Promise.all(this.regions.map(region => region.finished()));
+        return Promise.all(this.regions.map(region => region.finished(true)));
     }
 
     removeLayout(caller: LayoutPlaybackType = LayoutPlaybackType.CURRENT): void {

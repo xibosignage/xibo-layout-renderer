@@ -71,6 +71,7 @@ export interface IVideoMediaHandler {
     init(): void;
     play(): void;
     stop(disposeOnly?: boolean): void;
+    hold(): void;
 }
 
 export const reportToPlayerPlatform = [
@@ -313,9 +314,10 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
 
                     // The region is now holding this video on its last frame until
                     // the layout ends, which disposes it (Layout 'end' handler).
-                    if (media.region.isFrozenOn(media)) {
-                        clearStallWatchdog();
-                        stopped = true;
+                    // Or it is animating the video out, and disposes it once the
+                    // transition finishes (Region removeOldMedia).
+                    if (media.region.isFrozenOn(media) || media.region.willTransitionOut(media)) {
+                        videoPlayer.hold();
                         return;
                     }
                 }
@@ -335,6 +337,12 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
                     media.emitter.emit('end', media);
                 }
             }
+            stopped = true;
+        },
+        // Stop reacting to stalls and errors but keep the player on screen, for
+        // whoever disposes it later (the region's out transition or the layout).
+        hold: function() {
+            clearStallWatchdog();
             stopped = true;
         },
         play: function() {
