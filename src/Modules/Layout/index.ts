@@ -21,5 +21,5 @@
 
 export {
     default,
-    initRenderingDOM, getXlf, getLayout,
+    initRenderingDOM, rescaleLayouts, getXlf, getLayout,
 } from './Layout';

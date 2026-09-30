@@ -20,7 +20,7 @@
  */
 import { createNanoEvents } from 'nanoevents';
 
-import Layout, { getXlf, initRenderingDOM } from './Modules/Layout';
+import Layout, { getXlf, initRenderingDOM, rescaleLayouts } from './Modules/Layout';
 import { ELayoutState, ILayout, initialLayout, InputLayoutType, OptionsType, } from './Types/Layout';
 import { ELayoutType, initialXlr, IXlr, IXlrEvents } from './Types/XLR';
 import { IMedia } from './Types/Media';
@@ -31,6 +31,8 @@ import { OverlayLayoutManager } from "./Modules/Layout/OverlayLayoutManager";
 import { ConsumerPlatform, LayoutPlaybackType } from './types';
 import { setLayoutIndex } from './Modules/Generators/Generators';
 import { errorSummary, inputLayoutSummary, layoutListSummary, layoutSummary } from './Lib';
+
+let rescaleListenerAdded = false;
 
 export default function XiboLayoutRenderer(
     inputLayouts: InputLayoutType[],
@@ -252,6 +254,22 @@ export default function XiboLayoutRenderer(
         const previewCanvas = document.querySelector('#preview_canvas');
 
         initRenderingDOM(previewCanvas);
+
+        // Refit what is already on screen when the window is resized, at most once per frame
+        if (!rescaleListenerAdded) {
+            rescaleListenerAdded = true;
+            let rescaleFrame: number | null = null;
+            window.addEventListener('resize', () => {
+                if (rescaleFrame !== null) {
+                    return;
+                }
+
+                rescaleFrame = requestAnimationFrame(() => {
+                    rescaleFrame = null;
+                    rescaleLayouts();
+                });
+            });
+        }
 
         // Prepare splash screen
         splashScreen = SplashScreen(

@@ -93,6 +93,49 @@ export function initRenderingDOM(targetContainer: Element | null) {
     }
 }
 
+/**
+ * Refits every layout in the screen container to the container's current size.
+ *
+ * Layouts, regions and media are sized in pixels from the scale factor worked out when the
+ * layout was parsed, so rather than recalculating all of them, scale the layout container
+ * as a whole by the ratio between that scale factor and the one the new size needs. A layout
+ * parsed after the resize picks up the new size by itself and needs no transform.
+ */
+export function rescaleLayouts() {
+    const $screen = document.getElementById('screen_container');
+    const sw = $screen?.offsetWidth || 0;
+    const sh = $screen?.offsetHeight || 0;
+
+    if (!$screen || sw === 0 || sh === 0) {
+        return;
+    }
+
+    $screen.querySelectorAll<HTMLDivElement>(':scope > div[data-scale-factor]').forEach(($layout) => {
+        const xw = Number($layout.dataset.designWidth);
+        const xh = Number($layout.dataset.designHeight);
+        const parsedScaleFactor = Number($layout.dataset.scaleFactor);
+
+        if (!xw || !xh || !parsedScaleFactor) {
+            return;
+        }
+
+        const scaleFactor = Math.min(sw / xw, sh / xh);
+        const sWidth = xw * scaleFactor;
+        const sHeight = xh * scaleFactor;
+
+        $layout.style.setProperty('left', `${Math.abs(sw - sWidth) / 2}px`);
+        $layout.style.setProperty('top', `${Math.abs(sh - sHeight) / 2}px`);
+
+        if (scaleFactor === parsedScaleFactor) {
+            $layout.style.removeProperty('transform');
+            $layout.style.removeProperty('transform-origin');
+        } else {
+            $layout.style.setProperty('transform-origin', '0 0');
+            $layout.style.setProperty('transform', `scale(${scaleFactor / parsedScaleFactor})`);
+        }
+    });
+}
+
 export async function getXlf(layoutOptions: OptionsType) {
     let xlfUrl = layoutOptions.xlfUrl;
     let fetchOptions: RequestInit = {};
@@ -534,6 +577,11 @@ export default class Layout implements ILayout {
                 top: ${this.offsetY}px;
             `;
             $layout.style.cssText = cssText;
+
+            // Kept on the element so rescaleLayouts() can refit it when the screen is resized
+            $layout.dataset.designWidth = `${this.xw}`;
+            $layout.dataset.designHeight = `${this.xh}`;
+            $layout.dataset.scaleFactor = `${this.scaleFactor}`;
         }
 
         if ($layout && this.zIndex !== null && this.isOverlay) {
