@@ -20,6 +20,7 @@
  */
 
 import {ELayoutState, ILayout, initialLayout, InputLayoutType} from "../../Types/Layout";
+import {LayoutPlaybackType} from "../../types";
 import {IXlr} from "../../Types/XLR";
 import OverlayLayout from "./OverlayLayout";
 import {elementSummary, inputLayoutSummary, layoutListSummary, layoutSummary} from "../../Lib";
@@ -29,14 +30,65 @@ export class OverlayLayoutManager {
     container!: HTMLElement;
     parent!: IXlr;
 
+    // Overlay updates are applied one at a time. Two updates overlapping (e.g. playSchedules and
+    // updateOverlays) would each build the same overlays and leave one set orphaned in the DOM.
+    private queue: Promise<void> = Promise.resolve();
+
     constructor() {
         this.container = document.createElement('div');
         this.container.className = 'overlay-layouts';
         this.container.style.display = 'none';
     }
 
-    async parseOverlays(list: any[]): Promise<Awaited<OverlayLayout[]>> {
+    private enqueue(task: () => Promise<void>): Promise<void> {
+        this.queue = this.queue.then(task).catch((error) => {
+            console.error('<> XLR.debug OverlayLayoutManager::enqueue task failed', error);
+        });
+
+        return this.queue;
+    }
+
+    private getOverlayElement(overlay: OverlayLayout): HTMLDivElement | null {
+        return document.querySelector(`#${overlay.containerName}[data-sequence="${overlay.index}"]`);
+    }
+
+    // An overlay can keep playing through a schedule update if it hasn't ended and is still in the DOM
+    private isReusable(overlay: OverlayLayout): boolean {
+        return overlay.state !== ELayoutState.PLAYED && this.getOverlayElement(overlay) !== null;
+    }
+
+    private async removeOverlay(overlay: OverlayLayout) {
+        if (this.getOverlayElement(overlay) === null) return;
+
+        if (overlay.state === ELayoutState.RUNNING) {
+            await overlay.finishAllRegions();
+            overlay.emitter.emit('end', overlay);
+        } else {
+            // Prepared but never shown (e.g. held back by an interrupt), so there is nothing to report
+            overlay.discardLayout(LayoutPlaybackType.OVERLAY);
+        }
+    }
+
+    async parseOverlays(list: any[], existing: OverlayLayout[] = []): Promise<Awaited<OverlayLayout[]>> {
+        // Hand each existing overlay to at most one entry of the new list
+        const pool = [...existing];
+
         return await Promise.all(list.map(async (item: any, index: number) => {
+            const poolIndex = pool.findIndex((o) =>
+                o.layoutId === Number(item.layoutId) &&
+                o.scheduleId === (item.scheduleId || undefined) &&
+                this.isReusable(o));
+
+            if (poolIndex !== -1) {
+                const [overlay] = pool.splice(poolIndex, 1);
+
+                console.debug('<> XLR.debug OverlayLayoutManager::parseOverlays reusing overlay layout', {
+                    overlayLayout: layoutSummary(overlay),
+                });
+
+                return overlay;
+            }
+
             let inputOverlay: InputLayoutType = <InputLayoutType>{};
 
             inputOverlay = {...inputOverlay, ...item};
@@ -49,12 +101,12 @@ export class OverlayLayoutManager {
                 inputOverlay: inputLayoutSummary(inputOverlay),
             });
 
-            // Hide all overlays first
+            // Keep the new overlay hidden until it runs
             const $overlay = <HTMLDivElement | null>(document.querySelector(`#${overlayLayout.containerName}[data-sequence="${overlayLayout.index}"]`));
 
             if ($overlay !== null) {
                 $overlay.style.setProperty('visibility', 'hidden');
-                $overlay.style.setProperty('z-index', `${overlayLayout.zIndex ?? -999}`);
+                $overlay.style.setProperty('z-index', '-999');
             }
 
             return overlayLayout as OverlayLayout;
@@ -62,54 +114,36 @@ export class OverlayLayoutManager {
     }
 
     async prepareOverlayLayouts(list: InputLayoutType[], parent: IXlr) {
-        let hasChanged = false;
         this.parent = parent;
 
         console.debug('<> XLR.debug OverlayLayoutManager::prepareOverlayLayouts', {
             existingOverlays: layoutListSummary(this.overlays),
             newOverlays: layoutListSummary(list),
-            hasChanged,
         });
 
-        // Check if list has changed
-        // If yes, then emit overlayEnd for removed overlay
-        if (this.overlays.length > 0 && list.length >= 0) {
-            const existingOverlayIds = this.overlays.reduce((ids: number[], o) => [...ids, o.layoutId], []);
-            const newListIds = list.reduce((ids: number[], o) => [...ids, o.layoutId], []);
-            hasChanged = existingOverlayIds.join(',') !== newListIds.join(',');
+        const existing = this.overlays;
+        const overlays = await this.parseOverlays(list as InputLayoutType[], existing);
 
-            if (hasChanged) {
-                const overlaysRemoved = existingOverlayIds.filter(eId => newListIds.indexOf(eId) === -1);
-                console.debug('<> XLR.debug OverlayLayoutManager::prepareOverlayLayouts overlaysRemoved', {
-                    overlaysRemoved,
-                    existingOverlayIds,
-                    newListIds,
-                });
+        // End the overlays that are no longer scheduled, or that couldn't be reused
+        const overlaysRemoved = existing.filter((o) => overlays.indexOf(o) === -1);
 
-                if (overlaysRemoved.length > 0) {
-                    for (const oLayoutId of overlaysRemoved) {
-                        const o = this.overlays.find(o => o.layoutId === oLayoutId);
+        console.debug('<> XLR.debug OverlayLayoutManager::prepareOverlayLayouts overlaysRemoved', {
+            overlaysRemoved: layoutListSummary(overlaysRemoved),
+        });
 
-                        if (o) {
-                            const overlayHtml = <HTMLDivElement | null>(document.querySelector(`#${o.containerName}[data-sequence="${o.index}"]`));
-
-                            if (overlayHtml !== null) {
-                                await o.finishAllRegions();
-                                o.emitter.emit('end', o);
-                            }
-                        }
-                    }
-                }
-            }
+        for (const o of overlaysRemoved) {
+            await this.removeOverlay(o);
         }
 
-        console.debug('<> XLR.debug OverlayLayoutManager::prepareOverlayLayouts', {
-            existingOverlays: layoutListSummary(this.overlays),
-            newOverlays: layoutListSummary(list),
-            hasChanged,
-        });
+        this.overlays = overlays;
+    }
 
-        this.overlays = await this.parseOverlays(list as InputLayoutType[]);
+    // Prepare the given overlays and play them, after any update already in progress
+    updateOverlays(list: InputLayoutType[], parent: IXlr): Promise<void> {
+        return this.enqueue(async () => {
+            await this.prepareOverlayLayouts(list, parent);
+            this.playOverlays();
+        });
     }
 
     playOverlays() {
@@ -122,6 +156,9 @@ export class OverlayLayoutManager {
         }
 
         this.overlays.forEach((overlay) => {
+            // Running again would restart the regions of an overlay that is already playing
+            if (overlay.state === ELayoutState.RUNNING) return;
+
             overlay.run();
         });
     }
@@ -130,25 +167,28 @@ export class OverlayLayoutManager {
         if (this.overlays.length === 0) return;
 
         this.overlays.forEach(async (overlay) => {
-            const overlayHtml = <HTMLDivElement | null>(document.querySelector(`#${overlay.containerName}[data-sequence="${overlay.index}"]`));
+            const overlayHtml = this.getOverlayElement(overlay);
 
             console.debug('<> XLR.debug OverlayLayoutManager::stopOverlays', {
                 overlay: layoutSummary(overlay),
                 overlayHtml: elementSummary(overlayHtml),
             });
 
-            if (overlayHtml !== null) {
+            if (overlayHtml !== null && overlay.state === ELayoutState.RUNNING) {
                 await overlay.finishAllRegions();
                 overlay.emitter.emit('end', overlay);
             }
         })
     }
 
-    async resumeOverlays() {
-        if (this.overlays.length === 0) return;
+    resumeOverlays(): Promise<void> {
+        return this.enqueue(async () => {
+            if (this.overlays.length === 0) return;
 
-        this.overlays = await this.parseOverlays(this.overlays);
+            // Overlays ended by the interrupt are rebuilt, the rest carry on
+            this.overlays = await this.parseOverlays(this.overlays, this.overlays);
 
-        this.playOverlays();
+            this.playOverlays();
+        });
     }
 }

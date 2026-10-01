@@ -54,10 +54,8 @@ export default function XiboLayoutRenderer(
     };
 
     const runOverlayLayouts = (async () => {
-        await xlrObject.overlayLayoutManager.prepareOverlayLayouts(xlrObject.overlays, xlrObject);
-
-        // Play overlays
-        xlrObject.overlayLayoutManager.playOverlays();
+        // Prepares and plays the overlays, queued behind any overlay update already running
+        await xlrObject.overlayLayoutManager.updateOverlays(xlrObject.overlays, xlrObject);
     });
 
     xlrObject.isUpdatingLoop = false;
@@ -1043,6 +1041,13 @@ export default function XiboLayoutRenderer(
             if (sspInputLayout) {
                 xlrLayoutObj.duration = sspInputLayout.duration || 0;
                 xlrLayoutObj.ad = sspInputLayout.ad;
+            }
+
+            // Take the ID counter now rather than from the clone made before the XLF was fetched.
+            // Layouts prepared at the same time would otherwise start from the same value and
+            // share container and video.js IDs, so preparing one disposes the other's video.
+            if (props.options) {
+                newOptions.idCounter = props.options.idCounter;
             }
 
             let xlrLayout: ILayout;

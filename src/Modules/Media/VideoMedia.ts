@@ -123,6 +123,12 @@ export function VideoMedia(media: IMedia, xlr: IXlr) {
             if (vjsPlayer) {
                 videoPlayer.player = vjsPlayer;
 
+                // The player was created when the video was prepared, which can be before
+                // media.loop was settled (e.g. a video held in an overlay)
+                if (media.loop) {
+                    vjsPlayer.loop(true);
+                }
+
                 // ── Early source check ────────────────────────────────────────────────
                 // Two-step check before video.js tries to load anything:
                 // 1. Is the file extension one we map to a MIME type?
