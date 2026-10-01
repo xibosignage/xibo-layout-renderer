@@ -680,7 +680,13 @@ export default class Layout implements ILayout {
         if ($layoutContainer) {
             $layoutContainer.style.setProperty('visibility', 'visible');
             $layoutContainer.style.setProperty('opacity', '1');
-            $layoutContainer.style.setProperty('z-index', this.zIndex !== null ? `${this.zIndex}` : '1');
+            // Overlays have to stay above the main layouts. The XLF zindex defaults to 0, and with
+            // equal z-indexes the next main layout, appended later, would paint over the overlay.
+            if (this.isOverlay) {
+                $layoutContainer.style.setProperty('z-index', '999');
+            } else {
+                $layoutContainer.style.setProperty('z-index', this.zIndex !== null ? `${this.zIndex}` : '1');
+            }
 
             // Only set the body color when this.isOverlay === false
             if (!this.isOverlay) {
