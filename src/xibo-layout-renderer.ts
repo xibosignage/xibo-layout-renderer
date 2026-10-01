@@ -410,7 +410,8 @@ export default function XiboLayoutRenderer(
             const isCurrentLayout = current && div.id === current.containerName && div.dataset.sequence === String(current.index);
             const isNextLayout    = next    && div.id === next.containerName    && div.dataset.sequence === String(next.index);
 
-            if (!isCurrentLayout && !isNextLayout) {
+            // A layout finishing its out transitions removes itself
+            if (!isCurrentLayout && !isNextLayout && div.dataset.exiting !== '1') {
                 console.debug('XLR::cleanupOrphanedLayouts - removing orphaned layout element', div.id);
                 div.parentElement?.removeChild(div);
             }

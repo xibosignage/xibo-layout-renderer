@@ -117,11 +117,14 @@ export class Media implements IMedia {
         this.id = mediaId;
         this.mediaId = this.id;
         this.xml = xml;
-        this.options = options;
+        // Own copy: init() writes this widget's XLF options into it, and the region's
+        // object is shared by every widget (they all ended up with the last one's options)
+        this.options = { ...options };
         this.xlr = xlr;
 
         this.fileId = this.xml?.getAttribute('fileId') || '';
-        this.idCounter = nextId(this.options);
+        // The id counter lives on the shared options so container names stay unique
+        this.idCounter = nextId(options);
         this.containerName = `M-${this.id}-${this.idCounter}`;
         this.iframeName = `${this.containerName}-iframe`;
         this.mediaType = this.xml?.getAttribute('type') || '';
@@ -351,10 +354,15 @@ export class Media implements IMedia {
 
                 if (media.mediaType === 'video') {
                     // Dispose the video media, unless the region is holding it on its
-                    // last frame; the layout disposes it when it ends.
+                    // last frame (the layout disposes it when it ends) or animating it
+                    // out (the region disposes it once the transition finishes).
                     console.debug(`??? XLR.debug >> VideoMedia::stop - ${capitalizeStr(media.mediaType)} for media > ${media.id} has ended playing . . .`);
-                    if (media.videoHandler !== undefined && !media.region.isFrozenOn(media)) {
-                        media.videoHandler.stop(true);
+                    if (media.videoHandler !== undefined) {
+                        if (media.region.isFrozenOn(media) || media.region.willTransitionOut(media)) {
+                            media.videoHandler.hold();
+                        } else {
+                            media.videoHandler.stop(true);
+                        }
                     }
                 }
                 return; // done — no reschedule
