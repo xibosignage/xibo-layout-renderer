@@ -75,9 +75,10 @@ export type KeyframeOptionsType = {
 }
 
 export const flyInElem = (duration: number, keyframeOptions: KeyframeOptionsType | undefined, direction?: string) => {
-    const flyInKeyframes = [
-        {opacity: 0},
-        {opacity: 1, zIndex: 1},
+    // Fly only moves the element; opacity stays as-is so it doesn't read as a fade
+    const flyInKeyframes: Keyframe[] = [
+        {},
+        {zIndex: 1},
     ];
     const flyInTiming: number | KeyframeAnimationOptions | undefined = {
         duration,
@@ -100,8 +101,8 @@ export const flyInElem = (duration: number, keyframeOptions: KeyframeOptionsType
 
 export const flyOutElem = (duration: number, keyframeOptions: KeyframeOptionsType | undefined, direction?: string) => {
     const flyOutKeyframes: Keyframe[] = [
-        {opacity: 1},
-        {opacity: 0, zIndex: -1},
+        {},
+        {zIndex: -1},
     ];
     const flyOutTiming: number | KeyframeAnimationOptions | undefined = {
         duration,
@@ -157,110 +158,84 @@ export const flyTransitionKeyframes = (params: flyTransitionParams): KeyframeOpt
         from: {},
         to: {},
     };
-    const opacityAttr = (source: 'from' | 'to') => {
-        if (source === 'from') {
-            return params.trans === 'in' ? 0 : 1;
-        }
-        
-        return params.trans === 'out' ? 1 : 0;
-    };
-
     switch (params.direction) {
         case 'N':
             keyframes.from = {
-                opacity: opacityAttr('from'),
                 top: params.trans === 'in' ? `${params.height}px` : 0,
             };
             keyframes.to = {
-                opacity: opacityAttr('to'),
                 top: params.trans === 'in' ? 0 : `-${params.height}px`,
             };
             break;
         case 'NE':
             keyframes.from = {
-                opacity: opacityAttr('from'),
                 top: params.trans === 'in' ? `${params.height}px` : 0,
                 left: params.trans === 'in' ? `-${params.width}px` : 0,
             };
             keyframes.to = {
-                opacity: opacityAttr('to'),
                 top: params.trans === 'in' ? 0 : `-${params.height}px`,
                 left: params.trans === 'in' ? 0 : `${params.width}px`,
             };
             break;
         case 'E':
             keyframes.from = {
-                opacity: opacityAttr('from'),
                 left: params.trans === 'in' ? `-${params.width}px` : 0,
             };
             keyframes.to = {
-                opacity: opacityAttr('to'),
                 left: params.trans === 'in' ? 0 : `${params.width}px`,
             };
             break;
         case 'SE':
             keyframes.from = {
-                opacity: opacityAttr('from'),
                 top: params.trans === 'in' ? `-${params.height}px` : 0,
                 left: params.trans === 'in' ? `-${params.width}px` : 0,
             };
             keyframes.to = {
-                opacity: opacityAttr('to'),
                 top: params.trans === 'in' ? 0 : `${params.height}px`,
                 left: params.trans === 'in' ? 0 : `${params.width}px`,
             };
             break;
         case 'S':
             keyframes.from = {
-                opacity: opacityAttr('from'),
                 top: params.trans === 'in' ? `-${params.height}px` : 0,
             };
             keyframes.to = {
-                opacity: opacityAttr('to'),
                 top: params.trans === 'in' ? 0 : `${params.height}px`,
             };
             break;
         case 'SW':
             keyframes.from = {
-                opacity: opacityAttr('from'),
                 top: params.trans === 'in' ? `-${params.height}px` : 0,
                 left: params.trans === 'in' ? `${params.width}px` : 0,
             };
             keyframes.to = {
-                opacity: opacityAttr('to'),
                 top: params.trans === 'in' ? 0 : `${params.height}px`,
                 left: params.trans === 'in' ? 0 : `-${params.width}px`,
             };
             break;
         case 'W':
             keyframes.from = {
-                opacity: opacityAttr('from'),
                 left: params.trans === 'in' ? `${params.width}px` : 0,
             };
             keyframes.to = {
-                opacity: opacityAttr('to'),
                 left: params.trans === 'in' ? 0 : `-${params.width}px`,
             };
             break;
         case 'NW':
             keyframes.from = {
-                opacity: opacityAttr('from'),
                 top: params.trans === 'in' ? `${params.height}px` : 0,
                 left: params.trans === 'in' ? `${params.width}px` : 0,
             };
             keyframes.to = {
-                opacity: opacityAttr('to'),
                 top: params.trans === 'in' ? 0 : `-${params.height}px`,
                 left: params.trans === 'in' ? 0 : `-${params.width}px`,
             };
             break;
         default:
             keyframes.from = {
-                opacity: opacityAttr('from'),
                 top: params.trans === 'in' ? `${params.height}px` : 0,
             };
             keyframes.to = {
-                opacity: opacityAttr('to'),
                 top: params.trans === 'in' ? 0 : `-${params.height}px`,
             };
             break;

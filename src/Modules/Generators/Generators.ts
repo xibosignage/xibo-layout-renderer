@@ -661,8 +661,8 @@ export function createMediaElement(mediaObject: IMedia) {
         }
     }
 
-    // Check if the media has fade-in/out transitions
-    if (Boolean(self.options['transin']) && Boolean(self.options['transinduration'])) {
+    // Check if the media has a fade-in transition (fly is handled by Media.run)
+    if (self.options['transin'] === 'fadeIn' && Boolean(self.options['transinduration'])) {
         const transInDuration = Number(self.options.transinduration);
         const fadeInTrans = transitionElement('fadeIn', { duration: transInDuration });
         $media.animate(fadeInTrans.keyframes, fadeInTrans.timing);

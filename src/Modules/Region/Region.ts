@@ -74,6 +74,9 @@ export default class Region implements IRegion {
     offsetX: number = 0;
     offsetY: number = 0;
     oldMedia: IMedia | undefined = undefined;
+    // Media most recently shown by transitionNodes; the one on screen when the region ends
+    shownMedia: IMedia | undefined = undefined;
+    exitTransitionTimer: ReturnType<typeof setTimeout> | undefined = undefined;
     oneMedia: boolean = false;
     ready: boolean = false;
     sHeight: number = 0;
@@ -357,7 +360,7 @@ export default class Region implements IRegion {
         }
     }
 
-    finished() {
+    finished(skipExitTransition = false) {
         console.debug('<> XLR.debug Region::finished called . . . ', {
             regionId: this.id,
         });
@@ -365,7 +368,7 @@ export default class Region implements IRegion {
         // Mark as complete
         this.complete = true;
         this.layout.regions[this.index] = this;
-        this.layout.regionExpired();
+        this.layout.regionExpired(skipExitTransition);
     }
 
     run() {
@@ -392,38 +395,47 @@ export default class Region implements IRegion {
         }
     }
 
-    transitionNodes(oldMedia: IMedia | undefined, newMedia: IMedia | undefined) {
+    /**
+     * Resolve the out transition of a media item from its options.
+     */
+    getTransOut(media: IMedia | undefined) {
         let transOutDuration = 1;
         let transOutDirection: compassPoints = 'E';
 
+        if (media && Boolean(media.options['transoutduration'])) {
+            transOutDuration = Number(media.options.transoutduration);
+        }
+
+        if (media && Boolean(media.options['transoutdirection'])) {
+            transOutDirection = media.options.transoutdirection;
+        }
+
+        let defaultTransOutOptions: TransitionElementOptions = { duration: transOutDuration };
+        let transOut = transitionElement('defaultOut', { duration: defaultTransOutOptions.duration });
+
+        let transOutName: TransitionNameType | string = '';
+        if (media && Boolean(media.options['transout'])) {
+            transOutName = media.options['transout'];
+
+            if (transOutName === 'fly') {
+                transOutName = `${transOutName}Out`;
+                defaultTransOutOptions.keyframes = flyTransitionKeyframes({
+                    trans: 'out',
+                    direction: transOutDirection,
+                    height: media.divHeight,
+                    width: media.divWidth,
+                });
+            }
+
+            transOut = transitionElement(transOutName as TransitionNameType, defaultTransOutOptions);
+        }
+
+        return { transOut, transOutName, transOutDuration, transOutDirection };
+    }
+
+    transitionNodes(oldMedia: IMedia | undefined, newMedia: IMedia | undefined) {
         if (newMedia) {
-            if (oldMedia && Boolean(oldMedia.options['transoutduration'])) {
-                transOutDuration = Number(oldMedia.options.transoutduration);
-            }
-
-            if (oldMedia && Boolean(oldMedia.options['transoutdirection'])) {
-                transOutDirection = oldMedia.options.transoutdirection;
-            }
-
-            let defaultTransOutOptions: TransitionElementOptions = { duration: transOutDuration };
-            let transOut = transitionElement('defaultOut', { duration: defaultTransOutOptions.duration });
-
-            let transOutName: TransitionNameType | string = '';
-            if (oldMedia && Boolean(oldMedia.options['transout'])) {
-                transOutName = oldMedia.options['transout'];
-
-                if (transOutName === 'fly') {
-                    transOutName = `${transOutName}Out`;
-                    defaultTransOutOptions.keyframes = flyTransitionKeyframes({
-                        trans: 'out',
-                        direction: transOutDirection,
-                        height: oldMedia.divHeight,
-                        width: oldMedia.divWidth,
-                    });
-                }
-
-                transOut = transitionElement(transOutName as TransitionNameType, defaultTransOutOptions);
-            }
+            const { transOut, transOutName, transOutDuration, transOutDirection } = this.getTransOut(oldMedia);
 
             console.debug('??? XLR.debug >> Region > transitionNodes - transOut options', {
                 transOutName,
@@ -504,7 +516,7 @@ export default class Region implements IRegion {
                                         oldMediaEl: elementSummary($oldMedia),
                                     });
                                     removeOldMedia();
-                                }, (transOutDuration / 2));
+                                }, transOutDuration);
                             }
                         } else {
                             console.debug('??? XLR.debug >> Region transitionNode - hideOldMedia' +
@@ -522,8 +534,10 @@ export default class Region implements IRegion {
                 if (oldMedia !== newMedia) {
                     hideOldMedia();
                 }
+                this.shownMedia = newMedia;
                 newMedia.run();
             } else {
+                this.shownMedia = newMedia;
                 newMedia.run();
             }
         }
@@ -591,7 +605,8 @@ export default class Region implements IRegion {
         })
 
         /* The current media has finished running */
-        if (this.ended) {
+        // Also stop while the region plays its exit transition
+        if (this.ended || this.ending) {
             console.debug('??? XLR.debug >> Region - playNextMedia - region ended', {
                 ended: this.ended,
             });
@@ -748,7 +763,8 @@ export default class Region implements IRegion {
         if (!this.layout.isOverlay && crossedEnd) {
             this.finished();
 
-            if (this.layout.allEnded) {
+            // The layout ends once the exit transitions finish; don't show the next media
+            if (this.layout.allEnded || this.ending) {
                 console.debug('??? XLR.debug >> Region - playNextMedia - layout all ended');
                 return;
             }
@@ -787,8 +803,18 @@ export default class Region implements IRegion {
             (media.mediaType === 'image' || media.mediaType === 'video');
     }
 
+    /**
+     * Will this region animate the given media out when it ends? transitionNodes
+     * only runs the out transition when there is another media item to show.
+     */
+    willTransitionOut(media: IMedia | undefined): boolean {
+        return media !== undefined &&
+            Boolean(media.options['transout']) &&
+            this.totalMediaObjects > 1;
+    }
+
     playPreviousMedia() {
-        if (this.currentMediaIndex <= 0 || this.ended) {
+        if (this.currentMediaIndex <= 0 || this.ended || this.ending) {
             return;
         }
 
@@ -811,20 +837,66 @@ export default class Region implements IRegion {
         this.transitionNodes(this.oldMedia, this.currMedia);
     };
 
-    end() {
+    end(skipExitTransition = false, handOff = false) {
+        // Already playing its exit transition: a forced end cuts it short
+        if (this.exitTransitionTimer !== undefined) {
+            if (skipExitTransition) {
+                clearTimeout(this.exitTransitionTimer);
+                this.exitTransitionTimer = undefined;
+                this.exitTransitionComplete();
+            }
+            return;
+        }
+
         this.ending = true;
         /* The Layout has finished running */
         /* Do any region exit transition then clean up */
         this.layout.regions[this.index] = this;
         console.debug('Calling Region::end ', regionSummary(this));
-        this.exitTransition();
+        this.exitTransition(skipExitTransition, handOff);
     };
 
-    exitTransition() {
-        /* TODO: Actually implement region exit transitions using this.html */
-        console.debug('Called Region::exitTransition ', this.id);
+    exitTransition(skipExitTransition = false, handOff = false) {
+        // Play the out transition of the media on screen, as it would when moving
+        // to the next media. Forced ends (schedule change, navigation, interrupt)
+        // skip it as their callers expect the layout to end straight away.
+        const media = this.shownMedia;
+        const $media = media
+            ? this.html.querySelector('.' + getMediaId(media)) as HTMLElement | null
+            : null;
 
-        this.exitTransitionComplete();
+        if (skipExitTransition || !media || !Boolean(media.options['transout']) || !$media) {
+            console.debug('Called Region::exitTransition - no transition', this.id);
+            this.exitTransitionComplete();
+            return;
+        }
+
+        const { transOut, transOutName, transOutDuration } = this.getTransOut(media);
+        console.debug('Called Region::exitTransition ', this.id, {
+            transOutName,
+            transOutDuration,
+            media: mediaSummary(media),
+        });
+
+        const animation = $media.animate(transOut.keyframes, transOut.timing);
+
+        // Handing off to the next copy of this layout: it starts now and keeps this
+        // layout on screen until the transition finishes, so the region is done
+        if (handOff) {
+            this.layout.exitHoldMs = Math.max(this.layout.exitHoldMs, transOutDuration);
+            this.exitTransitionComplete();
+            return;
+        }
+
+        this.exitTransitionTimer = setTimeout(() => {
+            this.exitTransitionTimer = undefined;
+            // Leave the media hidden rather than held by the animation, so it shows
+            // normally if this layout plays again
+            animation.effect?.updateTiming({ fill: 'none' });
+            $media.style.setProperty('visibility', 'hidden');
+            $media.style.setProperty('opacity', '0');
+            this.exitTransitionComplete();
+        }, transOutDuration);
     }
 
     exitTransitionComplete() {
@@ -835,6 +907,10 @@ export default class Region implements IRegion {
     }
 
     reset() {
+        if (this.exitTransitionTimer !== undefined) {
+            clearTimeout(this.exitTransitionTimer);
+            this.exitTransitionTimer = undefined;
+        }
         this.ended = false;
         this.complete = false;
         this.ending = false;

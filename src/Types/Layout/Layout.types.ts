@@ -124,14 +124,15 @@ export interface ILayout {
     options: OptionsType;
     done: boolean;
     allEnded: boolean;
+    exitHoldMs: number;
     path?: string;
     prepareLayout(): void;
     parseXlf(): void;
     run(): void;
     emitter: Emitter<ILayoutEvents>;
     on<E extends keyof ILayoutEvents>(event: E, callback: ILayoutEvents[E]): Unsubscribe;
-    regionExpired(): void;
-    end(): void;
+    regionExpired(skipExitTransition?: boolean): void;
+    end(skipExitTransition?: boolean): void;
     regionEnded(): void;
     stopAllMedia(): Promise<void>;
     resetLayout(): Promise<void>;
@@ -187,6 +188,7 @@ export const initialLayout: ILayout = {
     options: {} as OptionsType,
     done: false,
     allEnded: false,
+    exitHoldMs: 0,
     path: '',
     emitter: <Emitter<ILayoutEvents>>{},
     index: -1,
