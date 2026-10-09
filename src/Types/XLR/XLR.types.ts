@@ -177,6 +177,8 @@ export interface IXlr {
 
     updateLoop(inputLayouts: InputLayoutType[]): Promise<void>;
 
+    restartLoop(): Promise<void>;
+
     updateOverlays(overlays: InputLayoutType[]): Promise<void>;
 
     updateScheduleLayouts(scheduleLayouts: InputLayoutType[]): Promise<void>;
@@ -271,6 +273,9 @@ export const initialXlr: IXlr = {
     updateLayouts(inputLayouts: InputLayoutType[]) {
     },
     updateLoop(inputLayouts) {
+        return Promise.resolve();
+    },
+    restartLoop() {
         return Promise.resolve();
     },
     updateOverlays(overlays: InputLayoutType[]) {
