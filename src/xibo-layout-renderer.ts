@@ -54,10 +54,8 @@ export default function XiboLayoutRenderer(
     };
 
     const runOverlayLayouts = (async () => {
-        await xlrObject.overlayLayoutManager.prepareOverlayLayouts(xlrObject.overlays, xlrObject);
-
-        // Play overlays
-        xlrObject.overlayLayoutManager.playOverlays();
+        // Prepares and plays the overlays, queued behind any overlay update already running
+        await xlrObject.overlayLayoutManager.updateOverlays(xlrObject.overlays, xlrObject);
     });
 
     xlrObject.isUpdatingLoop = false;
@@ -87,10 +85,46 @@ export default function XiboLayoutRenderer(
         }
     });
 
+    // Loop updates run one at a time. One that arrives while another is running waits, and only
+    // the newest of those is kept, since it is the loop the player wants now.
+    let pendingLoop: InputLayoutType[] | null = null;
+
     xlrObject.on('updateLoop', async (inputLayouts: InputLayoutType[]) => {
+        pendingLoop = inputLayouts;
+
+        if (xlrObject.isUpdatingLoop) {
+            return;
+        }
+
         xlrObject.isUpdatingLoop = true;
-        await xlrObject.updateLoop(inputLayouts);
-        xlrObject.isUpdatingLoop = false;
+        let failed = false;
+
+        try {
+            while (pendingLoop) {
+                const nextLoop = pendingLoop;
+                pendingLoop = null;
+                failed = false;
+
+                try {
+                    await xlrObject.updateLoop(nextLoop);
+                } catch (error) {
+                    console.error('XLR::updateLoop failed, restarting the loop', error);
+                    failed = true;
+                }
+            }
+        } finally {
+            // Always cleared. If it stayed set, prepareLayouts() would skip every later layout
+            // change and the screen would stay as it is until the player restarts.
+            xlrObject.isUpdatingLoop = false;
+        }
+
+        // By now the old layout may be gone and the new one not prepared, which leaves a blank
+        // screen. Start the new loop from the beginning instead. This has to wait until the flag
+        // is cleared, since prepareLayouts() does nothing while it is set.
+        if (failed) {
+            await xlrObject.restartLoop();
+            return;
+        }
 
         // If the running layout finished while isUpdatingLoop was true, the
         // layout end-handler bailed out of prepareLayouts() early and the
@@ -412,11 +446,44 @@ export default function XiboLayoutRenderer(
             const isCurrentLayout = current && div.id === current.containerName && div.dataset.sequence === String(current.index);
             const isNextLayout    = next    && div.id === next.containerName    && div.dataset.sequence === String(next.index);
 
-            if (!isCurrentLayout && !isNextLayout) {
+            // A layout finishing its out transitions removes itself
+            if (!isCurrentLayout && !isNextLayout && div.dataset.exiting !== '1') {
                 console.debug('XLR::cleanupOrphanedLayouts - removing orphaned layout element', div.id);
                 div.parentElement?.removeChild(div);
             }
         });
+    };
+
+    /**
+     * Drops the current and next layouts and plays the loop from its first layout, as on start.
+     * Used when a loop update fails part way through. Must not be called while isUpdatingLoop
+     * is set.
+     */
+    xlrObject.restartLoop = async function () {
+        try {
+            if (this.currentLayout &&
+                this.isLayoutInDOM(this.currentLayout.containerName, this.currentLayout.index)
+            ) {
+                this.currentLayout.inLoop = false;
+                this.currentLayout.removeLayout();
+            }
+
+            if (this.nextLayout) {
+                this.nextLayout.discardLayout(LayoutPlaybackType.NEXT);
+            }
+        } catch (error) {
+            console.error('XLR::restartLoop could not clean up the old layouts', error);
+        }
+
+        this.currentLayout = undefined;
+        this.nextLayout = undefined;
+        this.currentLayoutIndex = 0;
+
+        try {
+            await this.playSchedules(await this.prepareLayouts());
+        } catch (error) {
+            console.error('XLR::restartLoop could not start the loop', error);
+        }
     };
 
     xlrObject.updateLoop = async function (inputLayouts: InputLayoutType[]) {
@@ -1043,6 +1110,13 @@ export default function XiboLayoutRenderer(
             if (sspInputLayout) {
                 xlrLayoutObj.duration = sspInputLayout.duration || 0;
                 xlrLayoutObj.ad = sspInputLayout.ad;
+            }
+
+            // Take the ID counter now rather than from the clone made before the XLF was fetched.
+            // Layouts prepared at the same time would otherwise start from the same value and
+            // share container and video.js IDs, so preparing one disposes the other's video.
+            if (props.options) {
+                newOptions.idCounter = props.options.idCounter;
             }
 
             let xlrLayout: ILayout;

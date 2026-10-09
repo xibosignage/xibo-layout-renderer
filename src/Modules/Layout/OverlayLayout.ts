@@ -93,6 +93,16 @@ export default class OverlayLayout extends Layout {
         $overlay.parentElement?.removeChild($overlay);
       }
 
+      // Dispose video players now that the overlay is off screen, otherwise they keep
+      // playing (and firing stats) after the DOM is gone
+      for (const region of overlay.regions) {
+        for (const media of region.mediaObjects) {
+          if (media.videoHandler) {
+            media.videoHandler.stop(true);
+          }
+        }
+      }
+
       // Emit overlay layout end event
       console.debug('Overlay::Emitter > End - Calling overlayEnd event');
       overlay.xlr.emitter.emit('overlayEnd', overlay);

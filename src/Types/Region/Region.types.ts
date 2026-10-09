@@ -34,16 +34,16 @@ export interface IRegion {
     currentMediaIndex: number;
     emitter?: Emitter<DefaultEvents>;
 
-    end(): void;
+    end(skipExitTransition?: boolean, handOff?: boolean): void;
 
     ended: boolean;
     ending: boolean;
 
-    exitTransition(): void;
+    exitTransition(skipExitTransition?: boolean, handOff?: boolean): void;
 
     exitTransitionComplete(): void;
 
-    finished(): void;
+    finished(skipExitTransition?: boolean): void;
 
     html: HTMLDivElement;
     id: string;
@@ -65,6 +65,8 @@ export interface IRegion {
     };
 
     isFrozenOn(media: IMedia | undefined): boolean;
+
+    willTransitionOut(media: IMedia | undefined): boolean;
 
     playNextMedia(): void;
 
@@ -131,6 +133,9 @@ export const initialRegion: IRegion = {
     oneMedia: false,
     options: {},
     isFrozenOn(_media: IMedia | undefined) {
+        return false;
+    },
+    willTransitionOut(_media: IMedia | undefined) {
         return false;
     },
     playNextMedia() {
