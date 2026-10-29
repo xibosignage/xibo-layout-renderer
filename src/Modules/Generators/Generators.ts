@@ -268,7 +268,7 @@ export function composeResourceUrl(options: OptionsType, params: any) {
     const hardwareKey = (options) && options.config?.hardwareKey;
     const serverKey = (options) && options.config?.cmsKey;
 
-    return '/pwa/getResource' +
+    return (options?.pwaBaseUrl ?? '/pwa/') + 'getResource' +
         '?v=' + schemaVersion +
         '&serverKey=' + serverKey +
         '&hardwareKey=' + hardwareKey +
