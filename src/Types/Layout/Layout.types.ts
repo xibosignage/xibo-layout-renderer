@@ -72,6 +72,13 @@ export type OptionsType = {
      * `htmlPackageUrl + <uri> + '/' + <nominatedFile>`.
      */
     htmlPackageUrl?: string | null;
+    /**
+     * ChromeOS only: the path the player is served from, with a trailing slash.
+     * `/pwa/` for a CMS at the root of its host, `/xibo/pwa/` for one in a
+     * sub-folder. Widget resources are requested from `pwaBaseUrl + 'getResource'`.
+     * Defaults to `/pwa/`.
+     */
+    pwaBaseUrl?: string | null;
     platform: ConsumerPlatform;
     config?: {
         cmsUrl: string | null;
