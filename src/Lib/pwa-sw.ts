@@ -19,11 +19,11 @@
  * along with Xibo.  If not, see <http://www.gnu.org/licenses/>.
  */
 export default function PwaSW() {
-    const swScope = '/pwa/sw.js';
-
     return {
+        // The registration controlling this page. Not looked up by path, as the
+        // player can be served from a CMS sub-folder rather than from /pwa/.
         async getSW() {
-            return await navigator.serviceWorker.getRegistration(swScope);
+            return await navigator.serviceWorker.getRegistration();
         },
         postMsg(msg: any) {
             return new Promise(resolve => {
