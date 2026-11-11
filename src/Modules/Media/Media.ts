@@ -130,7 +130,7 @@ export class Media implements IMedia {
         this.mediaType = this.xml?.getAttribute('type') || '';
         this.render = this.xml?.getAttribute('render') || '';
         this.duration = parseInt(this.xml?.getAttribute('duration') as string) || 0;
-        this.enableStat = Boolean(this.xml?.getAttribute('enableStat') || false);
+        this.enableStat = this.xml?.getAttribute('enableStat') === '1';
         this.hasCommandExecuted = false;
         this.fromDt = this.xml?.getAttribute('fromDt') || '';
         this.toDt = this.xml?.getAttribute('toDt') || '';
