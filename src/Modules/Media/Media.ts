@@ -435,6 +435,7 @@ export class Media implements IMedia {
             uri: this.uri,
             isGlobalContent: this.mediaType === 'global',
             isImageOrVideo: this.mediaType === 'image' || this.mediaType === 'video',
+            isAudio: this.mediaType === 'audio',
             render: this.render,
             modeid: this.options['modeid'],
             // XLF option node names are lower-cased when parsed above, so the
@@ -688,6 +689,11 @@ export class Media implements IMedia {
 
     async stop() {
         if (this.html) {
+            // Audio has nothing on screen to hide, so make sure it falls silent too.
+            if (this.html instanceof HTMLAudioElement) {
+                this.html.pause();
+            }
+
             this.html.style.display = 'none';
             this.html.remove();
         }
