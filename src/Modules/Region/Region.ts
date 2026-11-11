@@ -464,20 +464,26 @@ export default class Region implements IRegion {
                             $oldMedia.style.setProperty('z-index', '-999');
                             $oldMedia.style.setProperty('opacity', '0');
 
-                            let $videoWrapper = null;
+                            let $videoWrapper: HTMLElement | null = null;
                             if (oldMedia.mediaType === 'video') {
-                                // @ts-ignore
-                                if ($oldMedia !== null && $oldMedia?.parentElement?.classList.contains('video-js')) {
+                                // video.js moves the media's class onto the wrapper it builds around the
+                                // <video>, so the element found above is usually the wrapper itself.
+                                // Missing it skipped stop(true) below, and a player held for this
+                                // transition was never disposed: it stayed registered in video.js, with
+                                // its <video> and source, for every playlist cycle.
+                                if ($oldMedia.classList.contains('video-js')) {
+                                    $videoWrapper = $oldMedia;
+                                } else if ($oldMedia.parentElement?.classList.contains('video-js')) {
                                     $videoWrapper = $oldMedia.parentElement;
+                                }
 
-                                    if ($videoWrapper !== null) {
-                                        $videoWrapper.style.setProperty('visibility', 'hidden');
-                                        $videoWrapper.style.setProperty('z-index', '-999');
-                                        $videoWrapper.style.setProperty('opacity', '0');
+                                if ($videoWrapper !== null) {
+                                    $videoWrapper.style.setProperty('visibility', 'hidden');
+                                    $videoWrapper.style.setProperty('z-index', '-999');
+                                    $videoWrapper.style.setProperty('opacity', '0');
 
-                                        if (oldMedia.videoHandler) {
-                                            oldMedia.videoHandler.stop(true);
-                                        }
+                                    if (oldMedia.videoHandler) {
+                                        oldMedia.videoHandler.stop(true);
                                     }
                                 }
                             }

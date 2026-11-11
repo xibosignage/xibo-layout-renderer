@@ -200,7 +200,8 @@ export function composeResourceUrlByPlatform(options: OptionsType, params: any) 
                 '_region_' + params.regionId +
                 '_media_' + params.mediaId +
                 '.html';
-        } else if (params.render === 'native' && params.isImageOrVideo) {
+        } else if (params.render === 'native' && (params.isImageOrVideo || params.isAudio)) {
+            // Native media is played straight from the consumer's local file server.
             resourceUrl = options.appHost + params.uri;
         }
     } else if (!Boolean(params['mediaType'])) {
@@ -572,7 +573,9 @@ export function prepareAudio(media: IMedia, container: HTMLAudioElement) {
 
     $audioMedia.preload = 'auto';
     $audioMedia.textContent = 'Unsupported Audio';
-    $audioMedia.autoplay = true;
+    // AudioMedia starts it when its turn comes. Autoplay would start it as soon as it has a source,
+    // which is while its layout is still being prepared behind the one on screen.
+    $audioMedia.autoplay = false;
 
     if (media.loop) {
         $audioMedia.loop = true;

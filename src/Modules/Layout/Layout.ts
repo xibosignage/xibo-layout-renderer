@@ -548,7 +548,7 @@ export default class Layout implements ILayout {
         this.xw = Number(this.layoutNode?.firstElementChild?.getAttribute('width'));
         this.xh = Number(this.layoutNode?.firstElementChild?.getAttribute('height'));
         this.zIndex = Number(this.layoutNode?.firstElementChild?.getAttribute('zindex')) || 0;
-        this.enableStat = Boolean(this.layoutNode?.firstElementChild?.getAttribute('enableStat') || false);
+        this.enableStat = this.layoutNode?.firstElementChild?.getAttribute('enableStat') === '1';
 
         /* Calculate Scale Factor */
         this.scaleFactor = Math.min((this.sw / this.xw), (this.sh / this.xh));
